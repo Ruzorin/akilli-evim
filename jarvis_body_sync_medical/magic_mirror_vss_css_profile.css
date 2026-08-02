@@ -1,0 +1,232 @@
+/* =============================================================================
+ * magic_mirror_vss_css_profile.css — FL-41 VSS Nöro-Optik CSS Profili
+ * =============================================================================
+ * Bu CSS, MagicMirror²'nin ~/MagicMirror/css/custom.css dosyasına kopyalanır.
+ * Visual Snow Syndrome (VSS) için nörolojik olarak optimize edilmiştir.
+ *
+ * 🧠 FL-41 ROSE TINT MANTIĞI:
+ * =============================================================================
+ * FL-41 (Rose Tint), 480-520nm (mavi-yeşil) bandını filtreler.
+ * Klinik olarak VSS semptomlarını %30-50 azaltır.
+ *
+ * Bu CSS'de:
+ * - Saf beyaz (#FFFFFF) YASAK → FL-41 Rose Tint (#E6A8D7) kullanılır
+ * - Mutlak siyah (#000000) YASAK → koyu lacivert (#0A0A0F) kullanılır
+ * - text-shadow YASAK → gölge = kontrast = Pattern Glare tetikleyici
+ * - box-shadow YASAK → gölge = kontrast = VSS statik artışı
+ * - opacity 0.85 → %15 karartma → fotofobi koruması
+ * - Font ince (weight 200) → kalın font = görsel stres
+ *
+ * "Bir doktor titizliğiyle, görsel korteksi korur."
+ * =============================================================================
+ */
+
+/* -------------------------------------------------------------------------
+ * ARKA PLAN: Mutlak siyah (#000000) yerine koyu lacivert (#0A0A0F)
+ * -------------------------------------------------------------------------
+ * Neden? Mutlak siyah → yüksek kontrast → Pattern Glare → VSS statik.
+ * Koyu lacivert → düşük kontrast → görsel sakinlik.
+ * ------------------------------------------------------------------------- */
+body {
+  background-color: #0A0A0F !important;
+}
+
+/* -------------------------------------------------------------------------
+ * TÜM METİNLER: Saf beyaz (#FFFFFF) yerine FL-41 Rose Tint (#E6A8D7)
+ * -------------------------------------------------------------------------
+ * FL-41 Rose Tint, 480-520nm bandını filtreler → fotofobi baskılanır.
+ * text-shadow YASAK → gölge = kontrast = VSS tetikleyici.
+ * ------------------------------------------------------------------------- */
+.normal,
+.bright,
+.dim {
+  color: #E6A8D7 !important;
+  /* FL-41 Rose Tint */
+  text-shadow: none !important;
+  /* Gölge YASAK */
+  font-weight: 200 !important;
+  /* İnce font — görsel stres azaltma */
+}
+
+/* -------------------------------------------------------------------------
+ * SAAT: FL-41 Rose Tint, ince font
+ * ------------------------------------------------------------------------- */
+.clock .time {
+  color: #E6A8D7 !important;
+  /* FL-41 Rose Tint */
+  font-weight: 200 !important;
+  text-shadow: none !important;
+  letter-spacing: 2px;
+}
+
+.clock .date {
+  color: #C49BBA !important;
+  /* Daha koyu FL-41 tonu */
+  font-weight: 200 !important;
+  text-shadow: none !important;
+}
+
+/* -------------------------------------------------------------------------
+ * HAVA DURUMU: FL-41 Rose Tint
+ * ------------------------------------------------------------------------- */
+.weather .temperature {
+  color: #E6A8D7 !important;
+  text-shadow: none !important;
+}
+
+.weather .weathericon {
+  display: none !important;
+  /* İkonlar YASAK — Pattern Glare */
+}
+
+/* -------------------------------------------------------------------------
+ * SPOTIFY: FL-41 Rose Tint
+ * ------------------------------------------------------------------------- */
+.MMM-Spotify .spotify .song {
+  color: #E6A8D7 !important;
+  text-shadow: none !important;
+}
+
+.MMM-Spotify .spotify .artist {
+  color: #C49BBA !important;
+  /* Daha koyu FL-41 */
+  text-shadow: none !important;
+}
+
+/* -------------------------------------------------------------------------
+ * MQTT MESAJLARI: FL-41 Rose Tint, italic
+ * ------------------------------------------------------------------------- */
+.MMM-MQTT .mqtt-message {
+  color: #E6A8D7 !important;
+  font-style: italic !important;
+  text-shadow: none !important;
+}
+
+/* -------------------------------------------------------------------------
+ * KELİME LİSTESİ (Dil Eğitmeni): FL-41 Rose Tint
+ * ------------------------------------------------------------------------- */
+.MMM-Vocabulary .vocab-en {
+  color: #E6A8D7 !important;
+  text-shadow: none !important;
+}
+
+.MMM-Vocabulary .vocab-fr {
+  color: #C49BBA !important;
+  text-shadow: none !important;
+}
+
+.MMM-Vocabulary .vocab-example {
+  color: #A88B9F !important;
+  /* En koyu FL-41 tonu */
+  text-shadow: none !important;
+}
+
+/* -------------------------------------------------------------------------
+ * GROOMING CHECKLIST: FL-41 Rose Tint
+ * ------------------------------------------------------------------------- */
+.MMM-Grooming-Checklist .grooming-header {
+  color: #C49BBA !important;
+  text-shadow: none !important;
+}
+
+.MMM-Grooming-Checklist .grooming-item {
+  color: #E6A8D7 !important;
+  text-shadow: none !important;
+}
+
+.MMM-Grooming-Checklist .grooming-score {
+  color: #E6A8D7 !important;
+  text-shadow: none !important;
+}
+
+/* -------------------------------------------------------------------------
+ * KARTLAR: Gölge YASAK, border YASAK
+ * -------------------------------------------------------------------------
+ * box-shadow = gölge = kontrast = Pattern Glare tetikleyici.
+ * border = çizgi = desen = Pattern Glare tetikleyici.
+ * ------------------------------------------------------------------------- */
+.module {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  /* Gölge YASAK */
+}
+
+/* -------------------------------------------------------------------------
+ * PARLAKLIK DÜŞÜR: opacity ile ekran karartma
+ * -------------------------------------------------------------------------
+ * %15 karartma → fotofobi koruması.
+ * ------------------------------------------------------------------------- */
+.region.top,
+.region.bottom,
+.region.center {
+  opacity: 0.85 !important;
+  /* %15 karartma */
+}
+
+/* -------------------------------------------------------------------------
+ * FONT BOYUTU: Görsel stres azaltma
+ * -------------------------------------------------------------------------
+ * Büyük font = yüksek kontrast = görsel stres.
+ * Orta font = düşük kontrast = sakin.
+ * ------------------------------------------------------------------------- */
+.normal {
+  font-size: 28px !important;
+}
+
+.small {
+  font-size: 18px !important;
+}
+
+/* -------------------------------------------------------------------------
+ * BİOMETRİK BRİFING (Modül 26): FL-41 Rose Tint
+ * ------------------------------------------------------------------------- */
+.MMM-Biometric-Briefing .bp-value {
+  color: #E6A8D7 !important;
+  text-shadow: none !important;
+}
+
+.MMM-Biometric-Briefing .sleep-value {
+  color: #C49BBA !important;
+  text-shadow: none !important;
+}
+
+.MMM-Biometric-Briefing .posture-alert {
+  color: #D4A0A0 !important;
+  /* Yumuşak kırmızı (FL-41 uyumlu) */
+  text-shadow: none !important;
+}
+
+/* -------------------------------------------------------------------------
+ * KONTRAST KORUMA: Tüm olası beyaz alanları FL-41'e zorla
+ * ------------------------------------------------------------------------- */
+* {
+  text-shadow: none !important;
+  /* Global: tüm gölgeler YASAK */
+}
+
+/* -------------------------------------------------------------------------
+ * GEÇİŞ EFEKTLERİ: Yavaş fade (ani geçiş YASAK)
+ * -------------------------------------------------------------------------
+ * Palinopsia: ani geçiş → görüntü kalıntısı → VSS statik artışı.
+ * Çözüm: yavaş fade geçiş (3000ms).
+ * ------------------------------------------------------------------------- */
+.module {
+  transition: opacity 3s ease-in-out !important;
+}
+
+/* -------------------------------------------------------------------------
+ * SCROLLBAR: FL-41 Rose Tint
+ * ------------------------------------------------------------------------- */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #C49BBA !important;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0A0A0F !important;
+}

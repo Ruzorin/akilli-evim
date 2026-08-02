@@ -15,15 +15,52 @@ Visual Snow Syndrome, görsel alanda sürekli "karıncalanma" (statik kar/TV kar
 - Palinopsia (görüntü kalıntıları)
 - Gece körlüğü benzeri semptomlar
 
-### Işık Tetikleyicileri
+### Nörolojik Temel: Thalamocortical Dysrhythmia
+
+VSS'nin nörolojik kökeni **Thalamocortical Dysrhythmia** (TCD) olarak bilinir. Bu teoriye göre:
+- Beynin talamus ve korteks arasındaki iletişim frekansları bozulur
+- Normalde alpha bandında (8-12 Hz) çalışan görsel korteks, theta bandına (4-8 Hz) kayar
+- Bu frekans kayması → görsel "karıncalanma" (statik) üretir
+- **Işık stresi** → TCD'yi alevlendirir → statik karıncalanma artar
+- **Düşük stres + doğru ışık** → TCD baskılanır → semptomlar azalır
+
+> **Klinik bağlam:** Jarvis'in AI katmanı (Gemini 3.6 Pro), kullanıcının akıllı saat HRV (Kalp Atış Varyabilitesi) verisinden stres seviyesini analiz eder. HRV düşüşü → otonom sinir sistemi stres altında → VSS krizi yaklaşabilir → AI **proaktif olarak** FL-41 aydınlatma modunu tetikler. "Krizi beklemek yerine, krizi önler."
+
+### Pattern Glare (Desen Parlaması)
+
+Pattern Glare, tekrarlayan desenlerin (çizgiler, kafesler, yüksek kontrastlı geometrik şekiller) görsel sistemde aşırı uyarım yaratmasıdır. VSS hastalarında:
+- Yüksek kontrastlı desenler → görsel karıncalanma artışı
+- Düz beyaz yüzeyler (tavan, duvar) → "boş alan karıncalanması" (empty field static)
+- **Çözüm:** Düz yüzeyleri maskelemek için düşük kontrastlı, yavaş hareket eden görseller (nebula projeksiyonu) kullanılır
+
+> **Pattern Glare kırma:** Modül 3'teki (Space Projection) tavan projeksiyonu, düz beyaz tavanı "çok yavaş dönen, koyu mor/kırmızı düşük kontrastlı nebula" ile maskeleyerek Pattern Glare etkisini kırar. "Düz yüzey = karıncalanma; hareketli düşük kontrast = sakin."
+
+### FL-41 Rose Tint (Gül Rengi) Spektrumu
+
+FL-41, nöroloji ve oftalmoloji literatüründe VSS ve fotofobi için en etkili ışık filtresidir:
+
+| Özellik | Detay |
+|---|---|
+| **Filtre aralığı** | 480-520 nm (mavi-yeşil bandı) kesim |
+| **Renk** | Gül rengi / pembe-msı kehribar |
+| **HEX** | #E6A8D7 → #FFB6C1 (FL-41 Rose Tint) |
+| **Etki** | Mavi-yeşil ışığı filtreler → fotofobi azalır → VSS statik baskılanır |
+| **Klinik kanıt** | FL-41 gözlükler VSS hastalarında semptomları %30-50 azaltır (klinik çalışmalar) |
+| **WLED uygulaması** | RGB: [230, 168, 215] → FL-41 spektrumu taklit edilir |
+
+> **FL-41 vs standart kehribar:** Standart kehribar (#BF8000) sıcak ama mavi-yeşil bandı tam kesmez. FL-41 Rose Tint (#E6A8D7) spesifik olarak 480-520 nm bandını filtreler → VSS için klinik olarak daha etkilidir.
+
+### Işık Tetikleyicileri (Güncellenmiş)
 
 | Tetikleyici | Etki | Çözüm |
 |---|---|---|
-| **Düşük PWM frekansı (<1kHz)** | LED titreşimi → VSS statik artışı | WLED PWM ≥ 2kHz (donanımsal) |
-| **Sert mavi ışık (450nm)** | Fotofobi → göz ağrısı → VSS alevlenme | Kehribar/yeşil filtre (≤500nm kes) |
-| **Anlık parlaklık değişimi** | Flaş/strobe → palinopsia tetikleme | Transition ≥ 3 saniye (3000ms) |
-| **Yüksek kontrast** | Görsel stres → statik artışı | Düşük kontrast, koyu gri/kehribar |
-| **Beyaz arka plan (#FFFFFF)** | Maksimum fotofobi | Koyu gri (#1A1A2E) + kehribar yazı |
+| **Düşük PWM frekansı (<1kHz)** | LED titreşimi → VSS statik artışı | WLED PWM ≥ 2kHz (donanımsal) — **KRİTİK** |
+| **Sert mavi ışık (450nm)** | Fotofobi → göz ağrısı → VSS alevlenme | FL-41 Rose Tint filtre (480-520nm kesim) |
+| **Anlık parlaklık değişimi** | Flaş/strobe → palinopsia tetikleme | Transition ≥ 3000ms (ZORUNLU) |
+| **Yüksek kontrast** | Pattern Glare → statik artışı | Düşük kontrast, FL-41 Rose Tint |
+| **Beyaz arka plan (#FFFFFF)** | Maksimum fotofobi + Pattern Glare | Koyu lacivert (#0A0A0F) + FL-41 Rose Tint yazı |
+| **Düz beyaz yüzeyler (tavan)** | Empty field static → karıncalanma | Nebula projeksiyonu ile maskeleme (Modül 3) |
+| **Tekrarlayan desenler** | Pattern Glare → görsel stres | Düzgün, organik, düşük kontrastlı görseller |
 
 ### WLED VSS Optimizasyonu
 

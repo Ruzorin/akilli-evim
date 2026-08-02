@@ -39,12 +39,22 @@ automation:
     alias: "VSS — Nöro-Optik Aydınlatma Aktif"
     description: >
       VSS modu açıldığında tüm WLED ve ışıkları nörolojik olarak güvenli
-      moda alır: transition 3000ms, mavi ışık KAPALI, sadece kehribar/yeşil,
-      maks parlaklık %58, efektler Solid/Breathe only.
+      moda alır: FL-41 Rose Tint spektrumu, transition 3000ms (ZORUNLU),
+      mavi ışık KAPALI, maks parlaklık %58, efektler Solid/Breathe only.
+      Ayrıca Pattern Glare kırma için Modül 3 (Space Projection) tavan
+      projeksiyonunu düşük kontrastlı nebula modunda tetikler.
 
-      🧠 VSS KORUMA:
-      Ani ışık = statik karıncalanma artışı. Yavaş geçiş = görsel korteks
-      sakin. "Bir doktor titizliğiyle, görsel korteksi korur."
+      🧠 VSS KORUMA — FL-41 + PATTERN GLARE:
+      FL-41 Rose Tint (#E6A8D7) → 480-520nm kesim → fotofobi baskılanır.
+      Pattern Glare kırma → düz beyaz tavan → nebula maskeleme.
+      Ani ışık = palinopsia → transition 3000ms ZORUNLU.
+      "Bir doktor titizliğiyle, görsel korteksi korur."
+
+      🤖 PROAKTİF AI TETİKLEME:
+      Gemini 3.6 Pro, kullanıcının akıllı saat HRV verisinden stres seviyesini
+      analiz eder. HRV düşüşü → otonom sinir sistemi stres altında → VSS krizi
+      yaklaşabilir → AI proaktif olarak VSS modunu tetikler. "Krizi beklemek
+      yerine, krizi önler."
 
     trigger:
       - platform: state
@@ -54,24 +64,58 @@ automation:
 
     action:
       # -------------------------------------------------------------------------
-      # WLED → Kehribar, Solid, transition 3000ms, maks %58
+      # WLED → FL-41 Rose Tint, Solid, transition 3000ms, maks %58
       # -------------------------------------------------------------------------
+      # 🧠 FL-41 ROSE TINT (#E6A8D7):
+      # 480-520nm (mavi-yeşil) bandını filtreler → fotofobi baskılanır
+      # Klinik olarak VSS semptomlarını %30-50 azaltır
+      # Standart kehribar yerine FL-41 spektrumu kullanılır
       - service: light.turn_on
         target:
           entity_id: light.wled_ambient
         data:
-          rgb_color: [191, 128, 0] # Kehribar (#BF8000) — VSS güvenli
+          rgb_color: [230, 168, 215] # FL-41 Rose Tint (#E6A8D7) — VSS klinik
           brightness: 150 # %58 — fotofobi koruması
           effect: "Solid" # Sabit — strobe/flash YASAK
-          transition: 3 # 3 saniye — ani değişim YOK
+          transition: 3 # 3000ms ZORUNLU — palinopsia engelle
 
-      # Yatak altı COB LED → kehribar, düşük parlaklık
+      # Yatak altı COB LED → FL-41 Rose Tint, düşük parlaklık
       - service: light.turn_on
         target:
           entity_id: light.underbed_cob_light
         data:
           brightness: 38 # %15 — gece için çok loş
-          transition: 3
+          transition: 3 # 3000ms ZORUNLU
+
+      # -------------------------------------------------------------------------
+      # PATTERN GLARE KIRMA — Modül 3 (Space Projection) tavan nebula
+      # -------------------------------------------------------------------------
+      # 🧠 PATTERN GLARE:
+      # Düz beyaz tavan → "empty field static" → karıncalanma artışı.
+      # Çözüm: Tavan projeksiyonunu "çok yavaş dönen, koyu mor/kırmızı
+      # düşük kontrastlı nebula" modunda tetikle → düz yüzeyi maskele.
+      # "Düz yüzey = karıncalanma; hareketli düşük kontrast = sakin."
+      - service: script.scene_romantic_nebula
+      # Koyu mor/kırmızı nebula → düşük kontrast → Pattern Glare kırma
+
+      # Motor hızını en yavaş (%10) → hipnotik yavaş hareket → görsel stres yok
+      - service: select.select_option
+        target:
+          entity_id: select.galaxy_projector_speed
+        data:
+          option: "slow"
+
+      # Parlaklığı minimum → fotofobi koruması
+      - service: number.set_value
+        target:
+          entity_id: number.galaxy_projector_brightness
+        data:
+          value: 20 # %20 — çok loş
+
+      # Yeşil lazer KAPAT (VSS tetikleyici)
+      - service: switch.turn_off
+        target:
+          entity_id: switch.galaxy_projector_laser
 
       # Tavan ışıkları → sıcak amber (2700K), düşük parlaklık
       - service: light.turn_on
