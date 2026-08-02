@@ -1,7 +1,7 @@
 # car_omniscience_copilot — Gözetmen Copilot Mimarisi
 
 > **Modül 22: Car Omniscience Copilot (Dalgınlık, Kehanet ve G-Kuvveti)**
-> 2.10m/125kg kullanıcının omurga yükünü izlemek, OBD2'den arıza kehaneti, IR kamera ile sürücü dalgınlığı tespiti ve G-Kuvveti optimizasyonu.
+> Sürücü anatomisine göre omurga yükünü izlemek, OBD2'den arıza kehaneti, IR kamera ile sürücü dalgınlığı tespiti ve G-Kuvveti optimizasyonu.
 
 ---
 

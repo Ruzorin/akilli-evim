@@ -327,14 +327,14 @@ Bu proje, fiziksel bir Raspberry Pi / PC sunucusu gerektirmez. Sistem **ucuz bir
 
 - **Android Multimedya Ekranı:** 9-10" Head Unit → HA Companion App (PWA) + Tailscale → VPS. "Aractayım ama evim elimde"
 - **OBD2 → HA:** ELM327 Bluetooth/Wi-Fi adaptörü → Torque/Car Scanner app → Webhook → HA sensörleri (RPM, hız, yakıt, motor sıcaklığı, DTC kodları)
-- **The Giant's Throne:** 2.10m/125kg için milimetrik koltuk + direksiyon + dikiz aynası senkronizasyonu. Telefon aracın BT ağına bağlanınca → koltuk %85 geri, %30 alçak; direksiyon %75 uzak, %20 alçak; aynalar %60/%65. "Tony Stark araca bindiğinde, araç ona uyum sağlar"
+- **The Giant's Throne:** Sürücüye özel milimetrik koltuk + direksiyon + dikiz aynası senkronizasyonu. Telefon aracın BT ağına bağlanınca → koltuk, direksiyon ve aynalar kullanıcının kayıtlı anatomik pozisyonuna otomatik ayarlanır. "Araç sürücüye uyum sağlar"
 - **İklim Optimizasyonu:** Araç içi sıcaklık → kullanıcının tercih ettiği seviyeye önceden ayar (21°C)
 - **Tesla Tarzı Dashboard:** Hız (renkli: >120 kırmızı), RPM, yakıt + ev durumu (sıcaklık, kilit, WLED, difüzör) + Jarvis sesli komut + DTC arıza kodları
 
 ### 22. `car_omniscience_copilot` — Gözetmen Copilot ve OBD2 Kehanet 🔮
 
 - **IR Kamera + Akıllı Saat + OBD2 Sensor Fusion:** FLIR One / Seek Thermal IR kamera → PERCLOS (göz kırpma oranı) + esneme tespiti. Akıllı saat → nabız, HRV, stres. OBD2 Wi-Fi → MAF, yağ basıncı, şanzıman sıcaklığı
-- **Fatigue & Ergonomic Guard:** PERCLOS >%15 → klima -2°C + difüzör nane/limon + Jarvis "Mola verin". >%25 → koltuk bel desteği %100 şişir + "Mola zorunlu". Omurga stres skoru (2.10m/125kg → %55 daha fazla bel yükü) >70 → bel desteği şişir
+- **Fatigue & Ergonomic Guard:** PERCLOS >%15 → klima -2°C + difüzör nane/limon + Jarvis "Mola verin". >%25 → koltuk bel desteği %100 şişir + "Mola zorunlu". Omurga stres skoru (sürücü anatomisine göre hesaplanır) >70 → bel desteği şişir
 - **Predictive Maintenance (Kehanet):** OBD2 trend analizi → arıza lambası yanmadan tespit. "Yağ basıncı düşüyor, 500 km içinde bakım" / "Şanzıman 95°C, yağ kontrolü" / "MAF sapması, hava filtresi temizliği" / "Bujiler kontrol" / "Akü 11.5V, değişim"
 - **G-Kuvveti Optimizasyonu:** Yatay G >0.8g → "Viraj sert, yavaşlayın" + çekiş kontrolü enhanced. Yağmurlu zemin (sürtünme <0.5) → "Fren mesafesi 2x" + çekiş maximum + motor freni soft. Agresif fren (<-0.7g) → ABS maximum + mobil bildirim. 125kg → %25 daha uzun fren mesafesi hesaba katılır
 

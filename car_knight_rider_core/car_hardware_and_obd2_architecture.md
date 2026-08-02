@@ -39,7 +39,7 @@
   │  ┌──────────────────────────────────────────────────────┐  │
   │  │  Elektrikli Koltuk + Direksiyon + Dikiz Aynaları     │  │
   │  │  - Koltuk hafıza pozisyonu (CAN Bus / analog)         │  │
-  │  │  - "The Giant's Throne" — 2.10m/125kg için ayar      │  │
+  │  │  - "The Giant's Throne" — sürücüye özel ayar          │  │
   │  └──────────────────────────────────────────────────────┘  │
   └─────────────────────────────────────────────────────────────┘
           │ Tailscale VPN (Mobil internet)
