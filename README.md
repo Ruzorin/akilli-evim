@@ -27,14 +27,8 @@ Bu proje, bir yaşam alanını ve aracı; sesli komutlarla yönetilebilen, sens�
 - **Araç:** OBD2 ELM327, Nvidia Jetson Nano 4GB + Sony IMX219 (Edge-AI ADAS)
 - **Gömülü:** Raspberry Pi Zero 2 W (Magic Mirror), Raspberry Pi 4 (jarvis_core + Hyperion)
 
-### Modül İsimlendirme Standartları (Executive Sanitizasyon)
-| İç Ad | Dış Ad (GitHub/Public) |
-|---|---|
-| `intimacy_sync_mode` | `ambient_rhythm_sync` |
-| `mobile_seduction_suite` | `executive_lounge_profile` |
-| `digital_grooming_coach` | `smart_mirror_vision_assistant` |
-
-> **Not:** Modüllerin arkasındaki mantık (koku hafızası, otonom iklim ayarı, düşük frekanslı binaural beats entegrasyonu ve duyusal tetikleyiciler) tam güçle ve eksiksiz bir şekilde çalışmaya devam etmektedir. İsimlendirme sadece dış yüzey için profesyonelleştirilmiştir.
+### Modül İsimlendirme Standartları
+Bu projede modüller, fonksiyonel amaçlarını net bir şekilde yansıtan teknik isimlerle tanımlanmıştır. Tüm modüllerin arkasındaki mantık (çevresel senkronizasyon, otonom iklim ayarı, akustik optimizasyon ve duyusal tetikleyiciler) tam güçle ve eksiksiz bir şekilde çalışmaktadır.
 
 ---
 
