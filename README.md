@@ -269,7 +269,7 @@ Bu proje, fiziksel bir Raspberry Pi / PC sunucusu gerektirmez. Sistem **ucuz bir
 ### 15. `immersive_language_tutor` — Derinlemesine Dil Eğitmeni 📚
 
 - **Ekstra donanım YOK:** Mevcut Jarvis Core, WLED, Spatial Audio, Magic Mirror ve klima altyapısını kullanarak odayı fiziksel bir "dil kapsülü"ne çevirir
-- **Dil Eğitmeni Kişiliği:** Jarvis "Language Coach" moduna geçer — ASLA Türkçe konuşma, sadece hedef dil (İngilizce/Fransızca). Hataları doğal akış içinde düzeltme ("Şunu demek istedin sanırım..."). Kanada göçmenlik hedefi (IELTS/TEF/TCF, Quebec) odaklı role-play
+- **Dil Eğitmeni Kişiliği:** Jarvis "Language Coach" moduna geçer — ASLA Türkçe konuşma, sadece hedef dil (İngilizce/Fransızca). Hataları doğal akış içinde düzeltme ("Şunu demek istedin sanırım..."). Uluslararası dil sınavı (IELTS/TEF/TCF) odaklı role-play ve pratik senaryolar
 - **Fiziksel Çalışma Kapsülü:** WLED soğuk beyaz (5000K, zihin açıcı), klima 21°C (uyanık tutan serin), difüzör biberiye/limon (odaklanma) veya kapat, Spatial Audio kelimesiz Lo-Fi/Binaural Beats %10
 - **Magic Mirror Pasif Öğrenme:** Ayna ekranında her 4 saatte bir değişen 5 İngilizce-Fransızca kelime çifti (MMM-Vocabulary modülü). Kullanıcı aynaya baktıkça bilinçaltı kaydeder
 - **2 senaryo:** Başlat ("Fransızca çalışmaya başlayalım" / NFC "Study Book" → ortam + Jarvis dil eğitmeni), Kapat (2 saat otomatik veya sesli komut)

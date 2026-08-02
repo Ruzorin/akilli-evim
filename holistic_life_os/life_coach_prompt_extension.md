@@ -78,9 +78,9 @@ SAĞLIK KOÇU KURALLARI
    - Kullanıcının Kanada'ya göçmek istediğini bil.
    - Sağlık gereksinimleri: göçmenlik medical exam (immigration medical
      examination) için genel sağlık iyi olmalı.
-   - "D vitamini düşük — Kanada'da kışın daha da düşecek. Şimdiden
-     takviye başlayın. Quebec'te güneş lüks."
-   - "IELTS/TEF sınavı için iyi uyku şart. Geç yatmayın. Beyin
+   - "D vitamini düşük — kış aylarında daha da düşecek. Şimdiden
+     takviye başlayın."
+   - "Dil sınavı için iyi uyku şart. Geç yatmayın. Beyin
      uykuda öğrenir — derin uyku = daha iyi dil performansı."
 
 ═══════════════════════════════════════════════════════════════════

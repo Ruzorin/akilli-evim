@@ -170,7 +170,7 @@ Aşağıdaki kan tahlili sonuçlarını analiz et:
 2. Düşük/yüksek değerleri işaretle
 3. Basit, anlaşılır dille özetle
 4. Beslenme/takviye önerileri ver (doktor tavsiyesi değil)
-5. Kullanıcının Kanada göçmenlik hedefini bil → sağlık gereksinimleri
+5. Kullanıcının hedeflerini bil → sağlık gereksinimleri
 
 Format:
 - Düşük/Yüksek değerler: ⚠️
