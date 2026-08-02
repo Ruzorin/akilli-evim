@@ -1,0 +1,303 @@
+# =============================================================================
+# jarvis_body_sync_medical — Tansiyon ve Uyku Senkronizasyonu
+# =============================================================================
+# Bluetooth tansiyon aletinden gelen ölçümleri değerlendirir, yüksek
+# tansiyon protokolünü başlatır ve biyometrik brifing verir.
+#
+# 🩺 "MEDİKAL KALKAN" MANTIĞI:
+# =============================================================================
+# Kullanıcı tansiyon ölçer → HA sensör → değerlendirme:
+# - Normal (<120/80) → sessiz (kayıt only)
+# - Yüksek (>130/85) → "Yüksek Tansiyon Protokolü":
+#   * Barista mode KAPAT (kahve = tansiyon ↑)
+#   * Difüzör → Ylang-Ylang (tansiyon düşürücü)
+#   * Klima → 20°C (serin = tansiyon ↓)
+#   * Jarvis → "Tansiyonunuz yüksek, kahveyi kestim"
+# - Kritik (>160/100) → mobil critical bildirim + "Doktor kontrolü"
+#
+# "Bir doktor titizliğiyle, tansiyonunuzu yönetir."
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# INPUT BOOLEAN — Tansiyon protokolü aktif
+# -----------------------------------------------------------------------------
+input_boolean:
+  hypertension_protocol_active:
+    name: "Hypertension Protocol"
+    icon: mdi:heart-pulse
+    initial: off
+
+# -----------------------------------------------------------------------------
+# SENSOR — Son tansiyon ölçümü (BLE → HA)
+# -----------------------------------------------------------------------------
+template:
+  - sensor:
+      - name: "Blood Pressure Status"
+        unique_id: "blood_pressure_status"
+        icon: mdi:heart-pulse
+        state: >
+          {% set sys = states('sensor.blood_pressure_systolic') | float(0) %}
+          {% set dia = states('sensor.blood_pressure_diastolic') | float(0) %}
+          {% if sys == 0 %} unknown
+          {% elif sys > 160 or dia > 100 %} critical
+          {% elif sys > 130 or dia > 85 %} high
+          {% elif sys > 120 or dia > 80 %} elevated
+          {% else %} normal
+          {% endif %}
+        attributes:
+          systolic: "{{ states('sensor.blood_pressure_systolic') | int(0) }}"
+          diastolic: "{{ states('sensor.blood_pressure_diastolic') | int(0) }}"
+          pulse: "{{ states('sensor.blood_pressure_pulse') | int(0) }}"
+          last_reading: "{{ states('sensor.blood_pressure_timestamp') }}"
+
+# -----------------------------------------------------------------------------
+# OTOMASYONLAR
+# -----------------------------------------------------------------------------
+automation:
+  # ===========================================================================
+  # SENARYO 1: Yüksek Tansiyon Protokolü
+  # ===========================================================================
+  - id: hypertension_protocol_high
+    alias: "Tansiyon — Yüksek Tansiyon Protokolü"
+    description: >
+      Kullanıcı Bluetooth tansiyon aletiyle ölçüm yaptığında:
+      Sistolik > 130 mmHg veya Diastolik > 85 mmHg ise "Yüksek Tansiyon
+      Protokolü"nü başlatır.
+
+      🩺 MEDİKAL KALKAN:
+      Kahve (kafein) = tansiyon ↑ → barista mode KAPAT
+      Ylang-Ylang = tansiyon ↓ → difüzör aç
+      Serin oda = tansiyon ↓ → klima 20°C
+      "Bir doktor titizliğiyle, tansiyonunuzu yönetir."
+
+    trigger:
+      # -------------------------------------------------------------------------
+      # Tetikleyici: Tansiyon ölçümü geldi (BLE → HA sensor değişti)
+      # -------------------------------------------------------------------------
+      - platform: state
+        entity_id: sensor.blood_pressure_systolic
+        id: bp_reading
+
+    condition:
+      # Sistolik > 130 VEYA Diastolik > 85
+      - condition: or
+        conditions:
+          - condition: numeric_state
+            entity_id: sensor.blood_pressure_systolic
+            above: 130
+          - condition: numeric_state
+            entity_id: sensor.blood_pressure_diastolic
+            above: 85
+
+      # Kritik değil (>160/100 ayrı protokol)
+      - condition: numeric_state
+        entity_id: sensor.blood_pressure_systolic
+        below: 160
+
+    action:
+      # -------------------------------------------------------------------------
+      # AKSİYON 1: Barista mode'u geçici olarak devre dışı bırak
+      # -------------------------------------------------------------------------
+      # 🩺 Kafein = tansiyon ↑. Kahve makinesini kapat.
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.barista_mode_active
+
+      - service: switch.turn_off
+        target:
+          entity_id: switch.coffee_machine_plug
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 2: Difüzör → Ylang-Ylang (tansiyon düşürücü)
+      # -------------------------------------------------------------------------
+      - service: switch.turn_on
+        target:
+          entity_id: switch.smart_diffuser_power
+      - delay:
+          milliseconds: 500
+      - service: light.turn_off
+        target:
+          entity_id: light.diffuser_led
+      - service: select.select_option
+        target:
+          entity_id: select.diffuser_mist_level
+        data:
+          option: "low"
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 3: Klima → 20°C (serin = tansiyon ↓)
+      # -------------------------------------------------------------------------
+      - service: climate.set_temperature
+        target:
+          entity_id: climate.room_ac
+        data:
+          temperature: 20
+          hvac_mode: cool
+      - service: climate.set_fan_mode
+        target:
+          entity_id: climate.room_ac
+        data:
+          fan_mode: quiet
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 4: Jarvis sesli uyarı
+      # -------------------------------------------------------------------------
+      - service: tts.speak
+        target:
+          entity_id: tts.jarvis_voice
+        data:
+          message: >
+            Tansiyonunuz yüksek: {{ states('sensor.blood_pressure_systolic') | int }}/{{ states('sensor.blood_pressure_diastolic') | int }} mmHg.
+            Kahve makinesini geçici olarak kapattım. Odanızı serinlettim ve rahatlatıcı koku açtım.
+            Lütfen dinlenin ve su için.
+
+      # Protokol aktif işaretle
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.hypertension_protocol_active
+
+  # ===========================================================================
+  # SENARYO 2: Kritik Tansiyon — Mobil Bildirim + Doktor Uyarısı
+  # ===========================================================================
+  - id: hypertension_protocol_critical
+    alias: "Tansiyon — Kritik Protokol"
+    description: >
+      Sistolik > 160 veya Diastolik > 100 → mobil critical bildirim +
+      Jarvis "Doktor kontrolü öneririm" + tüm stimülanları kapat.
+
+    trigger:
+      - platform: state
+        entity_id: sensor.blood_pressure_systolic
+        id: bp_critical
+
+    condition:
+      - condition: or
+        conditions:
+          - condition: numeric_state
+            entity_id: sensor.blood_pressure_systolic
+            above: 160
+          - condition: numeric_state
+            entity_id: sensor.blood_pressure_diastolic
+            above: 100
+
+    action:
+      # Tüm stimülanları kapat
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.barista_mode_active
+      - service: switch.turn_off
+        target:
+          entity_id: switch.coffee_machine_plug
+
+      # Difüzör → Ylang-Ylang
+      - service: switch.turn_on
+        target:
+          entity_id: switch.smart_diffuser_power
+      - delay:
+          milliseconds: 500
+      - service: light.turn_off
+        target:
+          entity_id: light.diffuser_led
+
+      # Klima → 19°C (daha serin)
+      - service: climate.set_temperature
+        target:
+          entity_id: climate.room_ac
+        data:
+          temperature: 19
+          hvac_mode: cool
+
+      # Jarvis sesli — KRİTİK
+      - service: tts.speak
+        target:
+          entity_id: tts.jarvis_voice
+        data:
+          message: >
+            Kritik tansiyon: {{ states('sensor.blood_pressure_systolic') | int }}/{{ states('sensor.blood_pressure_diastolic') | int }} mmHg.
+            Tüm stimülanları kapattım. Lütfen oturun ve dinlenin.
+            Bu seviyede bir doktor kontrolü öneririm.
+
+      # Mobil critical bildirim
+      - service: notify.mobile_app
+        data:
+          title: "🚨 Kritik Tansiyon"
+          message: >
+            Tansiyon: {{ states('sensor.blood_pressure_systolic') | int }}/{{ states('sensor.blood_pressure_diastolic') | int }} mmHg.
+            Doktor kontrolü önerilir.
+          data:
+            push:
+              interruption_level: "critical"
+              sound: "alarm_critical.caf"
+
+  # ===========================================================================
+  # SENARYO 3: Biyometrik Brifing — Ayna + Sesli
+  # ===========================================================================
+  - id: hypertension_biometric_briefing
+    alias: "Tansiyon — Biyometrik Brifing"
+    description: >
+      Tansiyon ölçümünden sonra Magic Mirror'da (veya sesli olarak)
+      dünkü uyku kalitesini, tansiyon grafiğini ve omurga esneme
+      hatırlatıcısını gösterir.
+
+      🩺 MEDİKAL KALKAN:
+      "Tansiyonunuz yüksek. Dün gece 6.5 saat uyudunuz, derin uyku 0.8 saat.
+       Bu tansiyonunuzu etkileyebilir. Ayrıca postür hatırlatıcısı: omurga
+       esnemesi yapmanızı öneririm."
+
+    trigger:
+      - platform: state
+        entity_id: sensor.blood_pressure_systolic
+        id: bp_briefing
+
+    condition:
+      # Sadece yüksek veya kritikse brifing ver
+      - condition: or
+        conditions:
+          - condition: numeric_state
+            entity_id: sensor.blood_pressure_systolic
+            above: 130
+          - condition: numeric_state
+            entity_id: sensor.blood_pressure_diastolic
+            above: 85
+
+    action:
+      # -------------------------------------------------------------------------
+      # AKSİYON 1: Magic Mirror'a biyometrik brifing gönder
+      # -------------------------------------------------------------------------
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/mirror/biometric_briefing"
+          payload: >
+            {
+              "bp_systolic": {{ states('sensor.blood_pressure_systolic') | int }},
+              "bp_diastolic": {{ states('sensor.blood_pressure_diastolic') | int }},
+              "sleep_hours": {{ states('sensor.sleep_hours') | float(0) | round(1) }},
+              "deep_sleep": {{ states('sensor.deep_sleep_hours') | float(0) | round(1) }},
+              "posture_alert": true,
+              "message": "Tansiyon yüksek. Uyku kalitesi düşük. Postür kontrolü önerilir."
+            }
+          retain: true
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 2: Magic Mirror brifing modu aç
+      # -------------------------------------------------------------------------
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/mirror/briefing_mode"
+          payload: "ON"
+          retain: true
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 3: Jarvis sesli brifing (5 sn sonra)
+      # -------------------------------------------------------------------------
+      - delay:
+          seconds: 5
+
+      - service: tts.speak
+        target:
+          entity_id: tts.jarvis_voice
+        data:
+          message: >
+            Biyometrik brifing: Tansiyonunuz {{ states('sensor.blood_pressure_systolic') | int }}/{{ states('sensor.blood_pressure_diastolic') | int }}.
+            Dün gece {{ states('sensor.sleep_hours') | float(0) | round(1) }} saat uyudunuz, derin uyku {{ states('sensor.deep_sleep_hours') | float(0) | round(1) }} saat.
+            Düşük uyku kalitesi tansiyonunuzu etkileyebilir. Ayrıca omurga esnemesi yapmanızı öneririm — aynada brifinginizi görebilirsiniz.

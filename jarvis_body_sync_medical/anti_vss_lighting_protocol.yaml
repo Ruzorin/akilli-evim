@@ -1,0 +1,229 @@
+# =============================================================================
+# jarvis_body_sync_medical — Anti-VSS Lighting Protocol (Nöro-Optik)
+# =============================================================================
+# Visual Snow Syndrome (VSS) için nörolojik olarak optimize edilmiş
+# aydınlatma protokolü. Ani ışık değişimleri, flaş/strobe efektleri ve
+# sert mavi ışık KESİNLİKLE engellenir.
+#
+# 🧠 VSS NÖRO-OPTİK MANTIĞI:
+# =============================================================================
+# VSS hastalarında görsel korteks aşırı duyarlıdır. Ani ışık değişimleri
+# statik karıncalanmayı artırır, fotofobi tetikler ve palinopsia (görüntü
+# kalıntıları) yaratır. Bu protokol:
+#   1. Tüm WLED transition ≥ 3000ms (ani değişim YOK)
+#   2. Strobe/Flash efektleri YASAK (sadece Solid/Breathe)
+#   3. Mavi ışık KAPALI (sadece kehribar/yeşil spektrum)
+#   4. Maks parlaklık 150/255 (%58) — fotofobi koruması
+#   5. MagicMirror kontrast düşük, koyu gri arka plan, kehribar yazı
+#
+# "Bir doktor titizliğiyle, görsel korteksi korur."
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# INPUT BOOLEAN — VSS modu aktif
+# -----------------------------------------------------------------------------
+input_boolean:
+  vss_lighting_mode:
+    name: "VSS Lighting Mode"
+    icon: mdi:eye-check
+    initial: on
+
+# -----------------------------------------------------------------------------
+# OTOMASYONLAR
+# -----------------------------------------------------------------------------
+automation:
+  # ===========================================================================
+  # SENARYO 1: VSS Lighting Mode ON → Tüm ışıkları nöro-optik moda al
+  # ===========================================================================
+  - id: vss_lighting_activate
+    alias: "VSS — Nöro-Optik Aydınlatma Aktif"
+    description: >
+      VSS modu açıldığında tüm WLED ve ışıkları nörolojik olarak güvenli
+      moda alır: transition 3000ms, mavi ışık KAPALI, sadece kehribar/yeşil,
+      maks parlaklık %58, efektler Solid/Breathe only.
+
+      🧠 VSS KORUMA:
+      Ani ışık = statik karıncalanma artışı. Yavaş geçiş = görsel korteks
+      sakin. "Bir doktor titizliğiyle, görsel korteksi korur."
+
+    trigger:
+      - platform: state
+        entity_id: input_boolean.vss_lighting_mode
+        to: "on"
+        id: vss_on
+
+    action:
+      # -------------------------------------------------------------------------
+      # WLED → Kehribar, Solid, transition 3000ms, maks %58
+      # -------------------------------------------------------------------------
+      - service: light.turn_on
+        target:
+          entity_id: light.wled_ambient
+        data:
+          rgb_color: [191, 128, 0] # Kehribar (#BF8000) — VSS güvenli
+          brightness: 150 # %58 — fotofobi koruması
+          effect: "Solid" # Sabit — strobe/flash YASAK
+          transition: 3 # 3 saniye — ani değişim YOK
+
+      # Yatak altı COB LED → kehribar, düşük parlaklık
+      - service: light.turn_on
+        target:
+          entity_id: light.underbed_cob_light
+        data:
+          brightness: 38 # %15 — gece için çok loş
+          transition: 3
+
+      # Tavan ışıkları → sıcak amber (2700K), düşük parlaklık
+      - service: light.turn_on
+        target:
+          entity_id:
+            - light.ceiling_light
+            - light.room_main_lights
+        data:
+          brightness_pct: 30
+          color_temp: 370 # 2700K sıcak amber
+          transition: 3
+
+      # MagicMirror → VSS CSS modu aktif
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/mirror/vss_mode"
+          payload: "ON"
+          retain: true
+
+      # Jarvis onay
+      - service: tts.speak
+        target:
+          entity_id: tts.jarvis_voice
+        data:
+          message: "Nöro-optik aydınlatma modu aktif. Işıklar gözlerinizi korumak için ayarlandı."
+
+  # ===========================================================================
+  # SENARYO 2: VSS KORUMA — Ani ışık değişimini engelle
+  # ===========================================================================
+  - id: vss_prevent_flash
+    alias: "VSS — Ani Işık Değişimi Engelle"
+    description: >
+      Başka bir modül (stadyum, parti, vb.) strobe/flash efekti tetiklerse,
+      VSS modu aktifken bu efekt KESİNLİKLE engellenir.
+
+      🧠 VSS KORUMA:
+      Strobe/Flash = palinopsia tetikleyici. VSS modunda ASLA izin verilmez.
+      "Bir doktor titizliğiyle, görsel korteksi korur."
+
+    trigger:
+      # WLED efekt değiştiğinde kontrol et
+      - platform: state
+        entity_id: light.wled_ambient
+        id: wled_changed
+
+    condition:
+      - condition: state
+        entity_id: input_boolean.vss_lighting_mode
+        state: "on"
+
+    action:
+      # Efekt "Strobe" veya "Flash" ise → hemen "Solid" yap
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: >
+                  {{ state_attr('light.wled_ambient', 'effect') in ['Strobe', 'Flash', 'Rainbow', 'Chase'] }}
+            sequence:
+              - service: light.turn_on
+                target:
+                  entity_id: light.wled_ambient
+                data:
+                  effect: "Solid"
+                  transition: 3
+              - service: tts.speak
+                target:
+                  entity_id: tts.jarvis_voice
+                data:
+                  message: "Uyarı: Flaş efekti VSS modu nedeniyle engellendi."
+
+# -----------------------------------------------------------------------------
+# MAGICMIRROR² custom.css — VSS OPTIMIZE
+# -----------------------------------------------------------------------------
+# Bu CSS, MagicMirror²'nin ~/MagicMirror/css/custom.css dosyasına kopyalanır.
+# Ekran kontrastını düşürür, saf beyaz yerine koyu gri/kehribar kullanır,
+# arka plan ışık sızıntısını engeller.
+# -----------------------------------------------------------------------------
+#
+# /* VSS Optimize — Nöro-Optik Ekran Ayarları */
+#
+# /* Arka plan: tam siyah yerine çok koyu lacivert (gözü daha az yorar) */
+# body {
+#   background-color: #0A0A0F !important;
+# }
+#
+# /* Tüm metinler: saf beyaz (#FFFFFF) yerine kehribar (#D4A574) */
+# .normal, .bright, .dim {
+#   color: #D4A574 !important;
+#   text-shadow: none !important;  /* Gölge = kontrast = VSS tetikleyici */
+# }
+#
+# /* Saat: kehribar, ince font */
+# .clock .time {
+#   color: #D4A574 !important;
+#   font-weight: 200 !important;
+#   text-shadow: none !important;
+# }
+#
+# .clock .date {
+#   color: #8B7355 !important;  /* Daha koyu kehribar */
+#   font-weight: 200 !important;
+# }
+#
+# /* Hava durumu: kehribar */
+# .weather .temperature {
+#   color: #D4A574 !important;
+# }
+#
+# /* Spotify: kehribar */
+# .MMM-Spotify .spotify .song {
+#   color: #D4A574 !important;
+# }
+# .MMM-Spotify .spotify .artist {
+#   color: #8B7355 !important;
+# }
+#
+# /* MQTT mesajları: kehribar, italic */
+# .MMM-MQTT .mqtt-message {
+#   color: #D4A574 !important;
+#   font-style: italic !important;
+# }
+#
+# /* Kelime listesi (dil eğitmeni): kehribar */
+# .MMM-Vocabulary .vocab-en {
+#   color: #D4A574 !important;
+# }
+# .MMM-Vocabulary .vocab-fr {
+#   color: #8B7355 !important;
+# }
+#
+# /* Grooming checklist: kehribar */
+# .MMM-Grooming-Checklist .grooming-item {
+#   color: #D4A574 !important;
+# }
+#
+# /* Kontrast düşür: tüm kartlar */
+# .module {
+#   background: transparent !important;
+#   border: none !important;
+#   box-shadow: none !important;  /* Gölge = kontrast = VSS tetikleyici */
+# }
+#
+# /* Parlaklık düşür: opacity ile ekran karartma */
+# .region.top, .region.bottom, .region.center {
+#   opacity: 0.85 !important;  /* %15 karartma */
+# }
+#
+# /* Font boyutu: biraz küçült (görsel stres azaltma) */
+# .normal {
+#   font-size: 28px !important;
+# }
+# .small {
+#   font-size: 18px !important;
+# }
+# -----------------------------------------------------------------------------

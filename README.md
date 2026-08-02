@@ -360,6 +360,13 @@ Bu proje, fiziksel bir Raspberry Pi / PC sunucusu gerektirmez. Sistem **ucuz bir
 - **Telegram/WhatsApp Anlık Bildirim:** Snapshot → Telegram Bot API → "⚠️ Dikkat! Aracınızın yanına biri yaklaştı. Kayıt başlatıldı." + fotoğraf → telefona anlık (2-5sn). WhatsApp Business API alternatif
 - **HA SuperApp Sentry Panel:** Tek dokunuş → Sentry ON/OFF. Son ihlal fotoğrafı + zaman + toplam ihlal sayısı + 7 gün ihlal geçmişi (history graph). "Tesla Sentry Mode" standardı
 
+### 26. `jarvis_body_sync_medical` — Medikal Kalkan ve Kişisel Yaşam Desteği 🩺
+
+- **Anti-VSS Lighting Protocol:** Visual Snow Syndrome için nöro-optik aydınlatma. WLED transition ≥3000ms (ani ışık YASAK), mavi ışık KAPALI (sadece kehribar/yeşil), Strobe/Flash efektleri engellenir. MagicMirror CSS: saf beyaz yerine koyu gri/kehribar, kontrast düşük, gölge yok
+- **Posture & Spinal Guard:** MediaPipe Pose Estimation ile servikal açı analizi. Boyun 15°+ öne ("Tech Neck") → 30sn sürerse Jarvis "Postürünüzü düzeltin". 25°+ → "Ciddi postür bozukluğu" + WLED kehribar (rahatlatıcı). Skolyoz ve ileri baş postürü için ortopedik koruma
+- **Tansiyon Senkronizasyonu:** Omron BLE tansiyon aleti → HA. >130/85 → "Yüksek Tansiyon Protokolü": barista mode KAPAT (kafein = tansiyon ↑), difüzör Ylang-Ylang (tansiyon ↓), klima 20°C (serin = tansiyon ↓). >160/100 → mobil critical bildirim + "Doktor kontrolü öneririm"
+- **Biyometrik Brifing:** Tansiyon ölçümünden sonra Magic Mirror'da + sesli olarak: dünkü uyku kalitesi, tansiyon grafiği, omurga esneme hatırlatıcısı. "Düşük uyku kalitesi tansiyonunuzu etkileyebilir"
+
 ---
 
 ## 🔗 Modüller Arası Haberleşme
@@ -514,10 +521,15 @@ akilli-evim/
 │   ├── adas_hmi_display_config.py
 │   └── adas_home_assistant_bridge.py
 └── car_sentry_mode_security/       ← Modül 25: Sentry Mode + Güvenlik
-    ├── sentry_hardware_and_power_architecture.md
-    ├── sentry_motion_trigger_daemon.py
-    ├── telegram_whatsapp_alert_bridge.py
-    └── car_security_home_assistant_integration.yaml
+│   ├── sentry_hardware_and_power_architecture.md
+│   ├── sentry_motion_trigger_daemon.py
+│   ├── telegram_whatsapp_alert_bridge.py
+│   └── car_security_home_assistant_integration.yaml
+└── jarvis_body_sync_medical/       ← Modül 26: Medikal Kalkan + VSS
+    ├── medical_hardware_and_vss_psychology.md
+    ├── anti_vss_lighting_protocol.yaml
+    ├── posture_and_spinal_guard.py
+    └── hypertension_and_recovery_orchestrator.yaml
 ```
 
 ---
