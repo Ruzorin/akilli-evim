@@ -1,0 +1,282 @@
+# =============================================================================
+# call_routing_and_ceo_mode — Eller Serbest Konuşma Script'leri
+# =============================================================================
+# Çağrı cevaplandığında telefonun ses çıkışını ESP32-S3 Bluetooth Proxy'ye
+# yönlendiren ve çağrı bittiğinde müziği fade-in ile devam ettiren script'ler.
+#
+# 🎯 "ELLER SERBEST" MANTIĞI:
+# =============================================================================
+# Kullanıcı odanın ortasında durur → INMP441 mikrofona normal ses tonuyla
+# konuşur → ses BT Proxy üzerinden telefona gider → karşı tarafın sesi
+# oda hoparlöründen duyulur. "Telefon kulakta" değil, "oda konferans salonu".
+#
+# 🎨 CEO DENEYİMİ:
+# Kullanıcı odaya girer, telefon çalar, cevaplar ve telefonu cebine koyar.
+# Oda onu duyar, karşı tarafı odaya verir. Eller serbest — yürüyebilir,
+# kahve alabilir, not alabilir. "CEO" hissi: kontrol, özgürlük, otorite.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# INPUT NUMBER — Çağrı öncesi ses seviyesi (geri dönmek için)
+# -----------------------------------------------------------------------------
+input_number:
+  pre_call_volume:
+    name: "Pre-Call Volume"
+    min: 0.0
+    max: 1.0
+    step: 0.01
+    initial: 0.15
+    icon: mdi:volume-high
+
+# -----------------------------------------------------------------------------
+# SCRIPT'LER
+# -----------------------------------------------------------------------------
+script:
+  # ===========================================================================
+  # SCRIPT: Çağrı Cevaplandı → BT Proxy'ye Ses Yönlendir
+  # ===========================================================================
+  hands_free_route_to_room:
+    alias: "Hands-Free — Çağrıyı Odaya Aktar"
+    icon: mdi:phone-bluetooth
+    description: >
+      Çağrı cevaplandığında telefonun ses çıkışını ESP32-S3 Bluetooth Proxy'ye
+      yönlendirir. Kullanıcı odanın ortasında normal ses tonuyla konuşur.
+
+      🎯 MANTIK:
+      1. MQTT → ESP32-S3'e "BT Proxy ON" sinyali
+      2. ESP32-S3, HFP üzerinden telefon çağrısını alır
+      3. Karşı taraf sesi → I2S DAC → oda hoparlörü
+      4. Kullanıcı sesi → INMP441 → I2S → BT HFP → telefon → çağrı
+      5. Gecikme <50ms (gerçek zamanlı konuşma)
+
+    sequence:
+      # -------------------------------------------------------------------------
+      # Adım 1: ESP32-S3'e BT Proxy ON sinyali gönder
+      # -------------------------------------------------------------------------
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/bluetooth/call_route"
+          payload: "ON"
+          retain: false
+
+      # -------------------------------------------------------------------------
+      # Adım 2: I2S DAC + INMP441 aktif (ESP32-S3'de otomatik)
+      # -------------------------------------------------------------------------
+      # ESPHome, HFP bağlantısı kurulduğunda otomatik I2S → BT köprüsü başlatır.
+      # Burada sadece HA tarafında durum güncellemesi yapılır.
+
+      # -------------------------------------------------------------------------
+      # Adım 3: Magic Mirror'a "Görüşme Modu" mesajı
+      # -------------------------------------------------------------------------
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/mirror/message"
+          payload: '{"text": "Görüşme modu. Eller serbest.", "duration": 3}'
+
+      # -------------------------------------------------------------------------
+      # Adım 4: WLED sabit beyaz/mavi (görüşme başladı)
+      # -------------------------------------------------------------------------
+      - service: light.turn_on
+        target:
+          entity_id: light.wled_ambient
+        data:
+          rgb_color: [200, 220, 255]
+          brightness: 100
+          effect: "Solid"
+          transition: 2
+
+      # -------------------------------------------------------------------------
+      # Adım 5: Klima fan quiet (çağrıda ses olmasın)
+      # -------------------------------------------------------------------------
+      - service: climate.set_fan_mode
+        target:
+          entity_id: climate.room_ac
+        data:
+          fan_mode: quiet
+
+      # -------------------------------------------------------------------------
+      # Adım 6: Jarvis kısa onay
+      # -------------------------------------------------------------------------
+      - delay:
+          seconds: 1
+      - service: tts.speak
+        target:
+          entity_id: tts.jarvis_voice
+        data:
+          message: "Görüşme odaya aktarıldı, efendim. Eller serbest."
+
+  # ===========================================================================
+  # SCRIPT: Çağrı Bitti → Müzik Fade-in + Atmosfer Geri Döndür
+  # ===========================================================================
+  hands_free_end_call:
+    alias: "Hands-Free — Çağrı Bitti (Müzik Devam + Atmosfer)"
+    icon: mdi:phone-hangup
+    description: >
+      Çağrı bittiğinde:
+      1. BT Proxy kapat
+      2. Müzik fade-in ile kaldığı yerden devam (pre_call_volume)
+      3. WLED eski atmosfere döndür
+      4. Klima fan eski moda
+      5. Jarvis kısa kapanış
+
+      🎨 CEO DENEYİMİ:
+      Çağrı biter → oda otomatik "normal" moduna döner → müzik yavaşça
+      geri gelir → ışıklar eski atmosfere → "görüşme bitti, rahatla" hissi.
+
+    sequence:
+      # -------------------------------------------------------------------------
+      # Adım 1: BT Proxy kapat
+      # -------------------------------------------------------------------------
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/bluetooth/call_route"
+          payload: "OFF"
+          retain: false
+
+      # -------------------------------------------------------------------------
+      # Adım 2: Müzik fade-in ile kaldığı yerden devam
+      # -------------------------------------------------------------------------
+      # 🎭 Fade-in: 5 saniyede %5'ten pre_call_volume'a kademeli artış.
+      # "Pat diye" müzik açılmaz → "yavaşça geri geldi" hissi → premium.
+      - service: script.audio_fade
+        data:
+          start_volume: 0.05
+          target_volume: "{{ states('input_number.pre_call_volume') | float(0.15) }}"
+          duration: 5
+          steps: 10
+
+      # Müziği devam ettir
+      - service: media_player.media_play
+        target:
+          entity_id: media_player.room_spatial_audio
+
+      # -------------------------------------------------------------------------
+      # Adım 3: WLED eski atmosfere döndür
+      # -------------------------------------------------------------------------
+      - choose:
+          # Intimacy → kırmızı
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.intimacy_sync_active
+                state: "on"
+            sequence:
+              - service: light.turn_on
+                target:
+                  entity_id: light.wled_ambient
+                data:
+                  rgb_color: [139, 0, 0]
+                  brightness: 120
+                  effect: "Breathe"
+                  transition: 5
+
+          # Stadyum → takım rengi
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.stadium_mode_active
+                state: "on"
+            sequence:
+              - service: light.turn_on
+                target:
+                  entity_id: light.wled_ambient
+                data:
+                  rgb_color: [200, 16, 46]
+                  brightness: 180
+                  effect: "Breathe"
+                  transition: 5
+
+          # Film → lacivert
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.movie_mode_active
+                state: "on"
+            sequence:
+              - service: rest_command.wled_deep_focus
+              - service: light.turn_on
+                target:
+                  entity_id: light.wled_ambient
+                data:
+                  brightness: 60
+                  transition: 5
+
+        # Varsayılan → Rest Idle (loş amber)
+        default:
+          - service: rest_command.wled_rest_idle
+          - service: light.turn_on
+            target:
+              entity_id: light.wled_ambient
+            data:
+              brightness: 60
+              transition: 5
+
+      # -------------------------------------------------------------------------
+      # Adım 4: Klima fan eski moda
+      # -------------------------------------------------------------------------
+      - service: climate.set_fan_mode
+        target:
+          entity_id: climate.room_ac
+        data:
+          fan_mode: low
+
+      # -------------------------------------------------------------------------
+      # Adım 5: (Opsiyonel) Difüzörü geri aç (çağrı öncesi açıksa)
+      # -------------------------------------------------------------------------
+      - choose:
+          - conditions:
+              # Çağrı öncesi difüzör açıksa → geri aç
+              - condition: state
+                entity_id: input_boolean.diffuser_was_on
+                state: "on"
+            sequence:
+              - service: switch.turn_on
+                target:
+                  entity_id: switch.smart_diffuser_power
+              - delay:
+                  milliseconds: 500
+              - service: light.turn_off
+                target:
+                  entity_id: light.diffuser_led
+
+      # -------------------------------------------------------------------------
+      # Adım 6: Jarvis kısa kapanış
+      # -------------------------------------------------------------------------
+      - delay:
+          seconds: 2
+      - service: tts.speak
+        target:
+          entity_id: tts.jarvis_voice
+        data:
+          message: "Görüşme sona erdi. Atmosfer geri döndü, efendim."
+
+# -----------------------------------------------------------------------------
+# OTOMASYON: Çağrı durumu değişikliği → Script çağrısı
+# -----------------------------------------------------------------------------
+automation:
+  # Çağrı cevaplandı → hands_free_route_to_room
+  - id: hands_free_on_answer
+    alias: "Hands-Free — Cevaplandı → Odaya Aktar"
+    trigger:
+      - platform: state
+        entity_id: sensor.phone_call_state
+        to: "offhook"
+        id: answered
+    condition:
+      - condition: state
+        entity_id: input_boolean.ceo_call_mode_active
+        state: "on"
+    action:
+      - service: script.hands_free_route_to_room
+
+  # Çağrı bitti → hands_free_end_call
+  - id: hands_free_on_end
+    alias: "Hands-Free — Bitti → Müzik Devam"
+    trigger:
+      - platform: state
+        entity_id: sensor.phone_call_state
+        to: "idle"
+        id: ended
+    condition:
+      - condition: state
+        entity_id: input_boolean.ceo_call_mode_active
+        state: "on"
+    action:
+      - service: script.hands_free_end_call

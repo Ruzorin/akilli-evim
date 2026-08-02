@@ -1,0 +1,301 @@
+# =============================================================================
+# underbed_lighting — ESPHome LD2410 Yatak Radarı Konfigürasyonu
+# =============================================================================
+# Bu dosya ESP32'ye yüklenir. HLK-LD2410B mmWave radar sensöründen
+# mesafe (Gate) verisi alır ve SADECE yatak yanında (0-1 metre) hareket
+# algılandığında tetiklenen bir "Ayak Algılayıcı" binary_sensor üretir.
+#
+# 🎯 GATE (MESAFE) MANTIĞI — BU MODÜLÜN KALBİ:
+# =============================================================================
+# LD2410, algılama bölgesini "Gate" adı verilen mesafe segmentlerine böler:
+#
+#   Gate 0: 0.00m - 0.75m  → Çok yakın (yatak kenarı, ayaklar yere değdi)
+#   Gate 1: 0.75m - 1.50m  → Yakın (yatak kenarı + bir adım)
+#   Gate 2: 1.50m - 2.25m  → Orta (yatak içi başlangıcı)
+#   Gate 3: 2.25m - 3.00m  → Uzak (yatak içi)
+#   Gate 4: 3.00m - 3.75m  → Çok uzak (oda içi)
+#   Gate 5+: 3.75m+        → Oda içi uzak bölgeler
+#
+# 🚨 KRİTİK: Yatakta uyuyan kişiyi ALGILAMAMAK için Gate 3+ bölgesini
+# görmezden geliyoruz. Sadece Gate 0, 1 ve 2'de (0-2.25m) hareket
+# algılandığında "ayak yere değdi" diye tetikliyoruz.
+#
+# Neden bu kadar kritik?
+#   - Eğer Gate 3+ (yatak içi) algılarsa: Gece yatakta döndüğünüzde
+#     yatak altı ışık yanar → uykunuzu böler!
+#   - Gate 0-2 (yatak yanı) algılarsa: Sadece yataktan kalktığınızda
+#     ışık yanar → gece tuvalete gidişinizde yol gösterir.
+#
+# Sensör yatak kenarına, zemine bakacak şekilde monte edilir.
+# Yatak içi (1.5m+) hareketler Gate 3+'a düşer ve görmezden gelinir.
+# =============================================================================
+
+esphome:
+  name: underbed-radar
+  friendly_name: "Underbed Radar & Lighting"
+  platform: ESP32
+  board: esp32dev
+
+# -----------------------------------------------------------------------------
+# WiFi — GL-MT3000 yerel ağına bağlanır
+# -----------------------------------------------------------------------------
+wifi:
+  ssid: "GL-MT3000"
+  password: "YOUR_WIFI_PASSWORD"
+  reboot_timeout: 10min
+
+# -----------------------------------------------------------------------------
+# MQTT — GL-MT3000 broker'a bağlanır
+# -----------------------------------------------------------------------------
+mqtt:
+  broker: "gl-mt3000.local"
+  port: 1883
+  discovery: true
+  discovery_prefix: homeassistant
+
+# -----------------------------------------------------------------------------
+# UART2 — LD2410 ile haberleşme
+# -----------------------------------------------------------------------------
+# LD2410, UART üzerinden ESP32 ile haberleşir.
+# TX (LD2410) → GPIO 16 (ESP32 RX2)
+# RX (LD2410) → GPIO 17 (ESP32 TX2)
+# Baud rate: 256000 (LD2410 varsayılan)
+# -----------------------------------------------------------------------------
+uart:
+  id: uart_ld2410
+  tx_pin: GPIO17 # ESP32 TX2 → LD2410 RX
+  rx_pin: GPIO16 # ESP32 RX2 → LD2410 TX
+  baud_rate: 256000
+  parity: NONE
+  stop_bits: 1
+
+# -----------------------------------------------------------------------------
+# LD2410 Sensör Konfigürasyonu
+# -----------------------------------------------------------------------------
+ld2410:
+  id: bed_radar
+  uart_id: uart_ld2410
+
+  # -------------------------------------------------------------------------
+  # Gate Hassasiyet Ayarları
+  # -------------------------------------------------------------------------
+  # Her Gate için "moving" (hareketli) ve "still" (duran) hassasiyet
+  # değerleri ayarlanır. Düşük değer = daha hassas; yüksek değer = daha az hassas.
+  #
+  # Gate 0-2 (yatak yanı): Hassas — ayak hareketini yakala
+  # Gate 3+ (yatak içi):   Düşük hassasiyet — yatak içi hareketi görmezden gel
+  #
+  # 🚨 Bu ayarlar KALİBRASYON gerektirir! Her oda/yatak farklıdır.
+  # LD2410 Companion app veya ESPHome web arayüzü ile kalibre edin.
+  # -------------------------------------------------------------------------
+
+  # Moving (hareketli) hassasiyet — Gate bazında
+  throttle: 1000ms # 1 saniyede bir güncelle (aşırı trafik önler)
+
+  # -------------------------------------------------------------------------
+  # Gate hassasiyetleri — LD2410 ESPHome bileşeni üzerinden ayarlanır
+  # -------------------------------------------------------------------------
+  # Aşağıdaki değerler başlangıçtır; gerçek montajda kalibre edilmelidir.
+  #
+  # moving_sensitivity (0-100): Düşük = daha hassas
+  # still_sensitivity (0-100): Düşük = daha hassas
+  #
+  # Gate 0 (0-0.75m):  Çok hassas — ayak yere değdi anında yakala
+  # Gate 1 (0.75-1.5m): Hassas — bir adım uzaklık
+  # Gate 2 (1.5-2.25m): Orta — yatak kenarı sınırı
+  # Gate 3 (2.25-3m):  Düşük — yatak içi, görmezden gel
+  # Gate 4+ (3m+):     Çok düşük — yatak içi derin, tamamen görmezden gel
+
+# -----------------------------------------------------------------------------
+# BINARY SENSOR: Ayak Algılayıcı (Gate 0-2 filtreli)
+# -----------------------------------------------------------------------------
+# 🎯 BU MODÜLÜN EN KRİTİK BİLEŞENİ
+# -----------------------------------------------------------------------------
+# LD2410'un "moving_distance" ve "still_distance" sensörlerini kullanarak
+# SADECE 0-2.25 metre arasındaki (Gate 0-2) hareketi algılayan özel bir
+# binary_sensor oluştururuz.
+#
+# Mantık:
+#   - Eğer moving_distance ≤ 2.25m VEYA still_distance ≤ 2.25m ise
+#     → "ayak yere değdi" → binary_sensor ON
+#   - Eğer tüm hareket 2.25m'den uzaktaysa (yatak içi)
+#     → "yatak içi hareket" → binary_sensor OFF
+#
+# Bu, yatakta dönen kişiyi ALGILAMAZ, sadece yataktan kalkanı algılar.
+# -----------------------------------------------------------------------------
+binary_sensor:
+  - platform: template
+    name: "Bed Feet Presence"
+    id: bed_feet_presence
+    icon: mdi:foot-print
+    # -------------------------------------------------------------------------
+    # Lambda: Gate 0-2 (0-2.25m) filtresi
+    # -------------------------------------------------------------------------
+    # LD2410'un moving_distance ve still_distance sensörlerini okur.
+    # Eğer hareket 2.25 metreden yakınsa → ON (ayak algılandı)
+    # Eğer hareket 2.25 metreden uzaktaysa → OFF (yatak içi, görmezden gel)
+    #
+    # 🚨 2.25 metre eşiği NEDEN KRİTİK?
+    #   - Sensör yatak kenarına monte edilir
+    #   - Yatak kenarı → yatak içi başlangıcı ~1.5-2m arası
+    #   - 2.25m eşiği: Yatak kenarını (Gate 0-2) yakalar, yatak içini (Gate 3+) eler
+    #   - Bu eşenek her oda/yatak için KALİBRASYON gerektirir!
+    #     (Yatak boyutu, sensör konumu, yatak yüksekliği etkiler)
+    lambda: |-
+      // LD2410 moving_distance sensöründen hareketli mesafe oku
+      float moving_dist = id(bed_radar_moving_distance).state;
+      // LD2410 still_distance sensöründen duran mesafe oku
+      float still_dist = id(bed_radar_still_distance).state;
+
+      // Eşik: 2.25 metre (Gate 0-2 bölgesi)
+      const float FEET_THRESHOLD = 2.25;
+
+      // Eğer hareketli veya duran varlık 2.25m'den yakınsa → ayak algılandı
+      if (moving_dist > 0 && moving_dist <= FEET_THRESHOLD) {
+        return true;  // Ayak yere değdi
+      }
+      if (still_dist > 0 && still_dist <= FEET_THRESHOLD) {
+        return true;  // Ayak yere değdi (duran varlık)
+      }
+
+      // Tüm hareket 2.25m'den uzaktaysa → yatak içi, görmezden gel
+      return false;
+    # 2 saniye bekleme (debounce) — yanlış pozitifleri engeller
+    # Kişi yatak kenarından geçerken kısa süreli "ON" olur, sonra "OFF"
+    # 2 saniye bekleme, bu kısa geçişleri filtreler
+    filters:
+      - delayed_on: 500ms # 0.5 saniye hareket varsa ON ol
+      - delayed_off: 10s # 10 saniye hareket yoksa OFF ol (kişi yatağa döndü)
+
+# -----------------------------------------------------------------------------
+# LD2410 SENSÖR ÇIKTILARI
+# -----------------------------------------------------------------------------
+# LD2410'un ham sensör verileri — HA'a gönderilir (kalibrasyon ve izleme için)
+sensor:
+  # Hareketli varlık mesafesi (metre)
+  - platform: ld2410
+    ld2410_id: bed_radar
+    moving_distance:
+      name: "Bed Radar Moving Distance"
+      id: bed_radar_moving_distance
+      unit_of_measurement: "m"
+      icon: mdi:arrow-right
+      # Bu sensör binary_sensor lambda'sında kullanılır
+      internal: false # HA'a gönder (kalibrasyon için)
+
+    # Duran varlık mesafesi (metre)
+    still_distance:
+      name: "Bed Radar Still Distance"
+      id: bed_radar_still_distance
+      unit_of_measurement: "m"
+      icon: mdi:arrow-right
+      # Bu sensör binary_sensor lambda'sında kullanılır
+      internal: false
+
+    # Hareketli varlık enerjisi (0-100)
+    moving_energy:
+      name: "Bed Radar Moving Energy"
+      icon: mdi:signal
+      internal: true # HA'a gönderme (sadece debug için)
+
+    # Duran varlık enerjisi (0-100)
+    still_energy:
+      name: "Bed Radar Still Energy"
+      icon: mdi:signal
+      internal: true
+
+    # Algılama bölgesi (0-8)
+    detection_distance:
+      name: "Bed Radar Detection Distance"
+      icon: mdi:map-marker-distance
+      internal: true
+
+  # -------------------------------------------------------------------------
+  # Gate bazında enerji sensörleri (opsiyonel — kalibrasyon için)
+  # -------------------------------------------------------------------------
+  # Her Gate için ayrı enerji sensörü. Kalibrasyon sırasında hangi Gate'de
+  # hareket olduğunu görmek için kullanılır.
+  - platform: ld2410
+    ld2410_id: bed_radar
+    gate_0_move_energy:
+      name: "Gate 0 Move Energy"
+      internal: true
+    gate_0_still_energy:
+      name: "Gate 0 Still Energy"
+      internal: true
+    gate_1_move_energy:
+      name: "Gate 1 Move Energy"
+      internal: true
+    gate_1_still_energy:
+      name: "Gate 1 Still Energy"
+      internal: true
+    gate_2_move_energy:
+      name: "Gate 2 Move Energy"
+      internal: true
+    gate_2_still_energy:
+      name: "Gate 2 Still Energy"
+      internal: true
+    gate_3_move_energy:
+      name: "Gate 3 Move Energy"
+      internal: true
+    gate_3_still_energy:
+      name: "Gate 3 Still Energy"
+      internal: true
+    gate_4_move_energy:
+      name: "Gate 4 Move Energy"
+      internal: true
+    gate_4_still_energy:
+      name: "Gate 4 Still Energy"
+      internal: true
+
+# -----------------------------------------------------------------------------
+# COB LED ÇIKIŞI — PWM ile parlaklık kontrolü
+# -----------------------------------------------------------------------------
+# COB LED, MOSFET modülü üzerinden ESP32 PWM pin'ine bağlanır.
+# PWM duty cycle: 0-1023 (ESPHome 10-bit PWM)
+# 0 = kapalı, 1023 = tam parlaklık
+#
+# COB LED 12V, ESP32 PWM 3.3V → MOSFET (IRLZ44N) ile sürülür.
+# MOSFET bağlantısı:
+#   Gate → ESP32 GPIO 25 (PWM pin)
+#   Drain → COB LED (-)
+#   Source → GND
+#   COB LED (+) → 12V güç kaynağı (+)
+# -----------------------------------------------------------------------------
+output:
+  - platform: ledc
+    id: cob_led_pwm
+    pin: GPIO25
+    frequency: 1000Hz # 1kHz PWM — gözle görülmeyen titreme
+    min_power: 0.0
+    max_power: 1.0
+    # Inverted: false (MOSFET normal logic)
+
+# -----------------------------------------------------------------------------
+# LIGHT: COB LED (Yatak Altı Aydınlatma)
+# -----------------------------------------------------------------------------
+light:
+  - platform: monochromatic
+    name: "Underbed COB Light"
+    id: underbed_cob_light
+    output: cob_led_pwm
+    icon: mdi:lightbulb-night
+    # Varsayılan parlaklık: %15 (gece yönlendirmesi için)
+    default_transition_length: 3s # 3 saniye geçiş — yumuşak açılma
+    # Bu light entity, HA otomasyonlarında kullanılır:
+    #   light.underbed_cob_light
+
+# -----------------------------------------------------------------------------
+# STATUS LED
+# -----------------------------------------------------------------------------
+status_led:
+  pin:
+    number: GPIO2
+    inverted: true
+
+# -----------------------------------------------------------------------------
+# LOGGER
+# -----------------------------------------------------------------------------
+logger:
+  level: DEBUG
+  baud_rate: 0 # UART log kapalı (WiFi log kapalı)

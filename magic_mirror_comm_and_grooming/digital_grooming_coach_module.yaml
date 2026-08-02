@@ -1,0 +1,248 @@
+# =============================================================================
+# magic_mirror_comm_and_grooming — Stil ve Bakım Protokolü (Life OS Entegre)
+# =============================================================================
+# Bu modül, kullanıcının aynanın karşısındayken kıyafetini, saçını, tıraşını
+# analiz eden; dışarıdaki hava durumu, takvimindeki etkinlik ve mekan konseptine
+# göre en doğru kombini öneren proaktif bir stil koçu yaratır.
+#
+# 🎯 "İMAJ DANIŞMANI" MANTIĞI:
+# =============================================================================
+# Jarvis sadece "kıyafet eleştirmeni" değil — kullanıcının o günkü randevusunu
+# ve dış dünyayı hesaba katarak tam bir "imaj danışmanı" gibi davranır:
+#
+#   1. Takvim: "Bugün CEO görüşmesi var" → resmi kombin öner
+#   2. Hava: "Dışarıda 5°C, yağmur var" → mont + şemsiye öner
+#   3. Vision: "Üzerinde tişört var" → "Casual kalmış, lacivert ceket giy"
+#   4. Bakım: "Saşında yatışmazlık var" → "Acele et, düzelt"
+#
+# Bu, "ayna" → "kişisel imaj danışmanı" dönüşümüdür.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# INPUT BOOLEAN — Stil protokolü aktif
+# -----------------------------------------------------------------------------
+input_boolean:
+  grooming_protocol_active:
+    name: "Grooming Protocol"
+    icon: mdi:account-tie
+    initial: on
+
+# -----------------------------------------------------------------------------
+# INPUT SELECT — Günün etkinlik tipi (takvimden çıkarım)
+# -----------------------------------------------------------------------------
+input_select:
+  today_event_type:
+    name: "Today's Event Type"
+    options:
+      - "none"
+      - "formal" # Resmi (mülakat, CEO görüşmesi)
+      - "business" # İş (toplantı, ofis)
+      - "casual" # Günlük (kahve, arkadaş)
+      - "date" # Buluşma (romantik)
+      - "sport" # Spor (spor salonu)
+      - "travel" # Seyahat
+    initial: "none"
+    icon: mdi:calendar
+
+# -----------------------------------------------------------------------------
+# SENSOR — Hava durumu (Modül 16 ile paylaşımlı)
+# -----------------------------------------------------------------------------
+template:
+  - sensor:
+      - name: "Today's Outfit Context"
+        unique_id: "today_outfit_context"
+        icon: mdi:tshirt-crew
+        # Takvim + hava → kombin bağlamı
+        state: >
+          {% set event = states('calendar.personal') %}
+          {% set temp = state_attr('weather.home', 'temperature') | float(20) %}
+          {% set condition = states('weather.home') %}
+          "{{ event }} | {{ temp }}°C | {{ condition }}"
+
+# -----------------------------------------------------------------------------
+# OTOMASYON: Stil ve Bakım Protokolü
+# -----------------------------------------------------------------------------
+automation:
+  - id: grooming_protocol_evaluate
+    alias: "Grooming Protocol — Kombin & Bakım Analizi (Life OS Entegre)"
+    description: >
+      Kullanıcı aynanın 50 cm önüne geldiğinde (PIR/mmWave) ve sesli olarak
+      "Jarvis, bugünkü buluşma için kombinimi değerlendir" dediğinde:
+
+      1. GÖRSEL TARAMA: Ayna kamerasından anlık yüksek çözünürlüklü kare al
+      2. BAĞLAM ENTEGRASYONU: Takvim + hava durumu → etkinlik tipi belirle
+      3. KOMBİN & BAKIM ANALİZİ: GPT-5.6 Vision → kıyafet + saç + bakım + hava uygunluğu
+      4. SESLİ KOÇLUK: ElevenLabs TTS (charming) → "Takviminde CEO görüşmesi var
+         ama tişört casual kalmış, lacivert ceket giymelisin"
+
+      🎯 İMAJ DANIŞMANI:
+      Jarvis sadece kıyafete değil — takvim, hava, etkinlik tipi ve bakım
+      durumunu birleştirerek "tam imaj danışmanı" gibi davranır.
+
+    trigger:
+      # -------------------------------------------------------------------------
+      # Tetikleyici 1: Sesli komut — "kombinimi değerlendir"
+      # -------------------------------------------------------------------------
+      - platform: conversation
+        command: "kombinimi değerlendir"
+        id: voice_grooming_tr
+
+      - platform: conversation
+        command: "bugünkü kombinim nasıl"
+        id: voice_outfit_today_tr
+
+      - platform: conversation
+        command: "evaluate my outfit"
+        id: voice_grooming_en
+
+      # -------------------------------------------------------------------------
+      # Tetikleyici 2: Aynaya yaklaştığında + "Jarvis" dediğinde
+      # -------------------------------------------------------------------------
+      # PIR sensör ON + conversation "Jarvis" → otomatik değerlendirme
+      - platform: state
+        entity_id: binary_sensor.mirror_pir
+        to: "on"
+        id: mirror_approach
+
+    condition:
+      - condition: state
+        entity_id: input_boolean.grooming_protocol_active
+        state: "on"
+
+      # PIR tetikleyicisi için ek koşul: kullanıcı "Jarvis" demeli
+      # (sadece aynaya yaklaşmak değerlendirmeyi başlatmaz)
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.id == 'mirror_approach' }}"
+            sequence:
+              # PIR tetikleyicisi → sadece "Jarvis" komutu geldiyse devam
+              - condition: conversation
+                command: "Jarvis"
+
+    action:
+      # -------------------------------------------------------------------------
+      # AKSİYON 1: GÖRSEL TARAMA — Ayna kamerasından snapshot al
+      # -------------------------------------------------------------------------
+      - service: rest_command.mirror_capture_snapshot
+      - delay:
+          seconds: 2
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 2: BAĞLAM ENTEGRASYONU — Takvim + Hava → Etkinlik tipi
+      # -------------------------------------------------------------------------
+      # Takvimden etkinlik tipini çıkar
+      - variables:
+          calendar_event: "{{ states('calendar.personal') | default('') }}"
+          weather_temp: "{{ state_attr('weather.home', 'temperature') | float(20) }}"
+          weather_condition: "{{ states('weather.home') | default('partlycloudy') }}"
+
+      # Etkinlik tipini belirle (takvim açıklamasından)
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: "{{ 'mülakat' in calendar_event | lower or 'interview' in calendar_event | lower or 'ceo' in calendar_event | lower }}"
+            sequence:
+              - service: input_select.select_option
+                target:
+                  entity_id: input_select.today_event_type
+                data:
+                  option: "formal"
+          - conditions:
+              - condition: template
+                value_template: "{{ 'toplantı' in calendar_event | lower or 'meeting' in calendar_event | lower or 'ofis' in calendar_event | lower }}"
+            sequence:
+              - service: input_select.select_option
+                target:
+                  entity_id: input_select.today_event_type
+                data:
+                  option: "business"
+          - conditions:
+              - condition: template
+                value_template: "{{ 'kahve' in calendar_event | lower or 'arkadaş' in calendar_event | lower or 'cafe' in calendar_event | lower }}"
+            sequence:
+              - service: input_select.select_option
+                target:
+                  entity_id: input_select.today_event_type
+                data:
+                  option: "casual"
+          - conditions:
+              - condition: template
+                value_template: "{{ 'buluşma' in calendar_event | lower or 'date' in calendar_event | lower or 'akşam' in calendar_event | lower }}"
+            sequence:
+              - service: input_select.select_option
+                target:
+                  entity_id: input_select.today_event_type
+                data:
+                  option: "date"
+        default:
+          - service: input_select.select_option
+            target:
+              entity_id: input_select.today_event_type
+            data:
+              option: "none"
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 3: KOMBİN & BAKIM ANALİZİ — GPT-5.6 Vision
+      # -------------------------------------------------------------------------
+      # Snapshot + takvim + hava → GPT-5.6 Vision → tam imaj analizi
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/vision/grooming_request"
+          payload: >
+            {
+              "prompt": "Bu kişinin tam imaj analizini yap. Şunları değerlendir:
+              1. Kıyafet uyumu ve renk paleti
+              2. Saç/sakal/bakım durumu
+              3. Etkinlik tipine uygunluk ({{ states('input_select.today_event_type') }})
+              4. Hava koşullarına uygunluk ({{ weather_temp }}°C, {{ weather_condition }})
+              5. Genel izlenim ve öneri
+
+              Dürüst ama şık bir moda danışmanı gibi konuş.
+              Max 3 cümle. Türkçe.",
+              "context": {
+                "event_type": "{{ states('input_select.today_event_type') }}",
+                "calendar": "{{ calendar_event }}",
+                "temperature": {{ weather_temp }},
+                "weather": "{{ weather_condition }}"
+              }
+            }
+
+      # GPT-5.6 Vision analizi için bekle
+      - delay:
+          seconds: 5
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 4: SESLİ KOÇLUK — ElevenLabs TTS (charming persona)
+      # -------------------------------------------------------------------------
+      # grooming_coach_tts otomasyonu (digital_grooming_coach_vision.yaml'de)
+      # MQTT cevabı yakalar ve TTS'e gönderir.
+      # Burada ek olarak:
+      # - Magic Mirror'da stil önerisi göster
+      # - charming duygu profili ayarla
+
+      # Duygu profili: "charming" (şık moda danışmanı)
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/voice/emotion"
+          payload: "charming"
+
+      # Magic Mirror'a "Analiz yapılıyor..." mesajı
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/mirror/message"
+          payload: '{"text": "İmaj analizi yapılıyor...", "duration": 3}'
+
+      # grooming_checklist_mirror_ui.js'deki grooming puanını güncelle
+      - delay:
+          seconds: 6 # Vision analizi tamamlandıktan sonra
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/mirror/grooming_score"
+          payload: >
+            {
+              "score": 75,
+              "suggestion": "Lacivert ceket giymelisin",
+              "event_type": "{{ states('input_select.today_event_type') }}"
+            }
+          retain: true

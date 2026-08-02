@@ -1,0 +1,17 @@
+# spatial_audio - Konumsal Ses ve Medya Otomasyonu
+# Spotify entegrasyonu ve çok kanallı ses yönetimi
+
+spotify:
+  client_id: "YOUR_SPOTIFY_CLIENT_ID"
+  client_secret: "YOUR_SPOTIFY_CLIENT_SECRET"
+  redirect_uri: "http://localhost:8888/callback"
+
+audio:
+  device: "multiroom_group"
+  channels: 4
+  spatial_engine: "enabled"
+
+presets:
+  morning: "playlist:morning_calm"
+  focus: "playlist:deep_focus"
+  party: "playlist:party_vibes"

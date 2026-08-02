@@ -1,0 +1,362 @@
+# =============================================================================
+# hidden_triggers — Gizli Tetikleyici Otomasyonları (Senaryolar)
+# =============================================================================
+# Bu dosya 3 senaryo için otomasyon tanımlar:
+#
+#   Senaryo 1 (Masa Altı Zigbee Buton): Tek/Çift tık + Basılı tutma
+#   Senaryo 2 (Ahşap Masa Dokunmatiği):  2 sn basılı tutma → Intimacy
+#   Senaryo 3 (NFC Bardak Altlığı):     Telefon koy → Auto-Ducking
+#
+# ⚡ GECİLMESİZ ÇALIŞMA — PREMIUM HİSSİN TEMELİ:
+# =============================================================================
+# Bu otomasyonlar <200ms gecikmeyle çalışır. Zigbee buton → Zigbee2MQTT →
+# HA → otomasyon → aksiyon zinciri ~100-200ms. TTP223 → MQTT → HA → otomasyon
+# zinciri ~100-150ms. Bu, insan algısı için "anında" hissedilir.
+#
+# Neden bu kadar kritik?
+#   Misafir butona basar → 5 saniye sonra oda değişirse → "teknoloji çalışıyor"
+#   Misafir butona basar → ANINDA oda değişirse → "sihir" → "premium"
+#
+# Sesli komut (2-3sn) veya telefon app (5-10sn) ile karşılaştırıldığında
+# gizli tetikleyiciler → "eforsuz güç" (effortless power) hissi → en yüksek
+# "premium" algı. Misafir "çaba sarf etmeden" odayı kontrol eder → "güç" hissi.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# OTOMASYONLAR
+# -----------------------------------------------------------------------------
+automation:
+  # ===========================================================================
+  # SENARYO 1: Masa Altı Zigbee Buton — Çoklu Jest
+  # ===========================================================================
+  - id: hidden_desk_zigbee_button
+    alias: "Hidden Trigger — Masa Altı Zigbee Buton"
+    description: >
+      Masanın altındaki Zigbee butona göre farklı modları tetikler:
+      Tek Tıklama → Lounge/Date atmosferi (Modül 10 + Spotify)
+      Çift Tıklama → Sinema Modu (Modül 8: Klima, TV, Işıklar)
+      Basılı Tutma → Tüm sistemi kapat, odayı normale döndür
+
+      ⚡ GECİKMESİZ: Zigbee buton → Zigbee2MQTT → HA → otomasyon ~100-200ms.
+      Misafir butona basar → ANINDA oda değişir → "sihir" hissi.
+
+    trigger:
+      # -------------------------------------------------------------------------
+      # Zigbee buton jestleri — Zigbee2MQTT üzerinden
+      # -------------------------------------------------------------------------
+      # Sonoff/Tuya Zigbee mini buton, Zigbee2MQTT ile HA'a bağlanır.
+      # Buton jestleri "action" sensörü olarak gelir:
+      #   single, double, hold, release
+      - platform: state
+        entity_id: sensor.desk_hidden_button_action
+        to: "single"
+        id: single_click
+
+      - platform: state
+        entity_id: sensor.desk_hidden_button_action
+        to: "double"
+        id: double_click
+
+      - platform: state
+        entity_id: sensor.desk_hidden_button_action
+        to: "hold"
+        id: hold_button
+
+    action:
+      - choose:
+          # -------------------------------------------------------------------------
+          # TEK TIKLAMA → Lounge/Date Atmosferi
+          # -------------------------------------------------------------------------
+          # Modül 10 (audio_reactive_wled) "Date Lounge" moduna geçer.
+          # Spotify "Deep R&B" çalma listesi başlar (fade-in ile).
+          # WLED amber/kırmızı, difüzör açılır, klima sessiz.
+          #
+          # 🎭 Misafir butona basar → ANINDA ışıklar değişir, müzik başlar →
+          # "oda beni hissetti" → "premium" hissi.
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.id == 'single_click' }}"
+            sequence:
+              # Audio WLED "Date Lounge" moduna geç
+              - service: input_select.select_option
+                target:
+                  entity_id: input_select.audio_wled_mode
+                data:
+                  option: "date_lounge"
+              # Spatial Audio "Deep R&B" çalma listesi başlat (fade-in %20)
+              - service: input_select.select_option
+                target:
+                  entity_id: input_select.spatial_audio_mood
+                data:
+                  option: "deep_rnb_date"
+              - service: script.spatial_play_mood
+                data:
+                  target_volume: 0.20
+              # Difüzörü aç (Amber esansı)
+              - service: switch.turn_on
+                target:
+                  entity_id: switch.smart_diffuser_power
+              - delay:
+                  milliseconds: 500
+              - service: light.turn_off
+                target:
+                  entity_id: light.diffuser_led
+
+          # -------------------------------------------------------------------------
+          # ÇİFT TIKLAMA → Sinema Modu
+          # -------------------------------------------------------------------------
+          # Modül 8 (invisible_remote) "Film Modu"nu tetikler:
+          # Klima 20°C quiet, TV aç + HDMI, ışıklar lacivert, WLED koyu mavi.
+          #
+          # 🎭 Çift tık → ANINDA sinema atmosferi → "premium" hissi.
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.id == 'double_click' }}"
+            sequence:
+              # Film modunu aktif et
+              - service: input_boolean.turn_on
+                target:
+                  entity_id: input_boolean.movie_mode_active
+              # Işıkları kapat (5sn transition)
+              - service: light.turn_off
+                target:
+                  entity_id:
+                    - light.ceiling_light
+                    - light.room_main_lights
+                data:
+                  transition: 5
+              # WLED "Deep Focus" (koyu mavi, sinema)
+              - service: rest_command.wled_deep_focus
+              - service: light.turn_on
+                target:
+                  entity_id: light.wled_ambient
+                data:
+                  brightness: 60
+                  transition: 5
+              # TV aç + HDMI 1
+              - service: script.tv_power_on_hdmi1
+              # Klima 22°C quiet
+              - service: climate.set_temperature
+                target:
+                  entity_id: climate.room_ac
+                data:
+                  temperature: 22
+                  hvac_mode: cool
+              - service: climate.set_fan_mode
+                target:
+                  entity_id: climate.room_ac
+                data:
+                  fan_mode: quiet
+              # Projeksiyon "Cinema Night" (koyu lacivert)
+              - service: script.scene_cinema_night
+
+          # -------------------------------------------------------------------------
+          # BASILI TUTMA → Tüm Sistemi Kapat
+          # -------------------------------------------------------------------------
+          # Tüm modları kapat, difüzörü durdur, odayı varsayılan aydınlığa döndür.
+          #
+          # 🎭 Basılı tutma → "her şey kapanır" → "sistem off" → sade oda.
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.id == 'hold' }}"
+            sequence:
+              # Tüm modları kapat
+              - service: input_boolean.turn_off
+                target:
+                  entity_id: input_boolean.intimacy_sync_active
+              - service: input_boolean.turn_off
+                target:
+                  entity_id: input_boolean.movie_mode_active
+              - service: input_boolean.turn_off
+                target:
+                  entity_id: input_boolean.barista_mode_active
+              - service: input_select.select_option
+                target:
+                  entity_id: input_select.audio_wled_mode
+                data:
+                  option: "off"
+              - service: input_select.select_option
+                target:
+                  entity_id: input_select.spatial_audio_mood
+                data:
+                  option: "off"
+              # Müziği fade-out ile kapat
+              - service: script.audio_fade_out_stop
+                data:
+                  duration: 5
+              # Difüzörü kapat
+              - service: switch.turn_off
+                target:
+                  entity_id: switch.smart_diffuser_power
+              # Projeksiyonu kapat
+              - service: script.scene_projection_off
+              # WLED'i kapat
+              - service: light.turn_off
+                target:
+                  entity_id: light.wled_ambient
+                data:
+                  transition: 5
+              # Yatak altı ışığı kapat
+              - service: light.turn_off
+                target:
+                  entity_id: light.underbed_cob_light
+                data:
+                  transition: 5
+              # Ana ışıkları normale döndür
+              - service: light.turn_on
+                target:
+                  entity_id:
+                    - light.ceiling_light
+                    - light.room_main_lights
+                data:
+                  brightness_pct: 100
+                  color_temp: 250
+                  transition: 5
+              # Klima normal sıcaklığa
+              - service: climate.set_temperature
+                target:
+                  entity_id: climate.room_ac
+                data:
+                  temperature: 24
+                  hvac_mode: cool
+              # Jarvis onay
+              - service: tts.speak
+                target:
+                  entity_id: tts.jarvis_voice
+                data:
+                  message: "All systems deactivated. Welcome back to reality."
+
+  # ===========================================================================
+  # SENARYO 2: Ahşap Masa Dokunmatiği — 2 Saniye Basılı Tutma → Intimacy
+  # ===========================================================================
+  - id: hidden_desk_touch_intimacy
+    alias: "Hidden Trigger — Ahşap Dokunma (Intimacy Mode)"
+    description: >
+      Masa üstündeki görünmez noktaya (ahşaba) parmakla 2 saniye basılı
+      tutulduğunda, sanki oda senin enerjini hissediyormuş gibi Modül 12'yi
+      (Intimacy Sync Mode) başlatan çok havalı ve gizli bir otomasyon.
+
+      🎭 "SİHİR" HİSSİ:
+      Misafir ahşaba 2 saniye basılı tutar → oda "enerjisini hissetmiş" gibi
+      Intimacy moduna geçer → ışıklar kırmızı, müzik R&B, klima serin, koku
+      difüzörü açılır. "Telepati" hissi → en yüksek "premium" algı.
+
+      ⚡ GECİKMESİZ: TTP223 → MQTT → HA → otomasyon ~100-150ms.
+      2 saniye basılı tutma → anında Intimacy → "sihir".
+
+    trigger:
+      # -------------------------------------------------------------------------
+      # TTP223 "long_press" jesti — MQTT üzerinden
+      # -------------------------------------------------------------------------
+      # ESP32 (stealth_button_esphome.yaml) TTP223 sensöründen gelen
+      # "long_press" jestini MQTT topic'ine publish eder.
+      # HA, bu topic'i dinler ve 2 saniye basılı tutma algıladığında tetiklenir.
+      - platform: mqtt
+        topic: "jarvis/triggers/desk_touch/gesture"
+        payload: "long_press"
+        id: desk_long_press
+
+    condition:
+      # Intimacy modu zaten aktif değilse
+      - condition: state
+        entity_id: input_boolean.intimacy_sync_active
+        state: "off"
+
+    action:
+      # -------------------------------------------------------------------------
+      # AKSİYON: Intimacy Sync Mode başlat
+      # -------------------------------------------------------------------------
+      # Modül 12'yi tetikler → input_boolean.intimacy_sync_active ON.
+      # Bu, tüm intimacy zincirini başlatır:
+      #   - WLED koyu yakut kırmızısı (#8B0000)
+      #   - Spotify "Deep Flow" R&B %25
+      #   - Klima 20°C quiet
+      #   - Difüzör Ylang-Ylang + Sandalağacı
+      #   - Projeksiyon "Romantic Nebula" (koyu pembe)
+      #   - Yatak altı ışık %30 amber (floating bed)
+      #
+      # 🎭 Misafir ahşaba dokundu → oda "onun enerjisini hissetti" →
+      # "sihir" → "telepati" → en yüksek "premium" algı.
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.intimacy_sync_active
+
+      # ESP32'ye intimacy aktif sinyali gönder (MQTT)
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/intimacy/active/set"
+          payload: "ON"
+          retain: true
+
+      # Magic Mirror'a sinematik mesaj gönder
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/mirror/message"
+          payload: '{"text": "Atmosphere set to Deep Flow...", "duration": 10}'
+
+  # ===========================================================================
+  # SENARYO 3: NFC Bardak Altlığı — Auto-Ducking
+  # ===========================================================================
+  - id: hidden_nfc_coaster_ducking
+    alias: "Hidden Trigger — NFC Bardak Altlığı (Auto-Ducking)"
+    description: >
+      Üzerine telefon koyulduğunda okunan bir NFC etiketi için (tag_scanned
+      event), masada içki/kahve içildiğini varsayarak Modül 5'teki (Spatial
+      Audio) müziğin sesini sohbet edilebilecek seviyeye (%15) düşüren
+      (Auto-Ducking) bir kural.
+
+      🎭 AUTO-DUCKING MANTIĞI:
+      Telefon bardak altına konur → "sohbet modu" → müzik kısılır.
+      Telefon kaldırılır → müzik eski seviyeye döner.
+      "Müzik sohbete saygı duyar" → "premium" hissi.
+
+    trigger:
+      # -------------------------------------------------------------------------
+      # Tetikleyici: NFC etiketi okundu (tag_scanned event)
+      # -------------------------------------------------------------------------
+      # HA Companion App, NFC okumasını HA'a "tag_scanned" event olarak iletir.
+      # tag_id, bardak altlığındaki NTAG215 etiketinin ID'sidir.
+      - platform: tag
+        id: "nfc_coaster"
+        # Bu etiket, bardak altlığı altındaki NTAG215'tir.
+
+    condition:
+      # Müzik çalıyorsa (çalmıyorsa ducking gerekmez)
+      - condition: state
+        entity_id: media_player.room_spatial_audio
+        state: "playing"
+
+    action:
+      # -------------------------------------------------------------------------
+      # AKSİYON 1: Müziği %15'e kıs (Auto-Ducking)
+      # -------------------------------------------------------------------------
+      # 🎭 Fade ile kısma — aniden değil, 3 saniyede kademeli.
+      # "Müzik sohbete saygı duyar" → "premium" hissi.
+      # %15: Sohbet edilebilecek seviye — arka plan, ön plan değil.
+      - service: script.audio_fade
+        data:
+          start_volume: "{{ state_attr('media_player.room_spatial_audio', 'volume_level') | float(0.20) }}"
+          target_volume: 0.15
+          duration: 3
+          steps: 6
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 2: 30 saniye bekle (sohbet süresi)
+      # -------------------------------------------------------------------------
+      # Telefon bardak altında 30 saniye kalırsa → müzik eski seviyeye döner.
+      # Eğer telefon hâlâ altındaysa ve müzik kısık çalıyorsa → devam.
+      # Eğer telefon kaldırıldıysa → başka bir NFC okuması veya manuel müdahale.
+      - delay:
+          seconds: 30
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 3: Müziği eski seviyeye döndür
+      # -------------------------------------------------------------------------
+      # 🎭 Fade ile geri açma — 3 saniyede kademeli.
+      # "Sohbet bitti, müzik geri geldi" → "premium" hissi.
+      - service: script.audio_fade
+        data:
+          start_volume: 0.15
+          target_volume: 0.20
+          duration: 3
+          steps: 6

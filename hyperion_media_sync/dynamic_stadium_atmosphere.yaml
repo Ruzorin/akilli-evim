@@ -1,0 +1,394 @@
+# =============================================================================
+# hyperion_media_sync — Dinamik Stadyum Atmosferi (Maç ve Spor Modu)
+# =============================================================================
+# Bu otomasyon, kullanıcı "Jarvis, maç başlıyor" dediğinde veya takvimde
+# maç etkinliği başladığında odayı bir stadyum atmosferine çevirir.
+#
+# 🎭 "STADYUM HİSSİ" MANTIĞI:
+# =============================================================================
+# Maç izlerken oda sadece "ekran + ışık" değil, bir "stadyum" olur:
+#   - WLED: Takım renkleri (Sarı-Kırmızı, Sarı-Lacivert) dinamik efekt
+#   - Hyperion: Ekran kenarı rengini WLED'e yansıt (anlık, <16ms)
+#   - Difüzör: Enerjik koku (narenciye/mentol) → heyecan/uyanıklık
+#   - Klima: Serin (20°C) → "stadyum havası"
+#   - Spatial Audio: Maç sesi + arka plan
+#   - Jarvis: Spor yorumcusu kişiliği (nadiren, tam yerinde tepki)
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# INPUT SELECT — Takım seçimi
+# -----------------------------------------------------------------------------
+input_select:
+  stadium_team:
+    name: "Stadium Team"
+    options:
+      - "off"
+      - "galatasaray" # Sarı-Kırmızı
+      - "fenerbahce" # Sarı-Lacivert
+      - "besiktas" # Siyah-Beyaz
+      - "trabzonspor" # Bordo-Mavi
+      - "custom" # Özel renk
+    initial: "off"
+    icon: mdi:soccer
+
+# -----------------------------------------------------------------------------
+# INPUT BOOLEAN — Stadyum modu aktif
+# -----------------------------------------------------------------------------
+input_boolean:
+  stadium_mode_active:
+    name: "Stadium Mode"
+    icon: mdi:stadium
+    initial: off
+
+# -----------------------------------------------------------------------------
+# OTOMASYONLAR
+# -----------------------------------------------------------------------------
+automation:
+  # ===========================================================================
+  # SENARYO 1: Maç Başlangıcı — Stadyum Atmosferi
+  # ===========================================================================
+  - id: stadium_mode_start
+    alias: "Stadium — Maç Başlangıcı (Stadyum Atmosferi)"
+    description: >
+      Kullanıcının takviminde bir maç etkinliği başladığında (veya sesli
+      komutla "Jarvis, maç başlıyor" dendiğinde) odayı stadyum atmosferine
+      çevirir.
+
+      🎭 STADYUM HİSSİ:
+      - Hyperion senkronizasyonu başlat (ekran → WLED, <16ms)
+      - Takım renkleri WLED'e dinamik efekt olarak gönder
+      - Difüzör enerjik koku (narenciye/mentol)
+      - Klima serin (20°C)
+      - Jarvis spor yorumcusu kişiliğine geç
+
+    trigger:
+      # -------------------------------------------------------------------------
+      # Tetikleyici 1: Sesli komut
+      # -------------------------------------------------------------------------
+      - platform: conversation
+        command: "maç başlıyor"
+        id: voice_match_tr
+
+      - platform: conversation
+        command: "maç başladı"
+        id: voice_match_tr2
+
+      - platform: conversation
+        command: "stadium mode"
+        id: voice_match_en
+
+      # -------------------------------------------------------------------------
+      # Tetikleyici 2: Takvimde maç etkinliği başladığında
+      # -------------------------------------------------------------------------
+      # CalDAV/Google Calendar'da "maç" veya "match" içeren etkinlik
+      - platform: calendar
+        entity_id: calendar.personal
+        event: start
+        id: calendar_match
+
+    condition:
+      - condition: state
+        entity_id: input_boolean.stadium_mode_active
+        state: "off"
+
+    action:
+      # -------------------------------------------------------------------------
+      # AKSİYON 0: Stadyum modunu aktif et
+      # -------------------------------------------------------------------------
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.stadium_mode_active
+
+      # Takım seç (sesli komutta takım adı varsa kullan, yoksa sor)
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: "{{ 'galatasaray' in trigger | string | lower }}"
+            sequence:
+              - service: input_select.select_option
+                target:
+                  entity_id: input_select.stadium_team
+                data:
+                  option: "galatasaray"
+          - conditions:
+              - condition: template
+                value_template: "{{ 'fenerbahçe' in trigger | string | lower or 'fenerbahce' in trigger | string | lower }}"
+            sequence:
+              - service: input_select.select_option
+                target:
+                  entity_id: input_select.stadium_team
+                data:
+                  option: "fenerbahce"
+          - conditions:
+              - condition: template
+                value_template: "{{ 'beşiktaş' in trigger | string | lower or 'besiktas' in trigger | string | lower }}"
+            sequence:
+              - service: input_select.select_option
+                target:
+                  entity_id: input_select.stadium_team
+                data:
+                  option: "besiktas"
+        # Varsayılan: Galatasaray
+        default:
+          - service: input_select.select_option
+            target:
+              entity_id: input_select.stadium_team
+            data:
+              option: "galatasaray"
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 1: HYPERION SENKRONİZASYONU BAŞLAT
+      # -------------------------------------------------------------------------
+      # Hyperion, ekran kenar piksellerini WLED'e UDP ile yansıtır (<16ms).
+      # Bu, ekranın "sınırlarının kaybolması"nı sağlar → imersif deneyim.
+      #
+      # Hyperion REST API: POST /api/json → {"command": "component", "subcomponent": "ALL", "action": "start"}
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/hyperion/control"
+          payload: "ON"
+          retain: true
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 2: TAKIM RENKLERİ — WLED DİNAMİK EFEKT
+      # -------------------------------------------------------------------------
+      # Hyperion aktifken WLED ekranı yansıtır. Ama "molalarda" (reklam arası)
+      # WLED takım renklerine döner. Bu, "stadyum" hissini güçlendirir.
+      #
+      # Takım renkleri:
+      #   Galatasaray: Sarı (#FFD700) + Kırmızı (#C8102E)
+      #   Fenerbahçe: Sarı (#FFD700) + Lacivert (#192E5D)
+      #   Beşiktaş: Siyah (#000000) + Beyaz (#FFFFFF)
+      #   Trabzonspor: Bordo (#6E0E2A) + Mavi (#4A8BCC)
+      - choose:
+          # Galatasaray: Sarı-Kırmızı
+          - conditions:
+              - condition: state
+                entity_id: input_select.stadium_team
+                state: "galatasaray"
+            sequence:
+              - service: light.turn_on
+                target:
+                  entity_id: light.wled_ambient
+                data:
+                  rgb_color: [200, 16, 46] # Kırmızı (Galatasaray)
+                  brightness: 180
+                  effect: "Breathe"
+                  transition: 3
+
+          # Fenerbahçe: Sarı-Lacivert
+          - conditions:
+              - condition: state
+                entity_id: input_select.stadium_team
+                state: "fenerbahce"
+            sequence:
+              - service: light.turn_on
+                target:
+                  entity_id: light.wled_ambient
+                data:
+                  rgb_color: [25, 46, 93] # Lacivert (Fenerbahçe)
+                  brightness: 180
+                  effect: "Breathe"
+                  transition: 3
+
+          # Beşiktaş: Siyah-Beyaz
+          - conditions:
+              - condition: state
+                entity_id: input_select.stadium_team
+                state: "besiktas"
+            sequence:
+              - service: light.turn_on
+                target:
+                  entity_id: light.wled_ambient
+                data:
+                  rgb_color: [255, 255, 255] # Beyaz (Beşiktaş)
+                  brightness: 200
+                  effect: "Breathe"
+                  transition: 3
+
+          # Trabzonspor: Bordo-Mavi
+          - conditions:
+              - condition: state
+                entity_id: input_select.stadium_team
+                state: "trabzonspor"
+            sequence:
+              - service: light.turn_on
+                target:
+                  entity_id: light.wled_ambient
+                data:
+                  rgb_color: [110, 14, 42] # Bordo (Trabzonspor)
+                  brightness: 180
+                  effect: "Breathe"
+                  transition: 3
+
+      # Ana ışıkları kapat (stadyum karanlık, sadece WLED + ekran)
+      - service: light.turn_off
+        target:
+          entity_id:
+            - light.ceiling_light
+            - light.room_main_lights
+        data:
+          transition: 3
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 3: DUYUSAL — Difüzör enerjik koku (narenciye/mentol)
+      # -------------------------------------------------------------------------
+      # Narenciye/mentol: Enerjik, uyanıklık, heyecan → stadyum hissi
+      - service: switch.turn_on
+        target:
+          entity_id: switch.smart_diffuser_power
+      - delay:
+          milliseconds: 500
+      - service: light.turn_off
+        target:
+          entity_id: light.diffuser_led
+      - service: select.select_option
+        target:
+          entity_id: select.diffuser_mist_level
+        data:
+          option: "medium"
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 4: KLİMA — Serin (stadyum havası)
+      # -------------------------------------------------------------------------
+      - service: climate.set_temperature
+        target:
+          entity_id: climate.room_ac
+        data:
+          temperature: 20
+          hvac_mode: cool
+      - service: climate.set_fan_mode
+        target:
+          entity_id: climate.room_ac
+        data:
+          fan_mode: low
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 5: Jarvis spor yorumcusu kişiliğine geç
+      # -------------------------------------------------------------------------
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/persona/switch"
+          payload: "media_companion"
+          retain: true
+
+      # Jarvis açılış
+      - delay:
+          seconds: 3
+      - service: tts.speak
+        target:
+          entity_id: tts.jarvis_voice
+        data:
+          message: >
+            {% set team = states('input_select.stadium_team') %}
+            {% if team == 'galatasaray' %}
+              Stadyum modu aktif. Sarı-kırmızı ışıklar yanıyor. Cimbom'un maçı başlıyor. Heyecanlıyız, efendim.
+            {% elif team == 'fenerbahce' %}
+              Stadyum modu aktif. Sarı-lacivert ışıklar yanıyor. Fener'in maçı başlıyor. Geç olsun ama güçlü olsun.
+            {% elif team == 'besiktas' %}
+              Stadyum modu aktif. Siyah-beyaz ışıklar yanıyor. Beşiktaş maçı başlıyor. Kartal uçuyor.
+            {% elif team == 'trabzonspor' %}
+              Stadyum modu aktif. Bordo-mavi ışıklar yanıyor. Trabzon maçı başlıyor. Heyecan başladı.
+            {% else %}
+              Stadyum modu aktif. Maç başlıyor, efendim.
+            {% endif %}
+
+  # ===========================================================================
+  # SENARYO 2: Maç Kapanışı — Dinlenme Moduna Geç
+  # ===========================================================================
+  - id: stadium_mode_end
+    alias: "Stadium — Maç Kapanışı (Dinlenme Modu)"
+    description: >
+      Maç bitiminde (2 saat sonra) odayı yavaşça dinlenme moduna (Rest Idle)
+      alır. Hyperion senkronizasyonunu durdurur, WLED loş amber'a döner,
+      difüzörü kapatır.
+
+    trigger:
+      # 2 saat otomatik kapatma
+      - platform: state
+        entity_id: input_boolean.stadium_mode_active
+        to: "on"
+        for:
+          hours: 2
+        id: auto_end
+
+      # Manuel kapatma
+      - platform: conversation
+        command: "maç bitti"
+        id: voice_end_tr
+
+      - platform: conversation
+        command: "stadium mode off"
+        id: voice_end_en
+
+    condition:
+      - condition: state
+        entity_id: input_boolean.stadium_mode_active
+        state: "on"
+
+    action:
+      # Stadyum modunu kapat
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.stadium_mode_active
+
+      # Takım seçimini sıfırla
+      - service: input_select.select_option
+        target:
+          entity_id: input_select.stadium_team
+        data:
+          option: "off"
+
+      # Hyperion senkronizasyonunu durdur
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/hyperion/control"
+          payload: "OFF"
+          retain: true
+
+      # WLED'i "Rest Idle" (loş amber) moduna al
+      - service: rest_command.wled_rest_idle
+      - service: light.turn_on
+        target:
+          entity_id: light.wled_ambient
+        data:
+          brightness: 60
+          transition: 10
+
+      # Difüzörü kapat
+      - service: switch.turn_off
+        target:
+          entity_id: switch.smart_diffuser_power
+
+      # Klima normal sıcaklığa
+      - service: climate.set_temperature
+        target:
+          entity_id: climate.room_ac
+        data:
+          temperature: 24
+          hvac_mode: cool
+
+      # Jarvis varsayılan kişiliğe dön
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/persona/switch"
+          payload: "default"
+          retain: true
+
+      # Jarvis kapanış
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.id == 'auto_end' }}"
+            sequence:
+              - service: tts.speak
+                target:
+                  entity_id: tts.jarvis_voice
+                data:
+                  message: "Maç bitti. Oda dinlenme moduna geçiyor. İyi seyirlerdi, efendim."
+        default:
+          - service: tts.speak
+            target:
+              entity_id: tts.jarvis_voice
+            data:
+              message: "Stadyum modu kapatıldı. Dinlenme zamanı."

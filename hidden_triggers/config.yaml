@@ -1,0 +1,19 @@
+# hidden_triggers - Gizli Tetikleyiciler
+# Flic Button ve Zigbee dokunmatik yüzey otomasyonları
+
+flic:
+  hub_ip: "192.168.1.100"
+  buttons:
+    - name: "bedside_flic"
+      mac: "AA:BB:CC:DD:EE:FF"
+      actions:
+        single: "jarvis.wake"
+        double: "jarvis.sleep_mode"
+        hold: "jarvis.emergency"
+
+zigbee:
+  touch_surface:
+    entity_id: "binary_sensor.hidden_touch"
+    triggers:
+      - tap_count: 2
+        action: "jarvis.toggle_projection"

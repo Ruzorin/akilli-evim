@@ -1,0 +1,15 @@
+# invisible_remote - Kızılötesi Cihaz Kontrolü
+# Broadlink / ESP32 IR blaster tabanlı kontrol
+
+ir_devices:
+  - name: "tv"
+    type: "broadlink"
+    ip: "192.168.1.102"
+    commands:
+      power: "power_hex_code"
+      volume_up: "vol_up_hex_code"
+  - name: "ac"
+    type: "esp32_ir"
+    ip: "192.168.1.103"
+    commands:
+      power: "ac_power_hex_code"

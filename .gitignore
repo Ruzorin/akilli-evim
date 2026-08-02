@@ -1,0 +1,191 @@
+# =============================================================================
+# .gitignore — Jarvis Premium Automation Suite (Single Codebase)
+# =============================================================================
+# Bu dosya, GitHub'a veya herhangi bir paylaşımlı platforma push
+# yapıldığında hassas verilerin DIŞARIDA kalmasını sağlar.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 🔑 API Anahtarları ve Token'lar
+# -----------------------------------------------------------------------------
+.env
+.env.local
+.env.production
+*.env
+secrets.yaml
+secrets.yml
+config/secrets/
+**/secrets.yaml
+**/secrets.yml
+
+# API key dosyaları
+*api_key*
+*api_keys*
+*token*
+*credentials*
+*oauth*
+
+# OpenAI / Anthropic / Google / ElevenLabs / Spotify / Telegram
+openai_key.txt
+anthropic_key.txt
+google_ai_key.txt
+elevenlabs_key.txt
+spotify_credentials.json
+telegram_bot_token.txt
+
+# -----------------------------------------------------------------------------
+# 🧬 Kişisel Veriler — Yüz Vektör Veritabanı (ChromaDB)
+# -----------------------------------------------------------------------------
+jarvis_memory/
+jarvis_memory/chromadb/
+**/chromadb/
+**/chroma/
+*.chromadb
+
+# Yüz embedding verileri
+face_data/
+face_embeddings/
+*.face_db
+*.embeddings
+
+# -----------------------------------------------------------------------------
+# 📸 Kamera Kayıtları ve Snapshot'lar
+# -----------------------------------------------------------------------------
+/tmp/sentry_*
+/tmp/sentry_snapshots/
+**/sentry_snapshots/
+**/sentry_records/
+*.jpg.snapshot
+*.mp4.record
+
+# Mutfak kamera kayıtları
+**/kitchen_frames/
+**/chef_snapshots/
+
+# Ayna kamera snapshot'ları
+**/mirror_snapshots/
+**/grooming_snapshots/
+
+# -----------------------------------------------------------------------------
+# 🔒 Home Assistant Hassas Konfigürasyon
+# -----------------------------------------------------------------------------
+ha_secrets.yaml
+ha_secrets.yml
+**/ha_secrets.yaml
+
+# HA long-lived tokens
+ha_token.txt
+ha_bearer_token.txt
+
+# -----------------------------------------------------------------------------
+# 🌐 Tailscale ve Ağ Hassas Bilgileri
+# -----------------------------------------------------------------------------
+tailscale_auth_key.txt
+tailscale_config.json
+vpn_credentials/
+
+# -----------------------------------------------------------------------------
+# 🚗 Araç Hassas Verileri
+# -----------------------------------------------------------------------------
+obd2_data/
+car_gps_logs/
+**/car_snapshots/
+**/adas_records/
+
+# Telegram bot token
+telegram_token.txt
+whatsapp_token.txt
+
+# -----------------------------------------------------------------------------
+# 🎵 Ses ve Ses Kayıtları
+# -----------------------------------------------------------------------------
+*.wav
+*.mp3.record
+**/voice_samples/
+**/tts_cache/
+
+# Binaural beats ses dosyaları (lokal)
+**/binaural/
+*.binaural.mp3
+
+# -----------------------------------------------------------------------------
+# 📱 Akıllı Saat Verileri
+# -----------------------------------------------------------------------------
+health_data/
+apple_health_export/
+google_fit_data/
+**/health_records/
+
+# Kan tahlili PDF'leri
+**/blood_tests/
+*.blood_test.pdf
+
+# -----------------------------------------------------------------------------
+# 🖥️ Sistem ve Geçici Dosyalar
+# -----------------------------------------------------------------------------
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Log dosyaları
+*.log
+logs/
+
+# ESPHome compile çıktıları
+*.bin
+*.elf
+.pio/
+.pioenvs/
+
+# WLED compile çıktıları
+wled_build/
+
+# MagicMirror node_modules
+**/node_modules/
+
+# Hyperion config (hassas)
+hyperion_secrets.json
+
+# -----------------------------------------------------------------------------
+# 📋 Kişisel Konfigürasyon (Kullanıcıya Özel)
+# -----------------------------------------------------------------------------
+# Kullanıcı adı, şifre, IP adresleri içeren dosyalar
+local_config.yaml
+local_config.yml
+**/local_config.yaml
+**/local_config.yml
+
+# Kullanıcı anatomik verileri (boy, kilo, vb.)
+user_biometrics.yaml
+**/user_biometrics.yaml
+
+# Koltuk/direksiyon pozisyon verileri (Giant's Throne)
+seat_calibration.yaml
+**/seat_calibration.yaml
+
+# -----------------------------------------------------------------------------
+# 🗂️ Backup ve Geçici
+# -----------------------------------------------------------------------------
+*.bak
+*.backup
+*.tmp
+*.temp
+*.cache

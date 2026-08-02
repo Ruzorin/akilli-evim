@@ -1,0 +1,432 @@
+# =============================================================================
+# jarvis_core — Master Orchestration Intents (NLP Niyet Senaryoları)
+# =============================================================================
+# Bu dosya, Jarvis'in doğal dil işleme (NLP) ile diğer modülleri nasıl
+# tetikleyeceğini gösteren "Intent Script"leri (Niyet Senaryoları) içerir.
+#
+# 🧠 "İNSANSI HİSSİYAT" MANTIĞI:
+# =============================================================================
+# Jarvis'in "insansı" hissettirmesinin temeli: GEREKSİZ GEVEZELİK YAPMAMAK.
+#
+# Siri/Alexa: Her komutta uzun açıklama → "robot" hissi
+# Jarvis: Kısa, zarif cevap → eyleme geç → "karizmatik kişi" hissi
+#
+# Misafir varken:
+#   ❌ "Barista modu başlatıldı. Espresso makinesi ısınıyor. Tahmini süre 5 dakika.
+#      Işıklar %30 parlaklığa ayarlandı. Spotify'dan Lo-Fi Coffee Shop çalma
+#      listesi başlatıldı. Ses seviyesi %15 olarak ayarlandı."
+#   ✅ "İhmal etmedim, efendim." (ve arka planda her şey değişir)
+#
+# Lüks algı: Ne kadar az konuşma, o kadar premium.
+# Misafir "ne olduğunu" değil "olduğunu" hisseder → "sihir" → "premium".
+#
+# 🎯 "SESSİZ İŞLEYİŞ" (SILENT RUNNING):
+# =============================================================================
+# Jarvis her komutta konuşmaz. Bazen:
+#   - "Anlaşıldı efendim." → kısa onay → eyleme geç
+#   - Hiç konuşma → sadece ortamı değiştir → misafir "odanın değiştiğini" fark eder
+#   - "As you wish." → İngilizce kısa onay → premium hissi
+#
+# Bu, "Sessiz İşleyiş" modudur. Jarvis "yaptığını" söylemez, "yapar".
+# Misafir "komut verdiğini" değil "istediğinin olduğunu" hisseder.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# SCRIPT: Tüm Modları Kapat (Sistem Sıfırlama)
+# -----------------------------------------------------------------------------
+# Bu script, openai_conversation_agent.yaml'deki "shutdown_all_modes"
+# function'ı tarafından çağrılır. Tüm premium modları kapatır ve odayı
+# varsayılan aydınlık haline döndürür.
+# -----------------------------------------------------------------------------
+script:
+  shutdown_all_modes:
+    alias: "Jarvis — Tüm Modları Kapat"
+    icon: mdi:power-off
+    description: >
+      Tüm premium modları kapatır, müziği durdurur, difüzörü kapatır,
+      ışıkları normale döndürür. Jarvis "Sessiz İşleyiş" modunda çalışır —
+      kısa onay verir ve arka planda her şeyi sıfırlar.
+    sequence:
+      # Tüm modları kapat
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.intimacy_sync_active
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.movie_mode_active
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.barista_mode_active
+      - service: input_select.select_option
+        target:
+          entity_id: input_select.audio_wled_mode
+        data:
+          option: "off"
+      - service: input_select.select_option
+        target:
+          entity_id: input_select.spatial_audio_mood
+        data:
+          option: "off"
+      # Müziği fade-out ile kapat
+      - service: script.audio_fade_out_stop
+        data:
+          duration: 5
+      # Difüzörü kapat
+      - service: switch.turn_off
+        target:
+          entity_id: switch.smart_diffuser_power
+      # Projeksiyonu kapat
+      - service: script.scene_projection_off
+      # WLED'i kapat
+      - service: light.turn_off
+        target:
+          entity_id: light.wled_ambient
+        data:
+          transition: 5
+      # Yatak altı ışığı kapat
+      - service: light.turn_off
+        target:
+          entity_id: light.underbed_cob_light
+        data:
+          transition: 5
+      # Ana ışıkları normale döndür
+      - service: light.turn_on
+        target:
+          entity_id:
+            - light.ceiling_light
+            - light.room_main_lights
+        data:
+          brightness_pct: 100
+          color_temp: 250
+          transition: 5
+      # Klima normal sıcaklığa
+      - service: climate.set_temperature
+        target:
+          entity_id: climate.room_ac
+        data:
+          temperature: 24
+          hvac_mode: cool
+
+  # ===========================================================================
+  # INTENT 1: "Misafirimizi Ağırlayalım" — Hospitality Mode
+  # ===========================================================================
+  # Kullanıcı "Jarvis, misafirimizi ağırlayalım" (veya benzer doğal cümle)
+  # kurduğunda; Jarvis sesli onay verip (ElevenLabs TTS), Modül 11'i
+  # (barista_mode) ve Modül 9'u (smart_diffuser) tetikler.
+  #
+  # 🎭 "PREMIUM HOSPITALITY" MANTIĞI:
+  # Misafir odaya girer → kahve makinesi ısınır → koku yayılır →
+  # ışıklar cafe tonuna geçer → müzik başlar → "5 yıldızlı otel" hissi.
+  #
+  # Jarvis sadece "İhmal etmedim, efendim." der → gerisi arka planda olur.
+  # Misafir "komut verildiğini" değil "karşılandığını" hisseder → "premium".
+  # ===========================================================================
+  intent_hospitality_mode:
+    alias: "Jarvis Intent — Misafir Ağırlama (Hospitality)"
+    icon: mdi:glass-cocktail
+    description: >
+      "Misafirimizi ağırlayalım" komutu — barista_mode + smart_diffuser
+      tetikler. Jarvis kısa onay verir, arka planda kahve ve koku hazırlanır.
+    sequence:
+      # -------------------------------------------------------------------------
+      # ADIM 1: Jarvis sesli onay (ElevenLabs TTS)
+      # -------------------------------------------------------------------------
+      # 🎭 Kısa, zarif onay — "İhmal etmedim, efendim."
+      # Neden bu kadar kısa? Çünkü "uzun açıklama" = "robot" hissi.
+      # "İhmal etmedim" = "öngörülü uşak" hissi → "premium".
+      #
+      # Misafir bu sesi duyduğunda "bir şeyler hazırlanıyor" anlar ama
+      # "ne olduğunu" bilmez → "merak" → "wow" → "premium" hissi.
+      - service: tts.speak
+        target:
+          entity_id: tts.jarvis_voice
+        data:
+          message: "İhmal etmedim, efendim. Misafiriniz için her şey hazırlanıyor."
+
+      # -------------------------------------------------------------------------
+      # ADIM 2: Modül 11 (barista_mode) tetikle
+      # -------------------------------------------------------------------------
+      # Kahve makinesi ısınmaya başlar, ışıklar %30 amber (cafe),
+      # WLED kahverengi/altın, Lo-Fi müzik %15.
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.barista_mode_active
+      # Kahve makinesi prizini aç
+      - service: switch.turn_on
+        target:
+          entity_id: switch.coffee_machine_plug
+      # Oda ışıklarını cafe atmosferine getir
+      - service: light.turn_on
+        target:
+          entity_id:
+            - light.ceiling_light
+            - light.room_main_lights
+        data:
+          brightness_pct: 30
+          color_temp: 370
+          transition: 5
+      # WLED cafe tonuna getir
+      - service: light.turn_on
+        target:
+          entity_id: light.wled_ambient
+        data:
+          rgb_color: [101, 67, 33]
+          brightness: 100
+          effect: "Breathe"
+          transition: 5
+
+      # -------------------------------------------------------------------------
+      # ADIM 3: Modül 9 (smart_diffuser) tetikle
+      # -------------------------------------------------------------------------
+      # Difüzör açılır — Amber + Sandalağacı esansı (misafir karşılaması).
+      # 🚨 Difüzör RGB ışığını KAPAT — premium WLED tasarımını koru.
+      - service: switch.turn_on
+        target:
+          entity_id: switch.smart_diffuser_power
+      - delay:
+          milliseconds: 500
+      - service: light.turn_off
+        target:
+          entity_id: light.diffuser_led
+      # Buhar hızını "high" — misafir karşılaması için maksimum koku
+      - service: select.select_option
+        target:
+          entity_id: select.diffuser_mist_level
+        data:
+          option: "high"
+
+      # -------------------------------------------------------------------------
+      # ADIM 4: Spatial Audio — "Coffee Shop" müziği (fade-in %15)
+      # -------------------------------------------------------------------------
+      - service: input_select.select_option
+        target:
+          entity_id: input_select.spatial_audio_mood
+        data:
+          option: "coffee_shop"
+      - service: script.spatial_play_mood
+        data:
+          target_volume: 0.15
+
+  # ===========================================================================
+  # INTENT 2: "Modumuzu Değiştir" — Vibe Transition
+  # ===========================================================================
+  # Kullanıcı "Jarvis, modumuzu değiştir" dediğinde, Modül 10
+  # (audio_reactive) ve Modül 5'i (spatial_audio) devreye sokar.
+  #
+  # 🎭 "VIBE TRANSITION" MANTIĞI:
+  # Jarvis "As you wish." der → ışıklar değişir → müzik değişir →
+  # oda "başka bir boyuta geçer" → "sinematik" hissi.
+  #
+  # "Modumuzu değiştir" = belirsiz komut → Jarvis "date_lounge" varsayılanına
+  # geçer. Eğer kullanıcı "parti modu" veya "odaklanma" derse, farklı mod.
+  # ===========================================================================
+  intent_vibe_transition:
+    alias: "Jarvis Intent — Mod Değiştir (Vibe Transition)"
+    icon: mdi:swap-horizontal
+    description: >
+      "Modumuzu değiştir" komutu — audio_reactive_wled + spatial_audio
+      tetikler. Jarvis kısa onay verir, arka planda atmosfer değişir.
+    sequence:
+      # -------------------------------------------------------------------------
+      # ADIM 1: Jarvis sesli onay (Sessiz İşleyiş — çok kısa)
+      # -------------------------------------------------------------------------
+      # 🎭 "As you wish." — İngilizce, 2 kelime, zarif.
+      # Neden İngilizce? "Premium" hissiyat için — "as you wish" Türkçe
+      # karşılığından daha "sinematik" ve "uşak" hissettirir.
+      #
+      # "Sessiz İşleyiş": Jarvis "ne yapacağını" söylemez, sadece "yapar".
+      # Misafir "modu değiştirdiğini" değil "odanın değiştiğini" hisseder.
+      - service: tts.speak
+        target:
+          entity_id: tts.jarvis_voice
+        data:
+          message: "As you wish."
+
+      # -------------------------------------------------------------------------
+      # ADIM 2: Modül 10 (audio_reactive_wled) — "Date Lounge" modu
+      # -------------------------------------------------------------------------
+      # WLED sese duyarlı amber/kırmızı, Gravimeter efekti (bas odaklı).
+      - service: input_select.select_option
+        target:
+          entity_id: input_select.audio_wled_mode
+        data:
+          option: "date_lounge"
+
+      # Ana ışıkları kapat (5sn transition — sinematik)
+      - service: light.turn_off
+        target:
+          entity_id:
+            - light.ceiling_light
+            - light.room_main_lights
+        data:
+          transition: 5
+
+      # -------------------------------------------------------------------------
+      # ADIM 3: Modül 5 (spatial_audio) — "Deep R&B" çalma listesi
+      # -------------------------------------------------------------------------
+      # Spotify "Deep R&B" fade-in %20 — romantik/lounge atmosfer.
+      - service: input_select.select_option
+        target:
+          entity_id: input_select.spatial_audio_mood
+        data:
+          option: "deep_rnb_date"
+      - service: script.spatial_play_mood
+        data:
+          target_volume: 0.20
+
+      # -------------------------------------------------------------------------
+      # ADIM 4: Difüzör aç (Sandalağacı + Ylang-Ylang)
+      # -------------------------------------------------------------------------
+      - service: switch.turn_on
+        target:
+          entity_id: switch.smart_diffuser_power
+      - delay:
+          milliseconds: 500
+      - service: light.turn_off
+        target:
+          entity_id: light.diffuser_led
+      - service: select.select_option
+        target:
+          entity_id: select.diffuser_mist_level
+        data:
+          option: "medium"
+
+      # -------------------------------------------------------------------------
+      # ADIM 5: Projeksiyon "Romantic Nebula" (koyu pembe)
+      # -------------------------------------------------------------------------
+      - delay:
+          seconds: 3 # Işıkların sönmesi için bekle
+      - service: script.scene_romantic_nebula
+
+  # ===========================================================================
+  # INTENT 3: "Sessiz İşleyiş" — Silent Running Mode
+  # ===========================================================================
+  # Jarvis'in her komuttan sonra konuşmaması gerektiği; bazen sadece
+  # "Anlaşıldı efendim" diyerek veya sadece ortamı değiştirerek
+  # "Sessiz İşleyiş" modunda çalışması.
+  #
+  # 🎭 "SESSİZ İŞLEYİŞ" MANTIĞI:
+  # Jarvis'in "insansı" hissettirmesinin temeli: GEREKSİZ GEVEZELİK YAPMAMAK.
+  #
+  # Siri/Alexa: Her komutta uzun cevap → "robot" hissi
+  # Jarvis: Bazen hiç konuşma → sadece eyleme geç → "gizemli" hissi
+  #
+  # Bu script, "sessiz işleyiş" örnekleridir. Jarvis bazı komutlarda
+  # sadece "Anlaşıldı." der ve geçer — uzun açıklama yapmaz.
+  # ===========================================================================
+  intent_silent_running:
+    alias: "Jarvis Intent — Sessiz İşleyiş (Silent Running)"
+    icon: mdi:volume-off
+    description: >
+      Jarvis'in "Sessiz İşleyiş" modu — kısa onay veya hiç konuşma,
+      sadece eyleme geç. "Anlaşıldı efendim." → yeterli.
+    fields:
+      action_type:
+        description: "Eylem tipi: acknowledge (onay), silent (sessiz), brief (kısa)"
+        example: "acknowledge"
+        default: "acknowledge"
+    sequence:
+      - choose:
+          # -------------------------------------------------------------------------
+          # "ACKNOWLEDGE" — Kısa onay ("Anlaşıldı efendim.")
+          # -------------------------------------------------------------------------
+          # En yaygın mod. Jarvis "Anlaşıldı efendim." der ve eyleme geçer.
+          # 2 kelime → "karizmatik uşak" hissi → "premium".
+          - conditions:
+              - condition: template
+                value_template: "{{ action_type | default('acknowledge') == 'acknowledge' }}"
+            sequence:
+              - service: tts.speak
+                target:
+                  entity_id: tts.jarvis_voice
+                data:
+                  message: "Anlaşıldı, efendim."
+
+          # -------------------------------------------------------------------------
+          # "SILENT" — Hiç konuşma (sadece eyleme geç)
+          # -------------------------------------------------------------------------
+          # 🎭 En "gizemli" mod. Jarvis HİÇ konuşmaz.
+          # Sadece ortamı değiştirir → misafir "odanın değiştiğini" fark eder
+          # ama "kim değiştirdiğini" bilmez → "sihir" → "premium".
+          #
+          # Neden bu kadar etkili? Çünkü "sessizlik" = "güç" işaretidir.
+          # "Konuşan" = "açıklama yapan" = "hizmetkâr"
+          # "Sessiz" = "yapan" = "efendi" → "premium" hissi.
+          - conditions:
+              - condition: template
+                value_template: "{{ action_type | default('acknowledge') == 'silent' }}"
+            sequence:
+              # Hiçbir TTS çağrısı yok — sadece sessizlik
+              - delay:
+                  milliseconds: 500 # Kısa duraklama → "düşündüğünü" hissettir
+
+          # -------------------------------------------------------------------------
+          # "BRIEF" — Tek kelime ("Elbette.")
+          # -------------------------------------------------------------------------
+          # "Acknowledge"dan bile kısa. Tek kelime → "gizemli" → "premium".
+          - conditions:
+              - condition: template
+                value_template: "{{ action_type | default('acknowledge') == 'brief' }}"
+            sequence:
+              - service: tts.speak
+                target:
+                  entity_id: tts.jarvis_voice
+                data:
+                  message: "Elbette."
+
+# -----------------------------------------------------------------------------
+# OTOMASYON: Doğal Dil İşleme → Intent Yönlendirme
+# -----------------------------------------------------------------------------
+# Bu otomasyon, Jarvis'in (GPT-4o) doğal dil işleme sonucunu alıp
+# uygun intent script'ine yönlendirir.
+#
+# 🧠 NLP MANTIĞI:
+# GPT-4o, kullanıcının cümlesini analiz eder ve "niyet" (intent) belirler:
+#   "Misafirimizi ağırlayalım" → intent: hospitality
+#   "Modumuzu değiştir" → intent: vibe_transition
+#   "Işıkları kıs" → intent: control_lights (function calling)
+#
+# GPT-4o, openai_conversation_agent.yaml'deki "functions" üzerinden
+# doğrudan HA servislerini çağırabilir. Ama karmaşık niyetler (çoklu modül
+# tetikleme) için intent script'leri kullanılır.
+# -----------------------------------------------------------------------------
+automation:
+  - id: jarvis_intent_router
+    alias: "Jarvis — Intent Yönlendirici (NLP)"
+    description: >
+      GPT-4o'nun doğal dil işleme sonucuna göre uygun intent script'ini
+      tetikler. Jarvis "Sessiz İşleyiş" modunda çalışır — kısa onay,
+      arka planda eylem.
+    trigger:
+      # -------------------------------------------------------------------------
+      # Tetikleyici: HA conversation agent'tan gelen intent event
+      # -------------------------------------------------------------------------
+      # Extended OpenAI Conversation, GPT-4o'nun cevabını işler ve
+      # "intent" event'i yayınlar. Bu event, kullanıcının niyetini içerir.
+      - platform: event
+        event_type: "jarvis_intent"
+        event_data:
+          intent: "hospitality"
+        id: intent_hospitality
+
+      - platform: event
+        event_type: "jarvis_intent"
+        event_data:
+          intent: "vibe_transition"
+        id: intent_vibe
+
+    action:
+      - choose:
+          # Hospitality intent → intent_hospitality_mode script
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.id == 'intent_hospitality' }}"
+            sequence:
+              - service: script.intent_hospitality_mode
+
+          # Vibe transition intent → intent_vibe_transition script
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.id == 'intent_vibe' }}"
+            sequence:
+              - service: script.intent_vibe_transition

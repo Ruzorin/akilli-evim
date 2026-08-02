@@ -1,0 +1,16 @@
+# morning_after - Ertesi Sabah Otomasyonu
+# Akıllı perde + hafif müzik tetikleyicileri
+
+schedule:
+  wake_time: "07:30"
+  weekend_wake_time: "09:00"
+
+curtains:
+  entity_id: "cover.smart_curtain"
+  open_duration_sec: 45
+
+music:
+  source: "spatial_audio"
+  preset: "morning"
+  volume: 0.3
+  ramp_minutes: 10

@@ -1,0 +1,278 @@
+# =============================================================================
+# invisible_remote — SmartIR Klima + TV/Medya IR Yapılandırması
+# =============================================================================
+# Bu dosya iki ana bölüm içerir:
+#
+#   BÖLÜM 1: SmartIR — Klima (AC) termostat olarak HA'a entegre edilir
+#   BÖLÜM 2: TV/Monitör — Broadlink ile öğrenilen IR kodları script olarak
+#
+# 🎯 SMARTIR NEDİR?
+# =============================================================================
+# SmartIR, Home Assistant için bir custom component'tir (HACS üzerinden kurulur).
+# Klimayı bir "climate" entity'si olarak HA'a tanıtır — yani klima artık
+# sadece aç/kapa değil; sıcaklık, fan hızı, mod (cool/heat/fan/dry) ayarlanabilir
+# bir termostat gibi davranır.
+#
+# SmartIR, 100+ klima markası için hazır IR kod veritabanı içerir:
+#   - Daikin, Mitsubishi, LG, Samsung, Gree, Midea, Hisense, vb.
+#   - Marka/model seçilerek kodlar otomatik yüklenir
+#   - Manuel IR kod öğrenmeye gerek yok (klima için)
+#
+# Kurulum: HACS → Integrations → SmartIR → Install
+#          custom_components/smartir/ klasörüne yüklenir
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# BÖLÜM 1: SMARTIR — KLİMA (AC) TERMOSTAT ENTEGRASYONU
+# -----------------------------------------------------------------------------
+# Bu blok configuration.yaml'a veya packages/ klasörüne konulur.
+# SmartIR, Broadlink RM4 Mini üzerinden klimaya IR komutları gönderir.
+#
+# 🎭 "STEALTH" ÇALIŞMA MANTIĞI:
+# =============================================================================
+# Klima açılışı, misafirin dikkatini dağıtmadan ARKA PLANDA çalışır.
+# Misafir odaya girer → difüzör açılır → WLED yanar → müzik başlar →
+# VE sessizce, fark edilmeden klima 20°C'ye ayarlanır.
+#
+# Misafir klimanın açıldığını "duymaz" veya "görmez" — sadece bir süre
+# sonra odanın serinlediğini "hisseder". Bu, "sihir" hissidir:
+# "Oda kendiliğinden serinledi" — teknoloji görünmez.
+# =============================================================================
+
+# SmartIR konfigürasyonu
+smartir:
+
+# Klima (AC) climate entity tanımı
+climate:
+  - platform: smartir
+    name: "Room AC" # HA'da görünen isim
+    unique_id: "room_ac"
+    device_code:
+      1460 # SmartIR cihaz kodu (klima marka/model)
+      # Bu kod, SmartIR veritabanında klimanızın
+      # marka/modeline karşılık gelir.
+      # Kodu bulmak için:
+      #   https://github.com/smartHomeHub/SmartIR
+      #   → codes/climate/ klasöründe marka/model arayın
+      # Örnek: 1460 = bazı Daikin modelleri
+      # Kendi klimanızın kodunu buraya yazın.
+
+    controller_data:
+      192.168.1.102 # Broadlink RM4 Mini'nin IP adresi
+      # (HA Broadlink entegrasyonundaki IP ile aynı)
+
+    temperature_sensor:
+      sensor.room_temperature # Oda sıcaklık sensörü
+      # (Zigbee sıcaklık sensörü veya
+      #  HA'da başka bir sıcaklık kaynağı)
+
+    humidity_sensor: sensor.room_humidity # Oda nem sensörü (opsiyonel)
+
+    power_sensor:
+      binary_sensor.ac_power_plug # Klimanın prizden güç tüketimi
+      # (Akıllı priz ile klimanın
+      #  gerçekten açık olup olmadığını
+      #  doğrular — IR'de geri besleme yok)
+
+    # SmartIR, klimaya IR komutu gönderir ama klimanın gerçekten açılıp
+    # açılmadığını BİLEMEZ (IR tek yönlüdür). power_sensor, akıllı prizden
+    # güç tüketimini okuyarak klimanın durumunu doğrular.
+    # Eğer güç > 50W ise klima açıktır; < 5W ise kapalıdır.
+
+# -----------------------------------------------------------------------------
+# SmartIR Climate Entity Özellikleri
+# -----------------------------------------------------------------------------
+# Kurulumdan sonra HA'da şu entity oluşur:
+#
+#   climate.room_ac
+#
+# Bu entity ile yapılabilecekler:
+#   - hvac_mode: cool / heat / fan_only / dry / auto / off
+#   - temperature: 16°C - 30°C
+#   - fan_mode: low / medium / high / auto / quiet
+#   - swing_mode: on / off
+#
+# Otomasyonlarda kullanım:
+#   - service: climate.set_temperature
+#     target: climate.room_ac
+#     data:
+#       temperature: 20
+#       hvac_mode: cool
+#
+#   - service: climate.set_fan_mode
+#     target: climate.room_ac
+#     data:
+#       fan_mode: quiet
+# -----------------------------------------------------------------------------
+
+# =============================================================================
+# BÖLÜM 2: TV/MONİTÖR — BROADLINK IR KOD SCRIPT'LERİ
+# =============================================================================
+# TV veya monitör için IR kodları Broadlink ile manuel öğrenilir ve
+# HA script'leri olarak kaydedilir. SmartIR klima için hazır veritabanı
+# varken, TV'ler için genellikle manuel kod öğrenme gerekir.
+#
+# IR KOD ÖĞRENME:
+#   1. Broadlink app → "Learn" moduna geç
+#   2. Orijinal TV kumandasından "Power" tuşuna bas
+#   3. Broadlink kodu kaydeder → HA'a "broadlink_remote.learned_code_1" olarak gelir
+#   4. Bu kodu aşağıdaki script'lere kopyala
+#
+# Aşağıdaki script'lerde "payload" alanına öğrenilen IR kodları gelecek.
+# =============================================================================
+
+script:
+  # ===========================================================================
+  # SCRIPT: TV Aç/Kapa (Power)
+  # ===========================================================================
+  tv_power_toggle:
+    alias: "TV — Power Toggle"
+    icon: mdi:power
+    sequence:
+      # Broadlink remote üzerinden IR kodu gönder
+      - service: remote.send_command
+        target:
+          entity_id: remote.broadlink_rm4_mini
+        data:
+          # Öğrenilen IR kodu (Broadlink app'ten alınan hex kod)
+          # Bu kod, TV'nin Power tuşuna karşılık gelir
+          command:
+            - "JgBGAU0RDB..." # ← Buraya gerçek IR hex kodunu yapıştır
+          # Tek komut, tek seferde gönder
+          num_repeats: 1
+          delay_secs: 0
+          hold_secs: 0
+
+  # ===========================================================================
+  # SCRIPT: TV Input HDMI 1
+  # ===========================================================================
+  # TV'yi açtıktan sonra HDMI girişini seçmek için kullanılır.
+  # Örn: Film modunda TV açılır → 3 saniye sonra HDMI 1 seçilir →
+  # Apple TV / Chromecast / laptop ekranı TV'de görünür.
+  tv_input_hdmi_1:
+    alias: "TV — Input HDMI 1"
+    icon: mdi:video-input-hdmi
+    sequence:
+      - service: remote.send_command
+        target:
+          entity_id: remote.broadlink_rm4_mini
+        data:
+          command:
+            - "JgBGAU0RDB..." # ← HDMI 1 IR hex kodu
+          num_repeats: 1
+          delay_secs: 0
+          hold_secs: 0
+
+  # ===========================================================================
+  # SCRIPT: TV Input HDMI 2
+  # ===========================================================================
+  tv_input_hdmi_2:
+    alias: "TV — Input HDMI 2"
+    icon: mdi:video-input-hdmi
+    sequence:
+      - service: remote.send_command
+        target:
+          entity_id: remote.broadlink_rm4_mini
+        data:
+          command:
+            - "JgBGAU0RDB..." # ← HDMI 2 IR hex kodu
+          num_repeats: 1
+          delay_secs: 0
+          hold_secs: 0
+
+  # ===========================================================================
+  # SCRIPT: TV Ses Aç
+  # ===========================================================================
+  tv_volume_up:
+    alias: "TV — Volume Up"
+    icon: mdi:volume-plus
+    sequence:
+      - service: remote.send_command
+        target:
+          entity_id: remote.broadlink_rm4_mini
+        data:
+          command:
+            - "JgBGAU0RDB..." # ← Volume Up IR hex kodu
+          num_repeats: 1
+          delay_secs: 0.1
+          hold_secs: 0
+
+  # ===========================================================================
+  # SCRIPT: TV Ses Kıs
+  # ===========================================================================
+  tv_volume_down:
+    alias: "TV — Volume Down"
+    icon: mdi:volume-minus
+    sequence:
+      - service: remote.send_command
+        target:
+          entity_id: remote.broadlink_rm4_mini
+        data:
+          command:
+            - "JgBGAU0RDB..." # ← Volume Down IR hex kodu
+          num_repeats: 1
+          delay_secs: 0.1
+          hold_secs: 0
+
+  # ===========================================================================
+  # SCRIPT: TV Sessize Al (Mute)
+  # ===========================================================================
+  tv_mute_toggle:
+    alias: "TV — Mute Toggle"
+    icon: mdi:volume-mute
+    sequence:
+      - service: remote.send_command
+        target:
+          entity_id: remote.broadlink_rm4_mini
+        data:
+          command:
+            - "JgBGAU0RDB..." # ← Mute IR hex kodu
+          num_repeats: 1
+          delay_secs: 0
+          hold_secs: 0
+
+  # ===========================================================================
+  # SCRIPT: TV Aç + HDMI 1'e Geç (Kompozit Script)
+  # ===========================================================================
+  # Bu script, TV'yi açar ve 3 saniye sonra HDMI 1'e geçer.
+  # "Netflix & Chill" veya "Film Modu" otomasyonlarında kullanılır.
+  #
+  # 🎭 STEALTH MANTIĞI:
+  # TV açılır → 3 saniye bekle (TV'nin açılması için) → HDMI 1'e geç.
+  # Bu 3 saniyelik bekleme, TV'nin tam açılmasını sağlar; çok hızlı gönderilen
+  # HDMI komutu TV tarafından yakalanamaz. Misafir, TV'nin "kendiliğinden"
+  # açılıp doğru girişe geçtiğini görür — kumanda yok, sadece "sihir".
+  tv_power_on_hdmi1:
+    alias: "TV — Power On + HDMI 1"
+    icon: mdi:television
+    sequence:
+      # Adım 1: TV'yi aç
+      - service: script.tv_power_toggle
+
+      # Adım 2: 3 saniye bekle (TV'nin tam açılması için)
+      # Bu bekleme KRİTİKTİR — TV açılırken IR komutları işlenmez.
+      # 3 saniye, çoğu TV için güvenli bir süredir.
+      - delay:
+          seconds: 3
+
+      # Adım 3: HDMI 1'e geç
+      - service: script.tv_input_hdmi_1
+
+      # Adım 4: 1 saniye bekle ve sesi orta seviyeye ayarla
+      - delay:
+          seconds: 1
+
+      - service: script.tv_volume_up
+      - delay:
+          milliseconds: 200
+      - service: script.tv_volume_up
+      - delay:
+          milliseconds: 200
+      - service: script.tv_volume_up
+      - delay:
+          milliseconds: 200
+      - service: script.tv_volume_up
+      - delay:
+          milliseconds: 200
+      - service: script.tv_volume_up
+      # 5 kez volume up → orta seviye (TV'ye göre değişir)

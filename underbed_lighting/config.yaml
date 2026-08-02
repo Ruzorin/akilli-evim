@@ -1,0 +1,17 @@
+# underbed_lighting - Yatak Altı Akıllı Aydınlatma
+# LD2410 varlık sensörü entegreli ESPHome cihazı
+
+ld2410:
+  pin_rx: 4
+  pin_tx: 5
+  sensitivity:
+    moving: 50
+    still: 30
+
+light:
+  led_pin: 6
+  led_count: 60
+  effects:
+    - "presence_glow"
+    - "night_guide"
+    - "off"

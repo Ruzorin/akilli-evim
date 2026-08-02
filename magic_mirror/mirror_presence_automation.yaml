@@ -1,0 +1,262 @@
+# =============================================================================
+# magic_mirror — Home Assistant Varlık Algılama Otomasyonları
+# =============================================================================
+# Bu dosya 3 senaryo için otomasyon tanımlar:
+#
+#   Senaryo 1 (Yaklaşma Algılama): Aynaya biri yaklaştığında ekranı aç
+#   Senaryo 2 (Karşılama/Etkileme): Intimacy modunda sinematik mesaj göster
+#   Senaryo 3 (Kapanış): Uzaklaşıldığında 1 dk sonra ekranı kapat
+#
+# 🧘 "CALM TECHNOLOGY" MANTIĞI:
+# =============================================================================
+# Ayna, kullanılmadığında tamamen görünmezdir — sadece bir ayna.
+# Sadece ihtiyaç duyulduğunda "canlanır" — kişi yaklaştığında.
+#
+# Bu, "Calm Technology" prensibinin özüdür:
+#   - Teknoloji "orada" ama "dikkat çekmiyor"
+#   - Sadece "çağrıldığında" görünür
+#   - "Çağrı" = fiziksel yaklaşma (radar/PIR)
+#
+# 🚨 AKILLI PRİZ MANTIĞI:
+# =============================================================================
+# LCD panelin gücü akıllı priz ile kesilir/açılır.
+# Neden? LCD siyah ekran gösterse bile backlight çalışır → ayna illüzyonu bozulur.
+# Güç kesik → backlight kapalı → %100 normal ayna.
+# Güç açık → LCD boot → MagicMirror² arayüzü → "canlanan ayna".
+#
+# Boot süresi ~10-15 saniye. Bu gecikme "teknoloji açılıyor" değil,
+# "ayna yavaşça uyanıyor" hissi yaratır — sinematik.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# INPUT BOOLEAN — Ayna modu durumu
+# -----------------------------------------------------------------------------
+# Intimacy/Date modunda ayna "sürekli açık" kalabilir (manuel mod).
+input_boolean:
+  magic_mirror_manual_on:
+    name: "Magic Mirror Manual On"
+    icon: mdi:mirror
+    initial: off
+
+# -----------------------------------------------------------------------------
+# OTOMASYONLAR
+# -----------------------------------------------------------------------------
+automation:
+  # ===========================================================================
+  # SENARYO 1: Yaklaşma Algılama — Aynaya Yaklaşıldığında Ekranı Aç
+  # ===========================================================================
+  - id: mirror_presence_on
+    alias: "Magic Mirror — Yaklaşma Algılama (Ekran Aç)"
+    description: >
+      Odadaki radar sensörü (veya aynanın çerçevesine gizlenmiş minik bir PIR
+      sensör), aynanın 1 metre yakınına biri geldiğini algıladığında, monitörün
+      bağlı olduğu akıllı prizi anında açar.
+
+      🧘 CALM TECHNOLOGY: Ayna "canlanır" — ama sessizce.
+      Ekran açılır, MagicMirror² boot eder (~10-15 sn), yazılar yavaşça belirir.
+      "Pat diye" değil, "yavaşça uyanıyor" hissi → sinematik.
+
+    trigger:
+      # -------------------------------------------------------------------------
+      # Tetikleyici 1: Ayna yakınındaki PIR sensör hareket algıladığında
+      # -------------------------------------------------------------------------
+      # Ayna çerçevesine gizlenmiş mini PIR sensör (HC-SR501)
+      # 1 metre menzilli, ayna önünde hareket algılar
+      - platform: state
+        entity_id: binary_sensor.mirror_pir
+        to: "on"
+        id: mirror_pir_on
+
+      # -------------------------------------------------------------------------
+      # Tetikleyici 2: LD2410 radar — ayna bölgesinde hareket
+      # -------------------------------------------------------------------------
+      # Eğer LD2410 aynaya yakın monte edildiyse, "ayak algılayıcı" yerine
+      # ayna bölgesi için ayrı bir Gate filtresi kullanılabilir.
+      # Bu alternatif tetikleyici — PIR yoksa radar kullan.
+      - platform: state
+        entity_id: binary_sensor.mirror_presence
+        to: "on"
+        id: mirror_radar_on
+
+    condition:
+      # Koşul 1: Akıllı priz şu an kapalı (ekran kapalı)
+      - condition: state
+        entity_id: switch.magic_mirror_plug
+        state: "off"
+
+      # Koşul 2: Manuel mod kapalı (manuel modda zaten açık)
+      - condition: state
+        entity_id: input_boolean.magic_mirror_manual_on
+        state: "off"
+
+    action:
+      # -------------------------------------------------------------------------
+      # AKSİYON: Akıllı prizi aç → LCD boot → MagicMirror² yüklenir
+      # -------------------------------------------------------------------------
+      # Priz açıldığında LCD güç alır, backlight yanar, Raspberry Pi boot eder.
+      # ~10-15 saniye sonra MagicMirror² arayüzü görünür.
+      #
+      # 🧘 Bu 10-15 saniyelik gecikme "teknoloji açılıyor" değil,
+      # "ayna yavaşça uyanıyor" hissi yaratır. Misafir aynaya yaklaşır,
+      # birkaç saniye sonra yazılar "belirmeye" başlar → sinematik.
+      - service: switch.turn_on
+        target:
+          entity_id: switch.magic_mirror_plug
+
+  # ===========================================================================
+  # SENARYO 2: Karşılama / Etkileme — Intimacy Modunda Sinematik Mesaj
+  # ===========================================================================
+  - id: mirror_intimacy_message
+    alias: "Magic Mirror — Intimacy Karşılama Mesajı"
+    description: >
+      Modül 12 (intimacy_sync_mode) aktif edildiğinde, aynanın ekranına MQTT
+      üzerinden özel bir mesaj göndererek aynanın ortasında 10 saniyeliğine
+      italik fontla "Atmosphere set to Deep Flow..." gibi sinematik bir metin
+      çıkartır.
+
+      🧘 CALM TECHNOLOGY: Mesaj "bildirim" değil "atmosfer" hissi yaratır.
+      İtalik font, 10 saniye görünüp kaybolur → "geçici, akıcı" → sinematik.
+      Misafir aynaya baktığında "bir mesaj" değil "bir his" görür.
+
+    trigger:
+      # -------------------------------------------------------------------------
+      # Tetikleyici 1: Intimacy Sync Mode aktif olduğunda
+      # -------------------------------------------------------------------------
+      - platform: state
+        entity_id: input_boolean.intimacy_sync_active
+        to: "on"
+        id: intimacy_on
+
+      # -------------------------------------------------------------------------
+      # Tetikleyici 2: Audio WLED "Date Lounge" moduna geçtiğinde
+      # -------------------------------------------------------------------------
+      - platform: state
+        entity_id: input_select.audio_wled_mode
+        to: "date_lounge"
+        id: date_lounge_on
+
+      # -------------------------------------------------------------------------
+      # Tetikleyici 3: Barista mode aktif olduğunda
+      # -------------------------------------------------------------------------
+      - platform: state
+        entity_id: input_boolean.barista_mode_active
+        to: "on"
+        id: barista_on
+
+    condition:
+      # Ayna ekranı açık olmalı (mesaj görünsün diye)
+      # Eğer ekran kapalıysa, önce aç
+      - condition: template
+        value_template: "{{ is_state('switch.magic_mirror_plug', 'on') or is_state('input_boolean.magic_mirror_manual_on', 'on') }}"
+
+    action:
+      # -------------------------------------------------------------------------
+      # AKSİYON: MQTT üzerinden aynaya sinematik mesaj gönder
+      # -------------------------------------------------------------------------
+      # MagicMirror²'deki MMM-MQTT modülü "jarvis/mirror/message" topic'ini
+      # dinler. Bu topic'e JSON formatında mesaj publish ederiz:
+      #   {"text": "Atmosphere set to Deep Flow...", "duration": 10}
+      #
+      # Mesaj aynanın ortasında italik fontla 10 saniye görünür, sonra kaybolur.
+      #
+      # 🧘 Neden MQTT? Çünkü MagicMirror² bir web uygulaması — HA doğrudan
+      # ekranı kontrol edemez. MQTT, HA → MagicMirror² köprüsüdür.
+      - choose:
+          # Intimacy modu → "Deep Flow" mesajı
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.id == 'intimacy_on' }}"
+            sequence:
+              - service: mqtt.publish
+                data:
+                  topic: "jarvis/mirror/message"
+                  payload: >-
+                    {"text": "Atmosphere set to Deep Flow...", "duration": 10}
+
+          # Date Lounge modu → "Lounge Vibe" mesajı
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.id == 'date_lounge_on' }}"
+            sequence:
+              - service: mqtt.publish
+                data:
+                  topic: "jarvis/mirror/message"
+                  payload: >-
+                    {"text": "Lounge Vibe activated. Relax.", "duration": 10}
+
+          # Barista modu → "Barista Mode" mesajı
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.id == 'barista_on' }}"
+            sequence:
+              - service: mqtt.publish
+                data:
+                  topic: "jarvis/mirror/message"
+                  payload: >-
+                    {"text": "Barista Mode. Your espresso is brewing...", "duration": 10}
+
+  # ===========================================================================
+  # SENARYO 3: Kapanış — Uzaklaşıldığında Ekranı Kapat
+  # ===========================================================================
+  - id: mirror_presence_off
+    alias: "Magic Mirror — Kapanış (Ekran Kapat)"
+    description: >
+      Aynanın önünden uzaklaşıldığında 1 dakika sonra akıllı prizi kapatarak
+      (gücü keserek) ekranı tamamen 100% normal bir aynaya dönüştürür.
+
+      🧘 CALM TECHNOLOGY: 1 dakika bekleme "grace period".
+      Misafir aynadan uzaklaşıp geri dönebilir (bir şey unuttu).
+      1 dakika sonra ekran kapanır → ayna %100 normale döner.
+      Güç kesildiğinde backlight söner → ayna illüzyonu TAMAM.
+
+    trigger:
+      # -------------------------------------------------------------------------
+      # Tetikleyici: Ayna yakınındaki sensör OFF + 1 dakika bekle
+      # -------------------------------------------------------------------------
+      - platform: state
+        entity_id: binary_sensor.mirror_pir
+        to: "off"
+        for:
+          minutes: 1
+        id: mirror_pir_off
+
+      # Alternatif: Radar sensör
+      - platform: state
+        entity_id: binary_sensor.mirror_presence
+        to: "off"
+        for:
+          minutes: 1
+        id: mirror_radar_off
+
+    condition:
+      # Koşul 1: Akıllı priz açık (ekran açık)
+      - condition: state
+        entity_id: switch.magic_mirror_plug
+        state: "on"
+
+      # Koşul 2: Manuel mod kapalı (manuel modda kapatma)
+      - condition: state
+        entity_id: input_boolean.magic_mirror_manual_on
+        state: "off"
+
+      # Koşul 3: Intimacy/Date modu kapalı
+      # (Bu modlarda ayna manuel açık kalsın)
+      - condition: state
+        entity_id: input_boolean.intimacy_sync_active
+        state: "off"
+
+    action:
+      # -------------------------------------------------------------------------
+      # AKSİYON: Akıllı prizi kapat → LCD gücü kes → backlight söner → %100 ayna
+      # -------------------------------------------------------------------------
+      # Güç kesildiğinde:
+      #   1. LCD backlight aniden söner → ekran siyah
+      #   2. Two-way mirror akrilik ışık geçirmez → tam ayna
+      #   3. Raspberry Pi kapanır (güç kesildi)
+      #
+      # 🧘 Bu geçiş "ani" olabilir (backlight söner) ama 1 dakikalık bekleme
+      # bu ani geçişi "doğal" hissettirir: misafir zaten uzaklaşmıştır,
+      # aynanın arkasında ne olduğu ilgilenmiyordur → "ayna ayna olarak kaldı".
+      - service: switch.turn_off
+        target:
+          entity_id: switch.magic_mirror_plug

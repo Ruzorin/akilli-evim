@@ -1,0 +1,296 @@
+# =============================================================================
+# life_os_superapp — SuperApp Lovelace Dashboard (Modern Arayüz)
+# =============================================================================
+# Home Assistant Lovelace için şık, modern bir dashboard konfigürasyonu.
+# Mushroom Cards + Bubble Card ile Apple/Tesla tarzı minimalist UI.
+#
+# 🎨 UX (Kullanıcı Deneyimi) MANTIK:
+# =============================================================================
+# Bu dashboard, karmaşık verileri (sağlık, ev kontrolü, medya) tek bir ekranda
+# kullanıcıyı YORMADAN sunar:
+#
+#   - Üst: Karşılama (günaydın + takvim) → "bugün ne var?" tek bakış
+#   - Orta: Swipeable sekmeler → sağa kaydır = Ev kontrolü, sola = Sağlık
+#   - Alt: Medya kontrolcü → Spotify/Hyperion tek dokunuş
+#   - Sağ alt: Floating chat → AGI ile yazılı komut
+#
+# "Kontrol paneli" değil "yaşam alanı" hissi. Apple/Tesla tarzı:
+# yuvarlak kartlar, boşluklu tasarım, sıcak tonlar, animasyonlu geçişler.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# LOVELACE DASHBOARD YAPILANDIRMASI
+# -----------------------------------------------------------------------------
+# Bu YAML, HA Lovelace dashboard'una "Raw Configuration Editor" ile yapıştırılır.
+# Veya configuration.yaml'da:
+#   lovelace:
+#     dashboards:
+#       jarvis-superapp:
+#         mode: yaml
+#         title: Jarvis SuperApp
+#         file: life_os_superapp/superapp_lovelace_dashboard.yaml
+# -----------------------------------------------------------------------------
+
+views:
+  # ===========================================================================
+  # ANA GÖRÜNÜM — SuperApp
+  # ===========================================================================
+  - title: Jarvis
+    icon: mdi:robot-outline
+    theme: Jarvis Dark # Koyu tema (premium hissi)
+    cards:
+      # -------------------------------------------------------------------------
+      # ÜST KISIM: KARŞILAMA KARTI (Günaydın + Takvim)
+      # -------------------------------------------------------------------------
+      # 🎨 UX: Kullanıcı uygulamayı açtığında ilk gördüğü şey:
+      # "Günaydın, Batın. Bugün 10:00'da Team Meeting var."
+      # Tek bakışta "bugün ne var?" sorusu yanıtlanır.
+      # -------------------------------------------------------------------------
+      - type: custom:bubble-card
+        card_type: button
+        name: >
+          {% set hour = now().hour %}
+          {% if hour < 6 %} İyi geceler, Batın
+          {% elif hour < 12 %} Günaydın, Batın
+          {% elif hour < 18 %} İyi günler, Batın
+          {% else %} İyi akşamlar, Batın
+          {% endif %}
+        icon: mdi:weather-sunny
+        button_type: name
+        sub_button:
+          - name: >
+              {% if states('calendar.personal') != 'off' %}
+                {{ state_attr('calendar.personal', 'message') }}
+                · {{ state_attr('calendar.personal', 'start_time')[:11] }}
+              {% else %}
+                Bugün etkinlik yok
+              {% endif %}
+            icon: mdi:calendar
+        styles: |
+          .bubble-button {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+          }
+          .bubble-name {
+            font-size: 24px;
+            font-weight: 300;
+            color: #FFFFFF;
+          }
+          .bubble-sub-button {
+            font-size: 14px;
+            color: #888;
+          }
+
+      # -------------------------------------------------------------------------
+      # ORTA KISIM: SWIPEABLE SEKMELER (Bubble Card)
+      # -------------------------------------------------------------------------
+      # 🎨 UX: Sağa-sola kaydırma ile sekmeler değişir.
+      # 1. Sekme: Ev Kontrolü (WLED, Difüzör, Klima)
+      # 2. Sekme: Sağlık (Uyku, Kalori, Nabız — Modül 16)
+      # -------------------------------------------------------------------------
+      - type: custom:bubble-card
+        card_type: pop-up
+        name: Ev Kontrolü
+        icon: mdi:home-lightning-bolt
+        width: 100%
+        # Sekme 1: Ev Kontrolü
+        cards:
+          # WLED kontrolü (Mushroom)
+          - type: custom:mushroom-light-card
+            entity: light.wled_ambient
+            name: Ambiyans
+            icon: mdi:led-strip-variant
+            show_brightness_control: true
+            show_color_control: true
+            use_light_color: true
+            layout: horizontal
+            primary_info: name
+            secondary_info: state
+
+          # Difüzör kontrolü
+          - type: custom:mushroom-entity-card
+            entity: switch.smart_diffuser_power
+            name: Difüzör
+            icon: mdi:scent
+            layout: horizontal
+            primary_info: name
+            secondary_info: state
+
+          # Klima kontrolü (Mushroom)
+          - type: custom:mushroom-climate-card
+            entity: climate.room_ac
+            name: Klima
+            icon: mdi:air-conditioner
+            show_temperature_control: true
+            hvac_modes:
+              - cool
+              - "off"
+            layout: horizontal
+            primary_info: name
+            secondary_info: state
+
+          # Perde kontrolü
+          - type: custom:mushroom-cover-card
+            entity: cover.smart_curtain
+            name: Perde
+            icon: mdi:curtains
+            show_buttons_control: true
+            layout: horizontal
+            primary_info: name
+            secondary_info: state
+
+          # Projeksiyon
+          - type: custom:mushroom-entity-card
+            entity: switch.galaxy_projector_power
+            name: Projeksiyon
+            icon: mdi:star-four-points
+            layout: horizontal
+            primary_info: name
+            secondary_info: state
+
+      # -------------------------------------------------------------------------
+      # SEKME 2: SAĞLIK (Modül 16 verileri)
+      # -------------------------------------------------------------------------
+      # 🎨 UX: Sağlık verileri "kalabalık" değil, yuvarlak kartlarda özet:
+      # - Uyku skoru: 72/100 (büçük yuvarlak)
+      # - Kalori: 1450/2200 (progress bar)
+      # - Nabız: 72 BPM (büyük rakam)
+      # - Adım: 4200 (ikon + rakam)
+      # -------------------------------------------------------------------------
+      - type: custom:bubble-card
+        card_type: pop-up
+        name: Sağlık
+        icon: mdi:heart-pulse
+        width: 100%
+        cards:
+          # Uyku skoru (Mushroom template)
+          - type: custom:mushroom-template-card
+            primary: Uyku
+            secondary: >
+              {{ states('sensor.computed_stress_score') | float(0) | round(0) }}/100
+            icon: mdi:sleep
+            icon_color: >
+              {% set score = states('sensor.computed_stress_score') | float(0) %}
+              {% if score > 70 %} green
+              {% elif score > 40 %} amber
+              {% else %} red
+              {% endif %}
+            layout: horizontal
+
+          # Kalori takibi (progress)
+          - type: custom:mushroom-template-card
+            primary: Kalori
+            secondary: >
+              {{ states('input_number.daily_calories') | int }} /
+              {{ states('input_number.daily_calorie_goal') | int }} kcal
+            icon: mdi:food-apple
+            icon_color: orange
+            layout: horizontal
+
+          # Dinlenme nabzı
+          - type: custom:mushroom-template-card
+            primary: Nabız
+            secondary: >
+              {{ states('sensor.resting_hr') | int }} BPM
+            icon: mdi:heart-pulse
+            icon_color: red
+            layout: horizontal
+
+          # Adım sayısı
+          - type: custom:mushroom-template-card
+            primary: Adım
+            secondary: >
+              {{ states('sensor.daily_steps') | int }}
+            icon: mdi:walk
+            icon_color: blue
+            layout: horizontal
+
+          # Stres skoru
+          - type: custom:mushroom-template-card
+            primary: Stres
+            secondary: >
+              {{ states('input_number.jarvis_stress_level') | float(0) | round(1) }}/10
+            icon: mdi:gauge
+            icon_color: >
+              {% set stress = states('input_number.jarvis_stress_level') | float(0) %}
+              {% if stress > 7 %} red
+              {% elif stress > 4 %} amber
+              {% else %} green
+              {% endif %}
+            layout: horizontal
+
+      # -------------------------------------------------------------------------
+      # ALT KISIM: MEDYA KONTROLCÜSÜ (Spotify + Hyperion)
+      # -------------------------------------------------------------------------
+      # 🎨 UX: Medya kontrolü "alt sabit" — her ekranda görünür.
+      # Spotify çalan şarkı + Hyperion durumu tek dokunuş.
+      # -------------------------------------------------------------------------
+      - type: custom:mushroom-media-player-card
+        entity: media_player.room_spatial_audio
+        name: Spotify
+        icon: mdi:spotify
+        show_volume_control: true
+        use_media_info: true
+        layout: horizontal
+        primary_info: name
+        secondary_info: media-title
+
+      # Hyperion durumu
+      - type: custom:mushroom-entity-card
+        entity: switch.hyperion_sync
+        name: Ekran Sync
+        icon: mdi:television-ambient-light
+        layout: horizontal
+        primary_info: name
+        secondary_info: state
+
+      # -------------------------------------------------------------------------
+      # SAĞ ALT: FLOATING CHAT BUTONU (AGI ile mesajlaşma)
+      # -------------------------------------------------------------------------
+      # 🎨 UX: Sağ alt köşede sürekli duran yuvarlak "Chat" butonu.
+      # Tıkla → AGI chat açılır → GPT-5.6'ya yazılı komut ver.
+      # -------------------------------------------------------------------------
+      - type: custom:bubble-card
+        card_type: pop-up
+        name: Jarvis
+        icon: mdi:robot-outline
+        button_type: name
+        width: 100%
+        # Chat pop-up içeriği
+        cards:
+          - type: custom:mushroom-template-card
+            primary: Jarvis AGI
+            secondary: >
+              {% if is_state('input_boolean.jarvis_proactive_mode', 'on') %}
+                Çevrimiçi · GPT-5.6 + Claude 5
+              {% else %}
+                Çevrimdışı
+              {% endif %}
+            icon: mdi:robot-outline
+            icon_color: blue
+            tap_action:
+              action: fire-dom-event
+              browser_mod:
+                service: browser_mod.popup
+                data:
+                  title: Jarvis AGI Chat
+                  content:
+                    type: custom:openai-conversation-card
+                    # Extended OpenAI Conversation chat arayüzü
+                    # Kullanıcı yazılı komut verir → GPT-5.6/Claude 5 yanıtlar
+                    # Fotoğraf atabilir → "Bunu kalori takibime ekle"
+
+# -----------------------------------------------------------------------------
+# TEMA: Jarvis Dark (Premium koyu tema)
+# -----------------------------------------------------------------------------
+# Bu tema, HA'nın tema ayarlarında tanımlanır:
+# frontend:
+#   themes:
+#     Jarvis Dark:
+#       primary-color: "#FFD700"        # Altın sarısı (premium vurgu)
+#       accent-color: "#FF4500"         # Turuncu-kırmızı
+#       background-color: "#0A0A0F"     # Çok koyu (OLED hissi)
+#       card-background-color: "#1A1A2E" # Koyu lacivert kart
+#       text-primary-color: "#FFFFFF"   # Saf beyaz
+#       text-secondary-color: "#888888"  # Gri (ikincil)
+#       divider-color: "#333333"        # Koyu gri ayraç
+# -----------------------------------------------------------------------------

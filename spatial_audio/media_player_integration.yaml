@@ -1,0 +1,235 @@
+# =============================================================================
+# spatial_audio — Media Player Entegrasyonu ve Çalma Listesi Yapılandırması
+# =============================================================================
+# Bu dosya iki ana bölüm içerir:
+#
+#   BÖLÜM 1: Media Player Grubu — İki hoparlörü tek entity olarak gruplar
+#   BÖLÜM 2: Çalma Listesi Değişkenleri — Ruh haline göre Spotify URI'leri
+#
+# 🎯 "COCOON EFFECT" İÇİN GRUPLAMA:
+# =============================================================================
+# İki hoparlör (sol/sağ) tek bir media_player entity'si olarak gruplanır.
+# Bu, otomasyonların "sol hoparlöre" ve "sağ hoparlöre" ayrı ayrı komut
+# göndermesini engeller — tek bir "spatial audio" entity'sine komut verilir
+# ve stereo pair otomatik olarak iki hoparlöre dağıtır.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# BÖLÜM 1: MEDIA PLAYER GRUBU
+# -----------------------------------------------------------------------------
+# HA'ın "media_player group" özelliği ile iki hoparlör tek entity'de birleşir.
+#
+# Ön koşul: Alexa app'inde (veya Google Home) stereo pair oluşturulmuş olmalı.
+# HA, Alexa Media Player entegrasyonu ile stereo pair'i tek entity olarak görür.
+#
+# Eğer stereo pair Alexa/Google tarafında oluşturulduysa, HA otomatik olarak
+# media_player.room_spatial_audio entity'sini oluşturur ve aşağıdaki grup
+# konfigürasyonu gerekmez.
+#
+# Eğer stereo pair HA tarafında gruplanacaksa, aşağıdaki blok kullanılır.
+# -----------------------------------------------------------------------------
+
+media_player:
+  # -------------------------------------------------------------------------
+  # Media Player Grubu — İki hoparlörü tek "Spatial Audio" entity'sinde birleştir
+  # -------------------------------------------------------------------------
+  - platform: group
+    name: "Room Spatial Audio"
+    unique_id: "room_spatial_audio"
+    entities:
+      # Sol hoparlör (Echo Dot / Nest Mini — sol köşe)
+      - media_player.echo_dot_sol
+      # Sağ hoparlör (Echo Dot / Nest Mini — sağ köşe)
+      - media_player.echo_dot_sag
+    # Bu grup, HA'ta "media_player.room_spatial_audio" olarak görünür.
+    # Tüm otomasyonlar bu entity'yi kullanır → stereo pair otomatik dağıtım.
+
+# -----------------------------------------------------------------------------
+# BÖLÜM 2: ÇALMA LİSTESİ DEĞİŞKENLERİ (Input Select)
+# -----------------------------------------------------------------------------
+# Farklı ruh halleri/mood'lar için Spotify çalma listesi URI'leri.
+# Otomasyonlar, bu input_select'ten seçilen mood'a göre Spotify URI'sini
+# alır ve çalmaya başlar.
+#
+# 🎨 MOOD PSİKOLOJİSİ:
+# =============================================================================
+# Her mood, farklı bir psikolojik etki yaratmak için seçilmiştir:
+#
+#   acoustic_morning:  Sakin, yumuşak → sabah uyanışı (morning_after)
+#   lofi_focus:        Lo-Fi, tekrarlayan → odaklanma/çalışma
+#   deep_rnb_date:     R&B, romantik → date/lounge vibe
+#   intimacy_flow:     Derin, akıcı → intimacy_sync_mode
+#   coffee_shop:       Lo-Fi, cafe → barista_mode
+#   sleep_ambient:     Ambient, çok yavaş → uyku (deep sleep)
+#   party_energy:     Enerjik, ritmik → parti modu
+# =============================================================================
+
+input_select:
+  # -------------------------------------------------------------------------
+  # Mood / Çalma Listesi Seçici
+  # -------------------------------------------------------------------------
+  spatial_audio_mood:
+    name: "Spatial Audio Mood"
+    options:
+      - "off"
+      - "acoustic_morning"
+      - "lofi_focus"
+      - "deep_rnb_date"
+      - "intimacy_flow"
+      - "coffee_shop"
+      - "sleep_ambient"
+      - "party_energy"
+    initial: "off"
+    icon: mdi:music-note
+
+# -----------------------------------------------------------------------------
+# Çalma Listesi URI Eşleştirme (Template Sensor)
+# -----------------------------------------------------------------------------
+# input_select'ten seçilen mood'a göre Spotify URI'sini döndüren bir template
+# sensor. Otomasyonlar bu sensor'dan URI'yi alır ve Spotify'a gönderir.
+#
+# ⚠️ ÖNEMLİ: Aşağıdaki Spotify URI'leri ÖRNEK'tir. Gerçek çalma listesi
+# ID'lerini Spotify'dan alıp buraya yapıştırmalısınız.
+#   1. Spotify'da çalma listesi aç
+#   2. Share → Copy Spotify URI
+#   3. "spotify:playlist:XXXXX" formatında URI'yi aşağıya yapıştır
+# -----------------------------------------------------------------------------
+
+template:
+  - sensor:
+      - name: "Spotify Playlist URI"
+        unique_id: "spotify_playlist_uri"
+        icon: mdi:spotify
+        # -------------------------------------------------------------------------
+        # Mood → Spotify URI eşleştirme
+        # -------------------------------------------------------------------------
+        # Bu sensor, input_select.spatial_audio_mood değerine göre
+        # doğru Spotify URI'sini döndürür.
+        # -------------------------------------------------------------------------
+        state: >
+          {% set mood = states('input_select.spatial_audio_mood') %}
+          {% set playlists = {
+            'acoustic_morning': 'spotify:playlist:37i9dQZF1DX4PP3DA4J0N8',
+            'lofi_focus': 'spotify:playlist:37i9dQZF1DX4PP3DA4J0N8',
+            'deep_rnb_date': 'spotify:playlist:37i9dQZF1DX4PP3DA4J0N8',
+            'intimacy_flow': 'spotify:playlist:37i9dQZF1DX9vYRuIxtD4e',
+            'coffee_shop': 'spotify:playlist:37i9dQZF1DX4PP3DA4J0N8',
+            'sleep_ambient': 'spotify:playlist:37i9dQZF1DWZd79Jq6MUSy',
+            'party_energy': 'spotify:playlist:37i9dQZF1DX4PP3DA4J0N8'
+          } %}
+          {{ playlists.get(mood, '') }}
+        # -------------------------------------------------------------------------
+        # Mood açıklaması (HA arayüzünde görüntü için)
+        # -------------------------------------------------------------------------
+        attributes:
+          mood_description: >
+            {% set mood = states('input_select.spatial_audio_mood') %}
+            {% set descriptions = {
+              'acoustic_morning': 'Sakin sabah — akustik gitar ve piyano',
+              'lofi_focus': 'Odaklanma — Lo-Fi tekrarlayan ritim',
+              'deep_rnb_date': 'Romantik akşam — derin R&B',
+              'intimacy_flow': 'Duyusal — derin, akıcı ambient',
+              'coffee_shop': 'Cafe atmosferi — Lo-Fi kahve müziği',
+              'sleep_ambient': 'Uyku — çok yavaş, ambient',
+              'party_energy': 'Parti — enerjik, ritmik'
+            } %}
+            {{ descriptions.get(mood, 'Kapalı') }}
+
+# -----------------------------------------------------------------------------
+# Çalma Listesi Başlatma Script'i
+# -----------------------------------------------------------------------------
+# Bu script, input_select'ten seçilen mood'a göre Spotify çalma listesini
+# spatial audio grubunda çalmaya başlar.
+#
+# 🎭 FADE-IN MANTIĞI:
+# =============================================================================
+# Müzik ASLA aniden (pat diye) başlamaz. Önce ses %0'a ayarlanır, çalma
+# listesi başlatılır, sonra ses yavaşça hedef seviyeye artırılır.
+# Bu, "müzik açıldı" değil, "müzik yavaşça yükseldi" hissi yaratır.
+# =============================================================================
+
+script:
+  # -------------------------------------------------------------------------
+  # Script: Mood Çalma Listesi Başlat (Fade-in ile)
+  # -------------------------------------------------------------------------
+  spatial_play_mood:
+    alias: "Spatial Audio — Mood Çal"
+    icon: mdi:play
+    description: >
+      Seçili mood'a göre Spotify çalma listesini spatial audio grubunda
+      çalmaya başlar. Ses %0'dan başlar ve fade-in ile hedef seviyeye artar.
+    fields:
+      target_volume:
+        description: "Hedef ses seviyesi (0.0 - 1.0)"
+        example: 0.20
+        default: 0.20
+    sequence:
+      # -------------------------------------------------------------------------
+      # Adım 1: Ses seviyesini %0'a ayarla (sessiz başlat)
+      # -------------------------------------------------------------------------
+      # Müzik başlamadan önce ses %0 → çalma listesi başlar ama duyulmaz.
+      # Sonra fade-in ile ses yavaşça artar → "pat diye" değil, "yükselerek".
+      - service: media_player.volume_set
+        target:
+          entity_id: media_player.room_spatial_audio
+        data:
+          volume_level: 0.0
+
+      # -------------------------------------------------------------------------
+      # Adım 2: Spotify çalma listesini başlat
+      # -------------------------------------------------------------------------
+      # Template sensor'dan URI'yi al ve Spotify'da çal
+      - service: media_player.play_media
+        target:
+          entity_id: media_player.room_spatial_audio
+        data:
+          media_content_type: "playlist"
+          media_content_id: "{{ states('sensor.spotify_playlist_uri') }}"
+
+      # -------------------------------------------------------------------------
+      # Adım 3: 2 saniye bekle (çalma listesinin yüklenmesi için)
+      # -------------------------------------------------------------------------
+      - delay:
+          seconds: 2
+
+      # -------------------------------------------------------------------------
+      # Adım 4: Fade-in — sesi yavaşça hedef seviyeye artır
+      # -------------------------------------------------------------------------
+      # 5 saniyede %0'dan hedef seviyeye kademeli artış.
+      # Her 1 saniyede %4 artış → 5 saniyede %20'ye ulaşır (hedef 0.20 ise).
+      #
+      # 🎭 Neden kademeli? İnsan kulağı ani ses değişimlerini "alarm" olarak
+      # algılar. Kademeli artış = "müzik doğal olarak yükseliyor" hissi.
+      - service: media_player.volume_set
+        target:
+          entity_id: media_player.room_spatial_audio
+        data:
+          volume_level: 0.04
+      - delay:
+          seconds: 1
+      - service: media_player.volume_set
+        target:
+          entity_id: media_player.room_spatial_audio
+        data:
+          volume_level: 0.08
+      - delay:
+          seconds: 1
+      - service: media_player.volume_set
+        target:
+          entity_id: media_player.room_spatial_audio
+        data:
+          volume_level: 0.12
+      - delay:
+          seconds: 1
+      - service: media_player.volume_set
+        target:
+          entity_id: media_player.room_spatial_audio
+        data:
+          volume_level: 0.16
+      - delay:
+          seconds: 1
+      - service: media_player.volume_set
+        target:
+          entity_id: media_player.room_spatial_audio
+        data:
+          volume_level: "{{ target_volume | default(0.20) }}"

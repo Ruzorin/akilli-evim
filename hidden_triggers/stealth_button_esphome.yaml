@@ -1,0 +1,233 @@
+# =============================================================================
+# hidden_triggers — ESP32 + TTP223 Kapasitif Dokunmatik Sensör
+# =============================================================================
+# Bu dosya ESP32'ye yüklenir. TTP223 kapasitif sensörden dokunma sinyali
+# alır ve ahşap masanın üst yüzeyine dokunulduğunda HA'a sinyal gönderir.
+#
+# ✨ "DIY SİHİR" MANTIĞI:
+# =============================================================================
+# TTP223 sensörü, ahşap masanın ALTINA yapıştırılır. Sensör yüzü ahşaba
+# bakar. Ahşabın üst yüzeyine parmak basıldığında, parmağın elektriksel
+# kapasitansı ahşabın içinden geçerek sensöre ulaşır → sensör HIGH verir.
+#
+# Misafir, masaya dokunur → "odanın enerjisini hissettim" gibi bir his →
+# oda anında değişir → "sihir" → "premium" hissi.
+#
+# 🎯 HASSASİYET (THRESHOLD) AYARI — KRİTİK:
+# =============================================================================
+# Ahşap kalınlığına göre TTP223'ün hassasiyeti ayarlanmalıdır:
+#
+#   İnce ahşap (2-5mm):  TTP223 varsayılan hassasiyet yeterli
+#   Orta ahşap (5-10mm): Debounce süresini artır (yanlış tetiklemeleri engelle)
+#   Kalın ahşap (10mm+): Bakır folyo ile sensör alanını genişlet + debounce artır
+#
+# Debounce: Sensör "titreşimli" sinyaller üretebilir (parmak tam basmadan
+# önce kısa HIGH/LOW dalgalanmaları). Debounce süresi, bu dalgalanmaları
+# filtreler — sadece "gerçek dokunma" algılanır.
+#
+# ⚡ GECİKMESİZ ÇALIŞMA — PREMIUM HİSSİN TEMELİ:
+# =============================================================================
+# Bu sensör <50ms gecikmeyle çalışır. ESP32 → MQTT → HA → otomasyon zinciri
+# toplam ~100-200ms. Bu, insan algısı için "anında" hissedilir.
+#
+# Neden bu kadar kritik?
+#   Misafir masaya dokunur → 5 saniye sonra oda değişirse → "teknoloji"
+#   Misafir masaya dokunur → ANINDA oda değişirse → "sihir" → "premium"
+#
+# Sesli komut (2-3sn) veya telefon app (5-10sn) ile karşılaştırıldığında
+# kapasitif dokunma → "telepati" hissi → en yüksek "premium" algı.
+# =============================================================================
+
+esphome:
+  name: stealth-touch-sensor
+  friendly_name: "Stealth Touch Sensor"
+  platform: ESP32
+  board: esp32dev
+
+# -----------------------------------------------------------------------------
+# WiFi — GL-MT3000 yerel ağına bağlanır
+# -----------------------------------------------------------------------------
+wifi:
+  ssid: "GL-MT3000"
+  password: "YOUR_WIFI_PASSWORD"
+  reboot_timeout: 10min
+  # WiFi güç çıkışını artır — masa altında sinyal zayıflayabilir
+  output_power: 20.5dB
+
+# -----------------------------------------------------------------------------
+# MQTT — GL-MT3000 broker'a bağlanır
+# -----------------------------------------------------------------------------
+# MQTT kullanıyoruz çünkü ESPHome API yerine MQTT daha hızlı pub/sub yapar.
+# Sensör dokunma olayını MQTT ile anında HA'a iletir → gecikme minimize.
+mqtt:
+  broker: "gl-mt3000.local"
+  port: 1883
+  discovery: true
+  discovery_prefix: homeassistant
+
+# -----------------------------------------------------------------------------
+# TTP223 Kapasitif Dokunmatik Sensör — GPIO Pin
+# -----------------------------------------------------------------------------
+# TTP223 I/O pini ESP32 GPIO 4'e bağlı.
+# TTP223 HIGH verir = dokunma algılandı
+# TTP223 LOW verir = dokunma yok
+#
+# Pin bağlantısı:
+#   TTP223 VCC → ESP32 3.3V
+#   TTP223 GND → ESP32 GND
+#   TTP223 I/O → ESP32 GPIO 4
+# -----------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------
+# BINARY SENSOR: Masa Üstü Gizli Dokunma
+# -----------------------------------------------------------------------------
+binary_sensor:
+  - platform: gpio
+    name: "Desk Hidden Touch"
+    id: desk_hidden_touch
+    icon: mdi:gesture-tap
+    pin:
+      number: GPIO4
+      mode:
+        input: true
+        pullup:
+          true # Pull-up: sensör pasifken HIGH, dokunulduğunda LOW
+          # (TTP223 bazı modlarda active-low çalışır)
+          # Eğer TTP223 active-high ise pullup: false yapın
+
+    # -------------------------------------------------------------------------
+    # DEBOUNCE — Hassasiyet Ayarı (KRİTİK)
+    # -------------------------------------------------------------------------
+    # Debounce, sensörün "titreşimli" sinyallerini filtreler.
+    #
+    # 🎯 Ahşap kalınlığına göre debounce ayarı:
+    #   İnce ahşap (2-5mm):   50ms (hızlı, hassas)
+    #   Orta ahşap (5-10mm):  100ms (orta — varsayılan)
+    #   Kalın ahşap (10mm+):  200ms (yavaş, ama güvenilir)
+    #
+    # Neden debounce gerekli?
+    #   - Ahşabın üzerinden dokunma sinyali "temiz" değildir
+    #   - Parmak tam basmadan önce kısa HIGH/LOW dalgalanmaları olur
+    #   - Debounce, sadece "gerçek ve kalıcı" dokunmayı algılar
+    #   - Yanlış pozitifleri (masa sallanması, vibrasyon) engeller
+    #
+    # ⚠️ KALİBRASYON GEREKLİ:
+    #   1. Sensörü ahşaba yapıştır
+    #   2. ESPHome log'larını izle
+    #   3. Ahşaba dokun → sensör HIGH oluyor mu?
+    #   4. Dokunmadan HIGH oluyorsa → debounce artır
+    #   5. Dokunsa bile HIGH olmuyorsa → ahşap çok kalın, bakır folyo ekle
+    filters:
+      # Debounce: 100ms — orta ahşap (5-10mm) için ideal
+      - delayed_on: 100ms # 100ms boyunca HIGH kalırsa "dokunma" say
+      - delayed_off: 200ms # 200ms boyunca LOW kalırsa "bırakma" say
+
+    # -------------------------------------------------------------------------
+    # ON_PRESS — Dokunma Algılandığında
+    # -------------------------------------------------------------------------
+    # Dokunma algılandığında MQTT üzerinden HA'a "dokunma başladı" sinyali.
+    # HA otomasyonu, dokunma süresini ölçer (2 saniye basılı tutma = intimacy).
+    on_press:
+      then:
+        - mqtt.publish:
+            topic: "jarvis/triggers/desk_touch"
+            payload: "ON"
+            qos: 1 # QoS 1 — garanti teslim (gecikmesiz ama güvenilir)
+
+    # -------------------------------------------------------------------------
+    # ON_RELEASE — Dokunma Bırakıldığında
+    # -------------------------------------------------------------------------
+    # Dokunma bırakıldığında MQTT üzerinden "dokunma bitti" sinyali.
+    # HA otomasyonu, dokunma süresini hesaplar (basılı tutma süresi).
+    on_release:
+      then:
+        - mqtt.publish:
+            topic: "jarvis/triggers/desk_touch"
+            payload: "OFF"
+            qos: 1
+
+    # -------------------------------------------------------------------------
+    # ON_MULTI_CLICK — Jest Algılama (opsiyonel)
+    # -------------------------------------------------------------------------
+    # TTP223 ile çoklu tıklama algılama (çift tık, uzun bas).
+    # Bu özellik ESPHome'un on_multiclick action'ı ile yapılır.
+    #
+    # 🎯 Jest tipleri:
+    #   Tek tık:  <500ms dokunma → "single_click"
+    #   Çift tık: 2x <500ms, arası <300ms → "double_click"
+    #   Uzun bas: >2000ms dokunma → "long_press"
+    #
+    # HA otomasyonu, MQTT topic'inden gelen sinyali dinler ve jest tipine
+    # göre farklı aksiyonlar alır.
+    on_multi_click:
+      # -------------------------------------------------------------------------
+      # KISA DOKUNMA (<500ms) — Tek Tık
+      # -------------------------------------------------------------------------
+      - timing:
+          - ON for at most 500ms
+          - OFF for at least 300ms
+        then:
+          - mqtt.publish:
+              topic: "jarvis/triggers/desk_touch/gesture"
+              payload: "single_click"
+              qos: 1
+
+      # -------------------------------------------------------------------------
+      # UZUN BASMA (>2000ms) — 2 Saniye Basılı Tutma
+      # -------------------------------------------------------------------------
+      # 🎯 Bu, "Intimacy Mode" tetikleyicisidir.
+      # Misafir ahşaba 2 saniye basılı tutar → "odanın enerjisini hissettim"
+      # gibi → Modül 12 (intimacy_sync_mode) başlar → "sihir" hissi.
+      - timing:
+          - ON for at least 2000ms
+        then:
+          - mqtt.publish:
+              topic: "jarvis/triggers/desk_touch/gesture"
+              payload: "long_press"
+              qos: 1
+
+      # -------------------------------------------------------------------------
+      # ÇİFT TIKLAMA (opsiyonel)
+      # -------------------------------------------------------------------------
+      - timing:
+          - ON for at most 500ms
+          - OFF for at most 300ms
+          - ON for at most 500ms
+          - OFF for at least 500ms
+        then:
+          - mqtt.publish:
+              topic: "jarvis/triggers/desk_touch/gesture"
+              payload: "double_click"
+              qos: 1
+
+# -----------------------------------------------------------------------------
+# STATUS LED
+# -----------------------------------------------------------------------------
+status_led:
+  pin:
+    number: GPIO2
+    inverted: true
+
+# -----------------------------------------------------------------------------
+# LOGGER
+# -----------------------------------------------------------------------------
+logger:
+  level: DEBUG
+  baud_rate: 0 # UART log kapalı (WiFi log kapalı — gecikme minimize)
+
+
+# -----------------------------------------------------------------------------
+# KALİBRASYON TALİMATLARI
+# -----------------------------------------------------------------------------
+# 1. TTP223'ü ahşabın altına yapıştır (sensör pad'i ahşaba bakar)
+# 2. ESP32'ye bu YAML'i yükle
+# 3. ESPHome log'larını izle (USB bağlantısı ile)
+# 4. Ahşabın üstüne dokun:
+#    - "Desk Hidden Touch: ON" mesajı gelmeli
+#    - Gelmiyorsa: ahşap çok kalın → bakır folyo ekle
+#    - Geliyorsa ama "titreşimli" → debounce artır (100ms → 200ms)
+# 5. Dokunmayı bırakınca "OFF" mesajı gelmeli
+# 6. 2 saniye basılı tut → "long_press" gesture mesajı gelmeli
+# 7. HA'da binary_sensor.desk_hidden_touch görünüyor mu kontrol et
+# 8. invisible_orchestration_automations.yaml'i HA'a yükle
+# -----------------------------------------------------------------------------

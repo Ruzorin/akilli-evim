@@ -1,0 +1,154 @@
+# =============================================================================
+# magic_mirror_comm_and_grooming — Dijital Stil Koçu (GPT-5.6 Vision)
+# =============================================================================
+# Kullanıcı aynanın karşısına geçip "Jarvis, kombin nasıl?" dediğinde:
+# 1. Ayna kamerasından anlık fotoğraf karesi al
+# 2. GPT-5.6 Vision'a gönder → kıyafet/saç/tarz analizi
+# 3. Jarvis sesli olarak (ElevenLabs TTS) stil tavsiyesi ver
+#
+# 🎨 "MODA DANIŞMANI" MANTIĞI:
+# =============================================================================
+# Jarvis sadece "kıyafet eleştirmeni" değil — kullanıcının o günkü randevusunu
+# ve dış dünyayı hesaba katarak tam bir "imaj danışmanı" gibi davranır.
+#
+# "Takviminde bugün CEO görüşmesi var ama üzerindeki tişört biraz casual
+#  kalmış patron, o lacivert ceketi giymen formunu artıracaktır."
+#
+# Bu, "ayna" → "kişisel stil koçu" dönüşümüdür.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# INPUT BOOLEAN — Stil koçu aktif
+# -----------------------------------------------------------------------------
+input_boolean:
+  grooming_coach_active:
+    name: "Grooming Coach"
+    icon: mdi:tshirt-crew
+    initial: on
+
+# -----------------------------------------------------------------------------
+# OTOMASYON: "Jarvis, kombin nasıl?" → Snapshot → GPT-5.6 Vision → TTS
+# -----------------------------------------------------------------------------
+automation:
+  - id: grooming_coach_evaluate
+    alias: "Grooming Coach — Kombin Değerlendirme (Vision API)"
+    description: >
+      Kullanıcı aynanın karşısına geçip "Jarvis, kombin nasıl?" veya
+      "Görünüşüm nasıl?" dediğinde:
+      1. Ayna kamerasından anlık fotoğraf karesi (snapshot) al
+      2. GPT-5.6 Vision'a gönder → kıyafet, saç, tarz analizi
+      3. Jarvis sesli olarak (ElevenLabs TTS, charming persona) stil tavsiyesi ver
+
+      🎨 MODA DANIŞMANI TONU:
+      Jarvis "chaming" persona ile konuşur — şık, dürüst, stil sahibi.
+      "Kombin harika ama o ayakkabılar bu ceketle gitmemiş patron,
+       siyah olanı giymelisin."
+
+    trigger:
+      # -------------------------------------------------------------------------
+      # Tetikleyici 1: "Jarvis, kombin nasıl?" sesli komutu
+      # -------------------------------------------------------------------------
+      - platform: conversation
+        command: "kombin nasıl"
+        id: voice_outfit_tr
+
+      - platform: conversation
+        command: "görünüşüm nasıl"
+        id: voice_look_tr
+
+      - platform: conversation
+        command: "bu kombin nasıl"
+        id: voice_outfit2_tr
+
+      - platform: conversation
+        command: "how do I look"
+        id: voice_look_en
+
+    condition:
+      - condition: state
+        entity_id: input_boolean.grooming_coach_active
+        state: "on"
+
+    action:
+      # -------------------------------------------------------------------------
+      # AKSİYON 1: Ayna kamerasından snapshot al
+      # -------------------------------------------------------------------------
+      # whatsapp_video_integration_module.py'deki capture_snapshot() çağrılır
+      # REST command → Pi Zero'da Python script → USB kamera → JPEG
+      - service: rest_command.mirror_capture_snapshot
+      # Snapshot alınıp MQTT'ye publish edilir: jarvis/mirror/snapshot
+
+      # Snapshot'ın alınması için bekle
+      - delay:
+          seconds: 2
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 2: Snapshot'ı GPT-5.6 Vision'a gönder
+      # -------------------------------------------------------------------------
+      # MQTT'den snapshot base64 al → multi_model_orchestrator.py'ye gönder
+      # GPT-5.6 Vision: "Bu kişinin kıyafetini, saçını ve tarzını analiz et"
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/vision/grooming_request"
+          payload: >
+            {
+              "prompt": "Bu kişinin kıyafetini, saçını ve genel tarzını analiz et.
+              Kıyafet uyumu, renk paleti, saç/sakal/bakım durumu.
+              Kısa, şık ve dürüst bir moda danışmanı gibi geri bildirim ver.
+              Max 3 cümle. Türkçe.",
+              "context": {
+                "calendar": "{{ states('calendar.personal') }}",
+                "weather": "{{ states('weather.home') }}",
+                "temperature": "{{ state_attr('weather.home', 'temperature') }}"
+              }
+            }
+
+      # GPT-5.6 Vision analizi için bekle
+      - delay:
+          seconds: 5
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 3: Jarvis sesli stil tavsiyesi (ElevenLabs TTS, charming)
+      # -------------------------------------------------------------------------
+      # multi_model_orchestrator.py, analizi MQTT'ye publish eder:
+      # jarvis/vision/grooming_response → {"text": "Kombin harika ama..."}
+      # Aşağıdaki otomasyon (grooming_tts) bunu yakalar ve TTS'e gönderir.
+
+  # ===========================================================================
+  # ALT OTOMASYON: GPT-5.6 Vision Cevabı → Jarvis TTS
+  # ===========================================================================
+  - id: grooming_coach_tts
+    alias: "Grooming Coach — Vision Cevabı → Jarvis TTS"
+    description: >
+      GPT-5.6 Vision'ın stil analiz cevabını alır ve Jarvis'e
+      (ElevenLabs TTS, charming persona) gönderir.
+
+    trigger:
+      - platform: mqtt
+        topic: "jarvis/vision/grooming_response"
+        id: grooming_response
+
+    condition:
+      - condition: state
+        entity_id: input_boolean.grooming_coach_active
+        state: "on"
+
+    action:
+      # Duygu profili: "charming" (şık, davetkar moda danışmanı)
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/voice/emotion"
+          payload: "charming"
+
+      # Jarvis sesli stil tavsiyesi
+      - service: tts.speak
+        target:
+          entity_id: tts.jarvis_voice
+        data:
+          message: "{{ trigger.payload_json.text | default('Harika görünüyorsunuz, efendim.') }}"
+
+      # Magic Mirror'a da stil önerisi göster (opsiyonel)
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/mirror/message"
+          payload: '{"text": "{{ trigger.payload_json.text }}", "duration": 10}'

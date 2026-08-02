@@ -1,0 +1,253 @@
+# =============================================================================
+# barista_mode — Gelişmiş Güç Tüketimi Mantığı (Smart Readiness Sensor)
+# =============================================================================
+# Bu otomasyon, kahve makinesinin "hazır" olma anını tespit eder.
+#
+# 🧠 NEDEN GÜÇ İZLEME (POWER MONITORING) KULLANIYORUZ?
+# =============================================================================
+# Çoğu espresso/kapsül makinesinin "hazır" LED'i veya API'si yoktur.
+# Makine sadece bir rezistans ve termostat içerir. Su ısınırken rezistans
+# yüksek güç çeker (1000W+); su kaynadığında termostat kapanır ve güç
+# aniden bekleme seviyesine (5-20W) düşer.
+#
+# Bu güç düşüşünü yakalayarak, makinenin hazır olduğunu "sihirli" bir
+# şekilde tespit ederiz — hiçbir sensör veya API gerektirmeden.
+#
+# GÜÇ PROFİLİ:
+#   Açılış → 1000W+ (ısınma) → 5-20W (hazır/standby)
+#   Biz "1000W üzerine çıkıp ardından 20W altına düşme" geçişini yakalıyoruz.
+#
+# BU YAKLAŞIMIN AVANTAJLARI:
+#   - Hiçbir makine modifikasyonu gerekmez (sadece akıllı priz)
+#   - Tüm makine markaları için çalışır (DeLonghi, Krups, Sage, vb.)
+#   - Gerçek "su sıcaklığı" göstergesi — zamanlayıcı tahmininden çok daha doğru
+#
+# DEZAVANTAJLARI:
+#   - İlk açılışta güç 1000W'a çıkmadan "hazır" tespit edilemez
+#     (Bu yüzden "heating_detected" bayrağı kullanıyoruz)
+#   - Bazı makineler termostat döngüsünde tekrar 1000W'a çıkabilir
+#     (Bu yüzden "ready_announced" bayrağı ile tekrar anons engellenir)
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# INPUT BOOLEAN — Durum Bayrakları
+# -----------------------------------------------------------------------------
+# Bu bayraklar, güç izleme algoritmasının durum makinesini (state machine) tutar.
+# HA yeniden başlasa bile durum kaybolmaz (input_boolean persistent storage).
+input_boolean:
+  # Makine ısınmaya başladı mı? (Güç 1000W'ı aştı mı?)
+  barista_heating_detected:
+    name: "Barista — Heating Detected"
+    icon: mdi:fire
+    initial: off
+
+  # "Kahve hazır" anonsu yapıldı mı? (Tekrar tekrar anons yapmayı engeller)
+  barista_ready_announced:
+    name: "Barista — Ready Announced"
+    icon: mdi:coffee-check
+    initial: off
+
+# -----------------------------------------------------------------------------
+# OTOMASYONLAR
+# -----------------------------------------------------------------------------
+automation:
+  # ===========================================================================
+  # OTOMASYON 1: Isınma Başlangıcı Tespiti (Güç > 1000W)
+  # ===========================================================================
+  - id: barista_heating_start
+    alias: "Barista — Isınma Başlangıcı Tespiti"
+    description: >
+      Kahve makinesi prizi açıldıktan sonra güç tüketimi 1000W'ın üzerine
+      çıkarsa, makinenin ısınmaya başladığını tespit eder ve "heating_detected"
+      bayrağını ON yapar. Bu bayrak, hazır tespiti için ön koşuldur.
+
+    trigger:
+      # Güç sensörü her değiştiğinde kontrol et
+      - platform: numeric_state
+        entity_id: sensor.coffee_machine_power
+        above: 1000
+        id: power_high
+
+    condition:
+      # Sadece barista modu aktifken çalışır
+      - condition: state
+        entity_id: input_boolean.barista_mode_active
+        state: "on"
+
+      # Henüz ısınma tespit edilmediyse (ilk kez ısınıyor)
+      - condition: state
+        entity_id: input_boolean.barista_heating_detected
+        state: "off"
+
+    action:
+      # Isınma bayrağını ON yap
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.barista_heating_detected
+
+      # "Ready announced" bayrağını sıfırla (yeni ısınma döngüsü için)
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.barista_ready_announced
+
+      # Opsiyonel: Jarvis ısınma başlangıcını onaylar
+      - service: tts.speak
+        target:
+          entity_id: tts.jarvis_voice
+        data:
+          message: "Heating cycle started. The machine is warming up."
+
+  # ===========================================================================
+  # OTOMASYON 2: Hazırlık Tespiti (Güç 1000W'dan 20W'a düşüş)
+  # ===========================================================================
+  - id: barista_ready_detection
+    alias: "Barista — Kahve Hazırlık Tespiti"
+    description: >
+      Kahve makinesi ısınmaya başladıktan sonra (heating_detected = ON),
+      güç tüketimi 20W'ın altına düşerse, suyun kaynadığını ve makinenin
+      hazır olduğunu tespit eder. Jarvis sesli olarak "kahveniz hazır" anonsu yapar.
+
+    trigger:
+      # -------------------------------------------------------------------------
+      # Güç sensörü 20W'ın altına düşerse tetiklenir
+      # -------------------------------------------------------------------------
+      # 20W eşiği: Bekleme (standby) modu için tipik değer.
+      # Bazı makineler 30W'a kadar çıkabilir; makinenizi test edip
+      # bu eşiği ayarlayın. Shelly Plug S 0.1W hassasiyetle ölçer.
+      - platform: numeric_state
+        entity_id: sensor.coffee_machine_power
+        below: 20
+        id: power_low
+
+    condition:
+      # -------------------------------------------------------------------------
+      # Koşul 1: Barista modu aktif olmalı
+      # -------------------------------------------------------------------------
+      - condition: state
+        entity_id: input_boolean.barista_mode_active
+        state: "on"
+
+      # -------------------------------------------------------------------------
+      # Koşul 2: Isınma tespit edilmiş olmalı (güç önce 1000W'ı aşmış olmalı)
+      # -------------------------------------------------------------------------
+      # Bu koşul OLMAZSA: priz açıldığında güç 0W'dan başlar ve 20W altında
+      # kalır → yanlış "hazır" tespiti. Isınma bayrağı, makinenin gerçekten
+      # ısındığını doğrular.
+      - condition: state
+        entity_id: input_boolean.barista_heating_detected
+        state: "on"
+
+      # -------------------------------------------------------------------------
+      # Koşul 3: Henüz "hazır" anonsu yapılmamış olmalı
+      # -------------------------------------------------------------------------
+      # Termostat döngüsü nedeniyle güç tekrar 20W altına düşebilir.
+      # Aynı ısınma döngüsünde tekrar tekrar anons yapmayı engeller.
+      - condition: state
+        entity_id: input_boolean.barista_ready_announced
+        state: "off"
+
+    action:
+      # "Ready announced" bayrağını ON yap (tekrar anons engeli)
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.barista_ready_announced
+
+      # Kısa gecikme — güç düşüşünün kalıcı olduğunu doğrula (2 saniye)
+      # Bazı makineler kısa güç kesintileri yapabilir; 2 saniye bekle
+      - delay:
+          seconds: 2
+
+      # Güç hala 20W altında mı? (Kalıcı düşüş mü kontrol et)
+      - choose:
+          - conditions:
+              - condition: numeric_state
+                entity_id: sensor.coffee_machine_power
+                below: 20
+            sequence:
+              # -------------------------------------------------------------------------
+              # ANONS: "Kahveniz hazır"
+              # -------------------------------------------------------------------------
+              # Jarvis, makinenin hazır olduğunu sesli olarak bildirir.
+              # İngilizce — premium/sinematik his için (barista_automation.yaml ile uyumlu).
+              - service: tts.speak
+                target:
+                  entity_id: tts.jarvis_voice
+                data:
+                  message: "The water is at optimal temperature. Your espresso is ready to brew."
+
+              # -------------------------------------------------------------------------
+              # MOBİL BİLDİRİM (Opsiyonel)
+              # -------------------------------------------------------------------------
+              # HA Companion App üzerinden telefona bildirim gönder.
+              # Misafir odada değilse bile kahvenin hazır olduğunu öğrenir.
+              - service: notify.mobile_app
+                data:
+                  title: "☕ Barista Mode"
+                  message: "Espresso machine is ready. Optimal temperature reached."
+                  data:
+                    # iOS'ta bildirim sesi
+                    push:
+                      sound: "coffee_ready.caf"
+                      interruption_level: "timeSensitive"
+
+              # -------------------------------------------------------------------------
+              # WLED GÖRSEL BİLDİRİM (Opsiyonel)
+              # -------------------------------------------------------------------------
+              # WLED ışıklarını kısa süreyle altın sarısı yanıp söndür
+              # → kahve hazır görsel sinyali
+              - service: light.turn_on
+                target:
+                  entity_id: light.wled_ambient
+                data:
+                  rgb_color: [255, 215, 0] # Altın sarısı
+                  brightness: 200
+                  effect: "Strobe" # Kısa yanıp sönme
+                  transition: 1
+
+              - delay:
+                  seconds: 3
+
+              # WLED'i cafe atmosferine geri döndür
+              - service: light.turn_on
+                target:
+                  entity_id: light.wled_ambient
+                data:
+                  rgb_color: [101, 67, 33] # Kahverengi/altın (cafe tonu)
+                  brightness: 100
+                  effect: "Breathe"
+                  transition: 3
+
+        # -------------------------------------------------------------------------
+        # Güç tekrar yükseldiyse (yanlış alarm) — bayrağı geri al
+        # -------------------------------------------------------------------------
+        default:
+          - service: input_boolean.turn_off
+            target:
+              entity_id: input_boolean.barista_ready_announced
+
+  # ===========================================================================
+  # OTOMASYON 3: Durum Sıfırlama (Modül Kapatıldığında)
+  # ===========================================================================
+  - id: barista_reset_flags
+    alias: "Barista — Durum Bayraklarını Sıfırla"
+    description: >
+      Barista modu kapatıldığında (barista_automation.yaml'deki stop otomasyonu),
+      güç izleme bayraklarını sıfırlar. Bir sonraki açılışta temiz başlar.
+
+    trigger:
+      # Barista modu OFF olduğunda tetiklenir
+      - platform: state
+        entity_id: input_boolean.barista_mode_active
+        to: "off"
+        id: mode_off
+
+    action:
+      # Isınma bayrağını sıfırla
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.barista_heating_detected
+
+      # Ready announced bayrağını sıfırla
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.barista_ready_announced

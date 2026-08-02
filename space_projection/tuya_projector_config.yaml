@@ -1,0 +1,361 @@
+# =============================================================================
+# space_projection — Tuya Projeksiyon Cihazı LocalTuya Konfigürasyonu
+# =============================================================================
+# Bu dosya, Tuya galaksi projeksiyon cihazının Home Assistant'a LocalTuya
+# üzerinden nasıl bağlanacağını ve sahnelerinin nasıl tanımlanacağını gösterir.
+#
+# 🎨 "SİNEMATİK LÜKS" MANTIĞI:
+# =============================================================================
+# Bu cihaz bir "oyuncak" değil, bir "atmosfer aracı"dır. Tüm ayarlar
+# "sinematik lüks" hissini korumak için tasarlanmıştır:
+#
+#   - Yeşil lazer (yıldız) KAPALI → "çocuk odası" değil "Interstellar"
+#   - Motor hızı %10 → "disko" değil "hipnotik"
+#   - Renkler koyu tonlar → "parlak" değil "derin"
+#   - Parlaklık düşük → "göz alıcı" değil "gizemli"
+#
+# 🚨 GÖRSEL ŞOVUN NEDEN ÇOK YAVAŞ OLMASI GEREKTİĞİ:
+# =============================================================================
+# Hızlı dönen nebula = "disko" → göz yorucu, dikkat dağıtıcı, "oyuncak" hissi
+# Yavaş dönen nebula = "hipnotik" → gözü yormaz, rahatlatıcı, "sinematik" hissi
+#
+# İnsan gözü yavaş hareketi "doğal" algılar (bulutlar, dalgalar gibi).
+# Hızlı hareket = "tehlike/uyarı" sinyali (avcı, tehlike).
+# Bu yüzden motor hızı %10'da tutulur — "döndüğünü fark ettirmeyecek kadar
+# yavaş ama canlı olduğunu hissettirecek kadar hızlı."
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# BÖLÜM 1: LOCALTUYA — PROJEKSİYON CİHAZI ENTTEGRASYONU
+# -----------------------------------------------------------------------------
+# LocalTuya, smart_diffuser modülündeki gibi kurulur.
+# Tuya IoT Platform'dan API anahtarı alınır, cihaz local key ile eklenir.
+# -----------------------------------------------------------------------------
+
+tuya_local:
+  cloud:
+    region: "eu"
+    client_id: "YOUR_TUYA_CLIENT_ID"
+    client_secret: "YOUR_TUYA_CLIENT_SECRET"
+
+  devices:
+    - host: 192.168.1.106 # Projeksiyon cihazının yerel IP'si
+      device_id: "YOUR_PROJECTOR_DEVICE_ID"
+      local_key: "YOUR_LOCAL_KEY"
+      protocol_version: "3.4"
+      friendly_name: "Galaxy Projector"
+      friendly_name_local: "Galaksi Projeksiyon"
+
+      entities:
+        # =====================================================================
+        # ENTITY 1: GÜÇ — Aç/Kapat
+        # =====================================================================
+        # DP 1: Ana güç (projeksiyon aç/kapa)
+        # HA entity: switch.galaxy_projector_power
+        - platform: "switch"
+          friendly_name: "Galaxy Projector Power"
+          unique_id: "galaxy_projector_power"
+          dp_id: 1
+          icon: "mdi:star-four-points"
+
+        # =====================================================================
+        # ENTITY 2: YEŞİL LAZER (Yıldız) — KAPALI TUTULACAK
+        # =====================================================================
+        # DP 2: Yeşil lazer aç/kapa (bool)
+        # HA entity: switch.galaxy_projector_laser
+        #
+        # 🚨 KRİTİK: Bu switch HER ZAMAN KAPALI olmalı!
+        # Yeşil lazer = "çocuk odası" hissi → sinematik lüksü bozar.
+        # Tüm otomasyonlarda lazer KAPALI olarak ayarlanır.
+        # Sadece "parti" modunda açılabilir (opsiyonel).
+        - platform: "switch"
+          friendly_name: "Galaxy Projector Laser"
+          unique_id: "galaxy_projector_laser"
+          dp_id: 2
+          icon: "mdi:laser-pointer"
+          # Bu switch her zaman OFF olmalı — otomasyonlar garanti eder
+
+        # =====================================================================
+        # ENTITY 3: MOTOR HIZI — Nebula Dönüş Hızı
+        # =====================================================================
+        # DP 3: Motor hızı (enum veya percent)
+        # HA entity: select.galaxy_projector_speed
+        #
+        # 🎨 Motor hızı %10 (çok yavaş) olarak ayarlanır.
+        # Neden? Hızlı dönüş = "disko" → göz yorucu.
+        # Yavaş dönüş = "hipnotik" → rahatlatıcı.
+        - platform: "select"
+          friendly_name: "Galaxy Projector Motor Speed"
+          unique_id: "galaxy_projector_speed"
+          dp_id: 3
+          icon: "mdi:rotate-slow"
+          options:
+            - "off" # Motor durur (statik nebula)
+            - "slow" # %10 — çok yavaş (varsayılan — hipnotik)
+            - "medium" # %50 — orta (parti modu için)
+            - "fast" # %100 — hızlı (ASLA kullanma — disko)
+
+        # =====================================================================
+        # ENTITY 4: RENK — Nebula Renk Paleti
+        # =====================================================================
+        # DP 4: Renk (string: "rrggbb" veya enum)
+        # HA entity: select.galaxy_projector_color
+        #
+        # 🎨 Sadece koyu tonlar kullanılır:
+        #   - Derin Mavi (#0A0A40) → varsayılan, derinlik
+        #   - Mor (#2A0A40) → gizem, romantik
+        #   - Koyu Pembe (#400A2A) → tutku, intim
+        #   - Koyu Lacivert (#0A0A20) → sinema salonu
+        #   - Kehribar (#402A0A) → sıcak, sabah
+        #
+        # Parlak renkler (yeşil, sarı, cyan) KULLANILMAZ → göz yorucu.
+        - platform: "select"
+          friendly_name: "Galaxy Projector Color"
+          unique_id: "galaxy_projector_color"
+          dp_id: 4
+          icon: "mdi:palette"
+          options:
+            - "deep_blue" # Derin Mavi — varsayılan
+            - "purple" # Mor — date/lounge
+            - "dark_pink" # Koyu Pembe — intimacy
+            - "dark_navy" # Koyu Lacivert — film modu
+            - "amber" # Kehribar — sabah/barista
+
+        # =====================================================================
+        # ENTITY 5: PARLAKLIK — Nebula Işık Şiddeti
+        # =====================================================================
+        # DP 5: Parlaklık (percent 0-100)
+        # HA entity: number.galaxy_projector_brightness
+        #
+        # 🎨 Parlaklık düşük tutulur (%30-50).
+        # Yüksek parlaklık = "göz alıcı" → dikkat dağıtıcı.
+        # Düşük parlaklık = "gizemli" → derinlik hissi.
+        - platform: "number"
+          friendly_name: "Galaxy Projector Brightness"
+          unique_id: "galaxy_projector_brightness"
+          dp_id: 5
+          icon: "mdi:brightness-4"
+          min_value: 0
+          max_value: 100
+          step: 1
+          unit_of_measurement: "%"
+          # Varsayılan: %30 (loş — gizemli, derin)
+
+        # =====================================================================
+        # ENTITY 6: SAHNE — Hazır Sahne Modları
+        # =====================================================================
+        # DP 6: Sahne (enum)
+        # HA entity: select.galaxy_projector_scene
+        # Bazı projeksiyon cihazları hazır sahne modları sunar.
+        - platform: "select"
+          friendly_name: "Galaxy Projector Scene"
+          unique_id: "galaxy_projector_scene"
+          dp_id: 6
+          icon: "mdi:movie-open"
+          options:
+            - "nebula_only" # Sadece nebula (lazer kapalı)
+            - "aurora" # Aurora efekti
+            - "galaxy" # Galaksi spirali
+            - "ocean" # Okyanus dalgaları
+            - "custom" # Özel ayar
+
+# -----------------------------------------------------------------------------
+# BÖLÜM 2: SAHNE SCRIPT'LERİ — Hazır Atmosfer Modları
+# -----------------------------------------------------------------------------
+# Her sahne, projeksiyon cihazının tüm ayarlarını (güç, lazer, motor, renk,
+# parlaklık) tek bir script çağrısıyla ayarlar.
+# =============================================================================
+
+script:
+  # ===========================================================================
+  # SAHNE 1: "Deep Space" — Varsayılan Derin Uzay
+  # ===========================================================================
+  # Derin mavi nebula, çok yavaş dönüş, loş parlaklık, lazer kapalı.
+  # Bu sahne, odada hiçbir mod aktif değilken veya uyku öncesi kullanılır.
+  # "Interstellar" filmi gibi — koyu, derin, gizemli.
+  scene_deep_space:
+    alias: "Projection — Deep Space"
+    icon: mdi:galaxy
+    sequence:
+      # Projeksiyonu aç
+      - service: switch.turn_on
+        target:
+          entity_id: switch.galaxy_projector_power
+      # Yeşil lazeri KAPAT (sinematik lüks)
+      - service: switch.turn_off
+        target:
+          entity_id: switch.galaxy_projector_laser
+      # Motor hızını "slow" (%10) — çok yavaş, hipnotik
+      - service: select.select_option
+        target:
+          entity_id: select.galaxy_projector_speed
+        data:
+          option: "slow"
+      # Rengi "deep_blue" — derin mavi
+      - service: select.select_option
+        target:
+          entity_id: select.galaxy_projector_color
+        data:
+          option: "deep_blue"
+      # Parlaklığı %30 — loş, gizemli
+      - service: number.set_value
+        target:
+          entity_id: number.galaxy_projector_brightness
+        data:
+          value: 30
+
+  # ===========================================================================
+  # SAHNE 2: "Romantic Nebula" — Date/Lounge/Intimacy
+  # ===========================================================================
+  # Mor/koyu pembe nebula, çok yavaş dönüş, loş parlaklık, lazer kapalı.
+  # Romantik akşam, date vibe, intimacy modu için.
+  scene_romantic_nebula:
+    alias: "Projection — Romantic Nebula"
+    icon: mdi:heart
+    sequence:
+      - service: switch.turn_on
+        target:
+          entity_id: switch.galaxy_projector_power
+      - service: switch.turn_off
+        target:
+          entity_id: switch.galaxy_projector_laser
+      - service: select.select_option
+        target:
+          entity_id: select.galaxy_projector_speed
+        data:
+          option: "slow"
+      # Rengi "dark_pink" — koyu pembe (intim/tutkulu)
+      - service: select.select_option
+        target:
+          entity_id: select.galaxy_projector_color
+        data:
+          option: "dark_pink"
+      - service: number.set_value
+        target:
+          entity_id: number.galaxy_projector_brightness
+        data:
+          value: 35
+
+  # ===========================================================================
+  # SAHNE 3: "Cinema Night" — Film Modu
+  # ===========================================================================
+  # Koyu lacivert nebula, çok yavaş dönüş, çok loş parlaklık, lazer kapalı.
+  # Sinema salonu / açık hava sineması ambiyansı.
+  scene_cinema_night:
+    alias: "Projection — Cinema Night"
+    icon: mdi:movie
+    sequence:
+      - service: switch.turn_on
+        target:
+          entity_id: switch.galaxy_projector_power
+      - service: switch.turn_off
+        target:
+          entity_id: switch.galaxy_projector_laser
+      - service: select.select_option
+        target:
+          entity_id: select.galaxy_projector_speed
+        data:
+          option: "slow"
+      # Rengi "dark_navy" — koyu lacivert (sinema salonu)
+      - service: select.select_option
+        target:
+          entity_id: select.galaxy_projector_color
+        data:
+          option: "dark_navy"
+      # Parlaklığı %20 — çok loş (ekran ön planda, tavan arka plan)
+      - service: number.set_value
+        target:
+          entity_id: number.galaxy_projector_brightness
+        data:
+          value: 20
+
+  # ===========================================================================
+  # SAHNE 4: "Morning Amber" — Sabah/Barista
+  # ===========================================================================
+  # Kehribar nebula, yavaş dönüş, orta parlaklık, lazer kapalı.
+  # Sabah uyanışı, barista modu için sıcak atmosfer.
+  scene_morning_amber:
+    alias: "Projection — Morning Amber"
+    icon: mdi:weather-sunset
+    sequence:
+      - service: switch.turn_on
+        target:
+          entity_id: switch.galaxy_projector_power
+      - service: switch.turn_off
+        target:
+          entity_id: switch.galaxy_projector_laser
+      - service: select.select_option
+        target:
+          entity_id: select.galaxy_projector_speed
+        data:
+          option: "slow"
+      # Rengi "amber" — kehribar (sıcak, sabah)
+      - service: select.select_option
+        target:
+          entity_id: select.galaxy_projector_color
+        data:
+          option: "amber"
+      # Parlaklığı %40 — biraz daha parlak (sabah, uyanış)
+      - service: number.set_value
+        target:
+          entity_id: number.galaxy_projector_brightness
+        data:
+          value: 40
+
+  # ===========================================================================
+  # SAHNE 5: "Off" — Kapat
+  # ===========================================================================
+  scene_projection_off:
+    alias: "Projection — Off"
+    icon: mdi:power
+    sequence:
+      - service: switch.turn_off
+        target:
+          entity_id: switch.galaxy_projector_power
+
+# -----------------------------------------------------------------------------
+# ALTERNATİF: IR KUMANDALI PROJEKSİYON (Broadlink)
+# -----------------------------------------------------------------------------
+# Eğer projeksiyon cihazı Tuya uyumlu DEĞİLSE ve sadece IR kumandalıysa,
+# Broadlink RM4 Mini ile kontrol edilebilir (invisible_remote modülündeki gibi).
+#
+# Bu durumda LocalTuya gerekmez; Broadlink ile IR kodları öğrenilir:
+#
+#   - Power (Aç/Kapa) → remote.send_command
+#   - Laser On/Off → remote.send_command
+#   - Motor Speed → remote.send_command (her tuş farklı hız)
+#   - Color → remote.send_command (her tuş farklı renk)
+#   - Brightness → remote.send_command (artır/azalt)
+#
+# Script örneği (Broadlink ile):
+#
+# script:
+#   scene_deep_space_ir:
+#     sequence:
+#       - service: remote.send_command
+#         target:
+#           entity_id: remote.broadlink_rm4_mini
+#         data:
+#           command: ["POWER_HEX_CODE"]  # Power ON
+#       - delay: 2
+#       - service: remote.send_command
+#         target:
+#           entity_id: remote.broadlink_rm4_mini
+#         data:
+#           command: ["LASER_OFF_HEX"]  # Laser OFF
+#       - delay: 1
+#       - service: remote.send_command
+#         target:
+#           entity_id: remote.broadlink_rm4_mini
+#         data:
+#           command: ["COLOR_BLUE_HEX"]  # Color → Blue
+#       - delay: 1
+#       - service: remote.send_command
+#         target:
+#           entity_id: remote.broadlink_rm4_mini
+#         data:
+#           command: ["SPEED_SLOW_HEX"]  # Speed → Slow
+#
+# Dezavantaj: IR ile geri besleme yok (cihazın gerçekten açılıp açılmadığı
+# bilinemez). Tuya/LocalTuya her zaman tercih edilir.
+# -----------------------------------------------------------------------------

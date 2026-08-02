@@ -1,0 +1,404 @@
+# =============================================================================
+# intimacy_sync_mode — Home Assistant Otomasyonu
+# =============================================================================
+# Bu dosya Home Assistant'ın automations.yaml dosyasına eklenecek veya
+# packages/ klasörüne konulacak bir paket olarak import edilecek.
+#
+# ÇALIŞMA MANTIĞI:
+#   1. Modül manuel olarak tetiklenir (Flic butonu veya Jarvis ses komutu)
+#   2. Başlangıç aksiyonları çalışır: ışıklar, difüzör, klima, müzik
+#   3. ESP32'den gelen "Activity Level" sensörü dinlenir
+#   4. Activity Level'a göre WLED efektleri dinamik olarak değişir
+#   5. Hareket durduğunda ışıklar loş/sabit kırmızıya döner
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# INPUT BOOLEAN — Modül durumunu HA içinde tutar
+# -----------------------------------------------------------------------------
+# Bu switch, modülün aktif/pasif durumunu saklar. Flic veya ses komutu
+# bunu ON yapar; modülden çıkış yapıldığında OFF yapılır.
+input_boolean:
+  intimacy_sync_active:
+    name: "Intimacy Sync Mode"
+    icon: mdi:heart-pulse
+    initial: off
+
+# -----------------------------------------------------------------------------
+# INPUT NUMBER — WLED efekt hızını dinamik ayarlamak için
+# -----------------------------------------------------------------------------
+# Activity Level'a göre bu değer 0-100 arası değişir ve WLED efekt hızını
+# belirler. HA arayüzünden manuel de müdahale edilebilir.
+input_number:
+  intimacy_wled_speed:
+    name: "Intimacy WLED Speed"
+    min: 0
+    max: 100
+    step: 1
+    initial: 20
+    icon: mdi:speedometer
+
+  intimacy_wled_intensity:
+    name: "Intimacy WLED Intensity"
+    min: 0
+    max: 255
+    step: 1
+    initial: 80
+    icon: mdi:brightness-6
+
+# -----------------------------------------------------------------------------
+# TETİKLEYİCİLER — Modülü başlatan olaylar
+# -----------------------------------------------------------------------------
+automation:
+  # ===========================================================================
+  # OTOMASYON 1: Modülü Başlat (Flic veya Ses Komutu)
+  # ===========================================================================
+  - id: intimacy_sync_start
+    alias: "Intimacy Sync — Modülü Başlat"
+    description: >
+      Gizli Flic butonu çift tıklama veya Jarvis ses komutu
+      ("Intimacy mode" / "Romantik mod") ile tetiklenir.
+      Tüm başlangıç aksiyonlarını çalıştırır.
+
+    trigger:
+      # Tetikleyici 1: Flic butonu çift tıklama
+      - platform: state
+        entity_id: sensor.flic_bedside_action
+        to: "double_click"
+        id: flic_trigger
+
+      # Tetikleyici 2: Jarvis ses komutu (HA conversation agent)
+      - platform: conversation
+        command: "romantik mod"
+        id: voice_trigger
+
+      # Tetikleyici 3: Jarvis ses komutu alternatif
+      - platform: conversation
+        command: "intimacy mode"
+        id: voice_trigger_en
+
+    condition:
+      # Modül zaten aktif değilse çalıştır (çift tetiklenmeyi engelle)
+      - condition: state
+        entity_id: input_boolean.intimacy_sync_active
+        state: "off"
+
+    action:
+      # -------------------------------------------------------------------------
+      # AKSİYON 0: Modülü aktif işaretle
+      # -------------------------------------------------------------------------
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.intimacy_sync_active
+
+      # ESP32 sensöre modül aktif sinyali gönder (MQTT üzerinden)
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/intimacy/active/set"
+          payload: "ON"
+          retain: true
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 1: IŞIKLAR — Tavan kapat + WLED kırmızıya al
+      # -------------------------------------------------------------------------
+      # Tavan ışıklarını kapat — sinematik karanlık atmosfer
+      - service: light.turn_off
+        target:
+          entity_id:
+            - light.ceiling_light
+            - light.room_main_lights
+        data:
+          transition: 2 # 2 saniyede sön (ani karanlık değil, yumuşak geçiş)
+
+      # WLED'i aç ve koyu yakut kırmızısı (#8B0000) rengine al
+      # #8B0000 = Koyu Yakut Kırmızısı: tutkulu ama gözü yormayan, sıcak bir ton
+      - service: light.turn_on
+        target:
+          entity_id: light.wled_ambient
+        data:
+          rgb_color: [139, 0, 0] # #8B0000 Koyu Yakut Kırmızısı
+          brightness: 80 # Başlangıçta loş (%31 parlaklık)
+          effect: "Breathe" # Nefes alma efekti — yavaş nabız
+          transition: 3 # 3 saniyede geçiş
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 2: İKLİM & KOKU — Difüzör aç + Klima 20°C'ye düşür
+      # -------------------------------------------------------------------------
+      # Akıllı difüzörü aç — Sandalağacı + Ylang-Ylang esansı yayılmaya başlar
+      - service: switch.turn_on
+        target:
+          entity_id: switch.smart_diffuser
+
+      # Difüzör mist seviyesini orta (2) yap — çok yoğun değil, hafif koku
+      - service: select.select_option
+        target:
+          entity_id: select.diffuser_mist_level
+        data:
+          option: "medium"
+
+      # Difüzör LED rengini sıcak kehribar (amber) yap — kırmızı ışıkla uyumlu
+      - service: light.turn_on
+        target:
+          entity_id: light.diffuser_led
+        data:
+          rgb_color: [191, 128, 0] # Kehribar (Amber)
+          brightness: 120
+
+      # Klimayı sessizce 20°C'ye düşür — IR blaster (invisible_remote) üzerinden
+      # 20°C: Rahatlatıcı serinluk — bedensel ısı arttığında konfor sağlar
+      # fan_mode: quiet — klima fan sesi romantik atmosferi boğmaz
+      - service: climate.set_temperature
+        target:
+          entity_id: climate.ac_living_room
+        data:
+          temperature: 20
+          hvac_mode: cool
+
+      - service: climate.set_fan_mode
+        target:
+          entity_id: climate.ac_living_room
+        data:
+          fan_mode: quiet
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 3: MEDYA — Spotify "Deep Flow" çalma listesi
+      # -------------------------------------------------------------------------
+      # Spotify'dan "Deep Flow" çalma listesini başlat
+      # Deep Flow: yavaş, akıcı, atmosferik müzik — ritmik hareketle uyumlu
+      - service: media_player.play_media
+        target:
+          entity_id: media_player.spotify
+        data:
+          media_content_type: "playlist"
+          media_content_id: "spotify:playlist:37i9dQZF1DX9vYRuIxtD4e" # Deep Flow
+          # Not: Çalma listesi ID'si gerçek Spotify ID'si ile değiştirilmeli
+
+      # Ses seviyesini %30'a ayarla — arka plan müziği, ön planda değil
+      - service: media_player.volume_set
+        target:
+          entity_id: media_player.spotify
+        data:
+          volume_level: 0.30
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 4: DİNAMİK RİTİM SENKRONİZASYONU — State listener başlat
+      # -------------------------------------------------------------------------
+      # Bu kısım, ESP32'den gelen Activity Level sensörünü dinleyen
+      # ayrı bir otomasyon (intimacy_sync_dynamic) tarafından yönetilir.
+      # Burada sadece bir gecikme + bilgilendirme gönderiyoruz.
+      - delay:
+          seconds: 5 # Müzik ve difüzörün oturması için bekle
+
+      # Jarvis üzerinden sesli onay (TTS)
+      - service: tts.speak
+        target:
+          entity_id: tts.jarvis_voice
+        data:
+          message: "Intimacy modu aktif. Işıklar, koku ve müzik senkronize ediliyor."
+
+  # ===========================================================================
+  # OTOMASYON 2: Dinamik Ritim Senkronizasyonu (Activity Level → WLED)
+  # ===========================================================================
+  - id: intimacy_sync_dynamic
+    alias: "Intimacy Sync — Dinamik Ritim Senkronizasyonu"
+    description: >
+      ESP32'den gelen "Bed Activity Level" sensörü değiştiğinde çalışır.
+      Activity Level'a göre WLED efekt hızını, parlaklığını ve rengini
+      dinamik olarak ayarlar. Hareket arttıkça nabız hızlanır ve renk
+      daha parlak kırmızıya döner; hareket durduğunda loş sabit kırmızıya döner.
+
+    trigger:
+      # Activity Level sensörü her değiştiğinde tetiklenir
+      # ESP32'den 2 saniyede bir güncelleme gelir
+      - platform: state
+        entity_id: sensor.bed_activity_level
+        id: activity_change
+
+    condition:
+      # Sadece modül aktifken çalışır
+      - condition: state
+        entity_id: input_boolean.intimacy_sync_active
+        state: "on"
+
+    action:
+      # Activity Level değerini al (0-100 float)
+      - variables:
+          activity: "{{ states('sensor.bed_activity_level') | float(0) }}"
+          # Activity'yi 0-100 aralığından 0-255 parlaklık aralığına map'le
+          # Düşük activity → loş (80) | Yüksek activity → parlak (255)
+          brightness: "{{ (80 + (activity / 100.0) * 175) | int }}"
+          # Efekt hızını activity'ye göre map'le
+          # Düşük activity → yavaş nefes (speed 20) | Yüksek → hızlı nabız (speed 100)
+          speed: "{{ (20 + (activity / 100.0) * 80) | int }}"
+          # Renk: activity arttıkça koyu kırmızıdan parlak kırmızıya geç
+          # 0% activity → #8B0000 (Koyu Yakut) | 100% activity → #FF4500 (Turuncu-Kırmızı)
+          # R kanalı: 139 → 255 (artar)
+          # G kanalı: 0 → 69 (hafif artar — turuncu ton)
+          # B kanalı: 0 → 0 (sabit)
+          red: "{{ (139 + (activity / 100.0) * 116) | int }}"
+          green: "{{ (0 + (activity / 100.0) * 69) | int }}"
+          blue: 0
+
+      # -------------------------------------------------------------------------
+      # SENARYO A: Hareket Var (Activity > 5)
+      # -------------------------------------------------------------------------
+      # Activity Level 5'ten büyükse → dinamik efekt uygula
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: "{{ activity | float > 5 }}"
+            sequence:
+              # WLED efekt hızını activity'ye göre ayarla
+              - service: number.set_value
+                target:
+                  entity_id: number.wled_ambient_speed
+                data:
+                  value: "{{ speed }}"
+
+              # WLED parlaklığını activity'ye göre ayarla
+              - service: light.turn_on
+                target:
+                  entity_id: light.wled_ambient
+                data:
+                  rgb_color: ["{{ red }}", "{{ green }}", "{{ blue }}"]
+                  brightness: "{{ brightness }}"
+                  effect: "Breathe"
+                  transition: 1 # Hızlı geçiş — ritme ayak uydur
+
+              # input_number'ları güncelle (HA arayüzünden görüntü için)
+              - service: input_number.set_value
+                target:
+                  entity_id: input_number.intimacy_wled_speed
+                data:
+                  value: "{{ speed }}"
+
+              - service: input_number.set_value
+                target:
+                  entity_id: input_number.intimacy_wled_intensity
+                data:
+                  value: "{{ brightness }}"
+
+        # -----------------------------------------------------------------
+        # SENARYO B: Hareket Durdu (Activity ≤ 5)
+        # -----------------------------------------------------------------
+        # Activity Level 5'ten küçük veya eşitse → loş sabit kırmızıya dön
+        default:
+          - service: light.turn_on
+            target:
+              entity_id: light.wled_ambient
+            data:
+              rgb_color: [139, 0, 0] # #8B0000 Koyu Yakut Kırmızısı
+              brightness: 60 # Daha loş (%23)
+              effect: "Solid" # Sabit — nabız durur
+              transition: 5 # Yavaş geçiş — ani sönme değil
+
+          # Efekt hızını minimuma indir
+          - service: number.set_value
+            target:
+              entity_id: number.wled_ambient_speed
+            data:
+              value: 10
+
+  # ===========================================================================
+  # OTOMASYON 3: Modülü Kapat
+  # ===========================================================================
+  - id: intimacy_sync_stop
+    alias: "Intimacy Sync — Modülü Kapat"
+    description: >
+      Modülden çıkış: Işıklar normale döner, difüzör kapanır, müzik durur.
+      Flic butonu basılı tutma veya Jarvis "Modülü kapat" komutu ile tetiklenir.
+
+    trigger:
+      # Tetikleyici 1: Flic basılı tutma
+      - platform: state
+        entity_id: sensor.flic_bedside_action
+        to: "hold"
+        id: flic_stop
+
+      # Tetikleyici 2: Jarvis ses komutu
+      - platform: conversation
+        command: "modulu kapat"
+        id: voice_stop
+
+      # Tetikleyici 3: Modül 30 dakikadır aktif ve hiç hareket yok
+      # (Güvenlik: kullanıcı uyuyakaldıysa her şeyi kapat)
+      - platform: template
+        value_template: >
+          {{ is_state('input_boolean.intimacy_sync_active', 'on') and
+             (states('sensor.bed_activity_level') | float < 1) and
+             (now() - states.input_boolean.intimacy_sync_active.last_changed).total_seconds() > 1800 }}
+        id: auto_stop
+
+    condition:
+      - condition: state
+        entity_id: input_boolean.intimacy_sync_active
+        state: "on"
+
+    action:
+      # Modülü pasif işaretle
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.intimacy_sync_active
+
+      # ESP32'ye modül kapandı sinyali gönder
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/intimacy/active/set"
+          payload: "OFF"
+          retain: true
+
+      # Difüzörü kapat
+      - service: switch.turn_off
+        target:
+          entity_id: switch.smart_diffuser
+
+      # Müziği durdur
+      - service: media_player.media_stop
+        target:
+          entity_id: media_player.spotify
+
+      # WLED'i kapat
+      - service: light.turn_off
+        target:
+          entity_id: light.wled_ambient
+        data:
+          transition: 5
+
+      # Klimayı normal sıcaklığa (24°C) geri al
+      - service: climate.set_temperature
+        target:
+          entity_id: climate.ac_living_room
+        data:
+          temperature: 24
+          hvac_mode: cool
+
+      - service: climate.set_fan_mode
+        target:
+          entity_id: climate.ac_living_room
+        data:
+          fan_mode: auto
+
+      # Tavan ışıklarını yumuşakça geri aç
+      - service: light.turn_on
+        target:
+          entity_id: light.ceiling_light
+        data:
+          brightness: 150
+          transition: 5
+
+      # Jarvis sesli onay
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.id == 'auto_stop' }}"
+            sequence:
+              - service: tts.speak
+                target:
+                  entity_id: tts.jarvis_voice
+                data:
+                  message: "Intimacy modu otomatik olarak kapatıldı. İyi geceler."
+        default:
+          - service: tts.speak
+            target:
+              entity_id: tts.jarvis_voice
+            data:
+              message: "Intimacy modu kapatıldı."

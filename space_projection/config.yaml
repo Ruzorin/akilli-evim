@@ -1,0 +1,16 @@
+# space_projection - Tavan Projeksiyonu / Derin Uzay İllüzyonu
+# Tuya entegrasyonu ile projeksiyon kontrolü
+
+tuya:
+  device_id: "PROJECTOR_DEVICE_ID"
+  local_key: "YOUR_LOCAL_KEY"
+  ip: "192.168.1.101"
+
+scenes:
+  deep_space:
+    media: "assets/deep_space.mp4"
+    audio: "spatial_audio.cosmic_ambient"
+  galaxy:
+    media: "assets/galaxy.mp4"
+  off:
+    power: false

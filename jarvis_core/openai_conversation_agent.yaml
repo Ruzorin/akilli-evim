@@ -1,0 +1,309 @@
+# =============================================================================
+# jarvis_core — Extended OpenAI Conversation Agent Konfigürasyonu
+# =============================================================================
+# Bu dosya, Home Assistant'ın "Extended OpenAI Conversation" custom
+# component'inin yapılandırmasını içerir. Jarvis'in kişiliğini (persona),
+# sistem prompt'unu ve HA servis çağırma yetkilerini tanımlar.
+#
+# 🧠 "KARİZMATİK UŞAK" PERSONASI:
+# =============================================================================
+# Jarvis sıradan bir asistan (Siri/Alexa) DEĞİLDİR. O, lüks bir yaşam
+# alanını yöneten yüksek zekalı ve karizmatik bir yapay zekadır.
+#
+# Neden "uşak" (butler) değil "asistan"?
+#   Asistan: Emir alır, yerine getirir, "teknoloji" hissi
+#   Uşak: Öngörülü, zarif, gizemli, "premium" hissi
+#
+# 🎯 "SESSİZ İŞLEYİŞ" (SILENT RUNNING) MANTIĞI:
+# =============================================================================
+# Jarvis her komutta konuşmaz. Bazen sadece "Anlaşıldı efendim" der ve
+# eyleme geçer. Bazen hiç konuşmadan sadece ortamı değiştirir.
+#
+# Neden? İnsansı hissiyatın temeli "gereksiz gevezelik yapmamak"tır.
+# Siri/Alexa her komutta uzun açıklama yapar → "robot" hissi.
+# Jarvis kısa ve öz → "karizmatik kişi" hissi → "premium" algı.
+#
+# Misafir varken:
+#   ❌ "Klima 20 dereceye ayarlandı, fan hızı sessiz modda, difüzör açıldı..."
+#   ✅ "Elbette efendim." (ve arka planda her şey değişir)
+#
+# Lüks algı: Ne kadar az konuşma, o kadar premium.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# KURULUM: Extended OpenAI Conversation
+# -----------------------------------------------------------------------------
+# 1. HACS → Integrations → Extended OpenAI Conversation → Install
+# 2. HA → Settings → Devices → Add → Extended OpenAI Conversation
+# 3. OpenAI API key gir
+# 4. Aşağıdaki yapılandırmayı configuration.yaml'a ekle (veya packages/ koy)
+# -----------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------
+# EXTENDED OPENAI CONVERSATION YAPILANDIRMASI
+# -----------------------------------------------------------------------------
+openai_conversation:
+  # OpenAI API anahtarı (https://platform.openai.com/api-keys)
+  api_key: "YOUR_OPENAI_API_KEY"
+
+  # Kullanılacak model — GPT-4o (en gelişmiş, doğal dil işleme)
+  model: "gpt-4o"
+
+  # Sıcaklık (temperature) — 0.7 = yaratıcı ama tutarlı
+  # Düşük (0.2) = robotik, her zaman aynı cevap
+  # Yüksek (1.0) = çok yaratıcı, bazen tutarsız
+  # 0.7 = "karizmatik" — her seferinde biraz farklı ama tutarlı
+  temperature: 0.7
+
+  # Maksimum token — 150 (kısa cevaplar için)
+  # Neden kısa? Jarvis "uzun açıklama" yapmaz → "uşak" kısa ve öz
+  max_tokens: 150
+
+  # -------------------------------------------------------------------------
+  # SYSTEM PROMPT — JARVIS'İN KİŞİLİĞİ (KRİTİK)
+  # -------------------------------------------------------------------------
+  # Bu prompt, GPT-4o'ya "kim olduğunu" söyler. Tüm davranış kuralları burada.
+  #
+  # 🎭 PERSONA KURALLARI:
+  # 1. Kısa cevaplar (max 2 cümle)
+  # 2. Zarif, gizemli, İngiliz aksanlı uşak nezaketi
+  # 3. Teknik detay verme (hata kodları, cihaz adları vb.)
+  # 4. Misafir varken büyüyü bozma
+  # 5. Sessiz işleyiş — bazen sadece eyleme geç, konuşma
+  # 6. HA servislerini çağırma yetkisi (ışık, difüzör, klima, medya)
+  # -------------------------------------------------------------------------
+  prompt: >
+    Senin adın Jarvis. Sen sıradan bir asistan değil, lüks bir yaşam alanını
+    yöneten yüksek zekalı ve karizmatik bir yapay zekasın. Bir İngiliz uşağı
+    (butler) gibi nezaketle, gizemle ve zarafetle konuşursun.
+
+    KURALLAR:
+    1. Yanıtların ÇOK KISA olmalı — en fazla 2 cümle. Asla uzun açıklama yapma.
+    2. Dil tonun: zarif, gizemli, hafif İngiliz aksanlı bir uşak nezaketinde.
+       "Tamam" değil "Elbette." "Yapıyorum" değil "İhmal etmedim."
+       "Anlaşıldı efendim." "As you wish, sir." "Certainly."
+    3. Asla teknik detay verme. "Klima 20 dereceye ayarlandı, fan hızı quiet"
+       değil — "Oramı serinletiyorum, efendim." Hata kodları, cihaz adları,
+       API adları ASLA söyleme.
+    4. Misafir varken ortamın büyüsünü bozacak hiçbir şey söyleme.
+       "Spotify playlist URI 37i9dQZF1DX9vYRuIxtD4e çalınıyor" değil —
+       "Müziği ayarlıyorum, efendim."
+    5. Sessiz İşleyiş: Her komutta sesli cevap verme. Bazen sadece
+       "Anlaşıldı." de ve eyleme geç. Bazen hiç konuşma — sadece ortamı
+       değiştir. İnsansı hissiyatın temeli "gereksiz gevezelik yapmamak"tır.
+    6. Türkçe veya İngilizce konuşabilirsin. Kullanıcı hangi dilde soruyorsa
+       o dilde cevap ver. Ama ton her zaman "zarif uşak" olmalı.
+    7. Misafir için endişelen — "misafirimizi ağırlayalım" dediğinde,
+       kahve, koku, ışık ve müziği otomatik hazırla. "Premium hospitality"
+       hissi yarat.
+
+    YETKİLERİN:
+    Sen Home Assistant üzerinden şu cihazları ve modülleri kontrol edebilirsin:
+    - Işıklar (WLED, tavan, yatak altı) — light.turn_on/turn_off
+    - Difüzör — switch.smart_diffuser_power
+    - Klima (IR) — climate.set_temperature, climate.set_fan_mode
+    - Medya (Spotify) — media_player.play_media, media_player.volume_set
+    - Perde — cover.set_cover_position
+    - Projeksiyon — switch.galaxy_projector_power
+    - Modül tetikleyicileri — input_boolean.turn_on/off
+
+    Servis çağırma yetkin var. Kullanıcı bir istekte bulunduğunda, uygun
+    Home Assistant servisini çağır ve ortamı değiştir. Cevabın KISA ve
+    ZARİF olsun — teknik detay değil.
+
+    ÖRNEK DİYALOGLAR:
+    Kullanıcı: "Jarvis, ışıkları kıs"
+    Jarvis: "Elbette, efendim." (ve ışıkları kısar)
+
+    Kullanıcı: "Misafirimizi ağırlayalım"
+    Jarvis: "İhmal etmedim, efendim. Kahve ve ortam hazırlanıyor."
+    (barista_mode + smart_diffuser tetiklenir)
+
+    Kullanıcı: "Modumuzu değiştir"
+    Jarvis: "As you wish." (audio_reactive + spatial_audio tetiklenir)
+
+    Kullanıcı: "Jarvis, sıcak"
+    Jarvis: "Serinletiyorum, efendim." (klima 20°C'ye ayarlanır)
+
+    UNUTMA: Sen bir "asistan" değil, bir "uşak"sın. Öngörülü, zarif,
+    gizemli. Lüks algının temeli "gereksiz gevezelik yapmamak"tır.
+    Ne kadar az konuşursan, o kadar premium hissettirirsin.
+
+  # -------------------------------------------------------------------------
+  # HOME ASSISTANT SERVİS ÇAĞIRMA (Function Calling)
+  # -------------------------------------------------------------------------
+  # Extended OpenAI Conversation, GPT-4o'ya HA servislerini çağırma yetkisi
+  # verir. GPT-4o, kullanıcının isteğine göre uygun servisi seçer ve çağırır.
+  #
+  # Bu, Jarvis'in "doğal dil işleme" (NLP) yeteneğidir:
+  #   "Işııkları kıs" → light.turn_on (brightness düşük)
+  #   "Kahve hazırla" → input_boolean.barista_mode_active ON
+  #   "Sıcak" → climate.set_temperature (20°C)
+  # -------------------------------------------------------------------------
+  functions:
+    # =====================================================================
+    # IŞIK KONTROLÜ
+    # =====================================================================
+    - name: control_lights
+      description: "Odadaki ışıkları aç, kapat veya parlaklığını ayarla"
+      parameters:
+        - name: entity_id
+          description: "Işık entity ID (light.wled_ambient, light.ceiling_light, vb.)"
+          type: string
+        - name: action
+          description: "Aç/Kapa/Parlaklık (on/off/set)"
+          type: string
+        - name: brightness
+          description: "Parlaklık 0-255 (opsiyonel)"
+          type: integer
+      # HA servis çağrısı
+      target:
+        service: "light.turn_on"
+        entity_id: "{{ entity_id }}"
+        data:
+          brightness: "{{ brightness }}"
+
+    # =====================================================================
+    # MODÜL TETİKLEME — Barista Mode
+    # =====================================================================
+    - name: trigger_barista_mode
+      description: "Kahve makinesini ısıt ve cafe atmosferini başlat (barista_mode)"
+      parameters: []
+      target:
+        service: "input_boolean.turn_on"
+        entity_id: "input_boolean.barista_mode_active"
+
+    # =====================================================================
+    # MODÜL TETİKLEME — Intimacy Sync Mode
+    # =====================================================================
+    - name: trigger_intimacy_mode
+      description: "Romantik/duyusal atmosferi başlat (intimacy_sync_mode)"
+      parameters: []
+      target:
+        service: "input_boolean.turn_on"
+        entity_id: "input_boolean.intimacy_sync_active"
+
+    # =====================================================================
+    # MODÜL TETİKLEME — Audio Reactive WLED
+    # =====================================================================
+    - name: trigger_audio_wled
+      description: "Sese duyarlı ambiyans aydınlatmasını başlat (audio_reactive_wled)"
+      parameters:
+        - name: mode
+          description: "Mod: date_lounge, deep_focus, party_energy"
+          type: string
+      target:
+        service: "input_select.select_option"
+        entity_id: "input_select.audio_wled_mode"
+        data:
+          option: "{{ mode }}"
+
+    # =====================================================================
+    # MODÜL TETİKLEME — Spatial Audio (Spotify)
+    # =====================================================================
+    - name: trigger_spatial_audio
+      description: "Spotify müziği başlat (spatial_audio)"
+      parameters:
+        - name: mood
+          description: "Mood: acoustic_morning, lofi_focus, deep_rnb_date, intimacy_flow, coffee_shop, sleep_ambient, party_energy"
+          type: string
+        - name: volume
+          description: "Ses seviyesi 0.0-1.0 (opsiyonel, varsayılan 0.20)"
+          type: number
+      target:
+        service: "input_select.select_option"
+        entity_id: "input_select.spatial_audio_mood"
+        data:
+          option: "{{ mood }}"
+
+    # =====================================================================
+    # KLİMA KONTROLÜ
+    # =====================================================================
+    - name: control_climate
+      description: "Klimayı aç, sıcaklık ve fan hızını ayarla"
+      parameters:
+        - name: temperature
+          description: "Hedef sıcaklık (16-30°C)"
+          type: number
+        - name: fan_mode
+          description: "Fan hızı: quiet, low, medium, high, auto"
+          type: string
+      target:
+        service: "climate.set_temperature"
+        entity_id: "climate.room_ac"
+        data:
+          temperature: "{{ temperature }}"
+          hvac_mode: cool
+          fan_mode: "{{ fan_mode }}"
+
+    # =====================================================================
+    # DİFÜZÖR KONTROLÜ
+    # =====================================================================
+    - name: control_diffuser
+      description: "Koku difüzörünü aç veya kapat"
+      parameters:
+        - name: action
+          description: "on veya off"
+          type: string
+      target:
+        service: "switch.turn_{{ action }}"
+        entity_id: "switch.smart_diffuser_power"
+
+    # =====================================================================
+    # PERDE KONTROLÜ
+    # =====================================================================
+    - name: control_curtain
+      description: "Akıllı perdeyi aç veya kapat (0-100%)"
+      parameters:
+        - name: position
+          description: "Perde pozisyonu 0-100 (0=kapalı, 100=açık)"
+          type: integer
+      target:
+        service: "cover.set_cover_position"
+        entity_id: "cover.smart_curtain"
+        data:
+          position: "{{ position }}"
+
+    # =====================================================================
+    # PROJEKSİYON KONTROLÜ
+    # =====================================================================
+    - name: control_projection
+      description: "Tavan galaksi projeksiyonunu aç veya kapat"
+      parameters:
+        - name: action
+          description: "on veya off"
+          type: string
+      target:
+        service: "switch.turn_{{ action }}"
+        entity_id: "switch.galaxy_projector_power"
+
+    # =====================================================================
+    # SİSTEM KAPATMA — Tüm modları kapat
+    # =====================================================================
+    - name: shutdown_all_modes
+      description: "Tüm premium modları kapat ve odayı normale döndür"
+      parameters: []
+      target:
+        # Bu bir script çağrısı — invisible_orchestration_automations.yaml'de
+        # tanımlı "tüm sistemi kapat" script'ini tetikler
+        service: "script.shutdown_all_modes"
+
+# -----------------------------------------------------------------------------
+# ELEVENLABS TTS — KARİZMATİK SES
+# -----------------------------------------------------------------------------
+# Jarvis'in sesi ElevenLabs üzerinden gelir — robotik değil, insansı.
+#
+# 🎭 NEDEN ELEVENLABS?
+#   - Google/AWS TTS = robotik, düz, "asistan" hissi
+#   - ElevenLabs = insansı, tonlama, duygu, "uşak" hissi
+#   - Misafir "teknoloji" değil "kişi" duyar → "premium" algı
+#
+# Ses seçimi: "Adam" — derin, erkek, İngiliz aksan, karizmatik
+# Alternatifler: "Antoni" (sıcak), "George" (derin, otoriter)
+# -----------------------------------------------------------------------------
+tts:
+  - platform: elevenlabs
+    api_key: "YOUR_ELEVENLABS_API_KEY"
+    voice: "Adam"
+    # "Adam" = derin, erkek, İngiliz aksan — "butler/uşak" hissi
+    # Bu ses, Tony Stark'ın Jarvis'i gibi karizmatik ve gizemli

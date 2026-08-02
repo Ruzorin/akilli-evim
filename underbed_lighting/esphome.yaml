@@ -1,0 +1,18 @@
+# underbed_lighting - ESPHome Yapılandırması
+# LD2410 varlık sensörü + WS2812B LED şerit
+
+esphome:
+  name: underbed-lighting
+  platform: ESP32
+  board: esp32dev
+
+wifi:
+  ssid: "GL-MT3000"
+  password: "YOUR_WIFI_PASSWORD"
+
+mqtt:
+  broker: "gl-mt3000.local"
+  port: 1883
+
+# LD2410 varlık sensörü ve LED şerit konfigürasyonu
+# TODO: Sensör ve light bileşenleri eklenecek

@@ -1,0 +1,282 @@
+# =============================================================================
+# barista_mode — Home Assistant Ana Otomasyonu
+# =============================================================================
+# Bu otomasyon, misafir masanın altındaki NFC etiketine telefon dokundurduğunda
+# veya Jarvis'e "barista modunu başlat" dediğinde çalışır.
+#
+# ÇALIŞMA MANTIĞI:
+#   1. NFC etiketi okunur veya ses komutu gelir → Tetiklenir
+#   2. Kahve makinesinin prizi açılır (ısınma başlar)
+#   3. Oda ışıkları "Lounge/Cafe" atmosferine geçer (sıcak amber, %30 parlaklık)
+#   4. WLED ambiyans ışıkları kahverengi/altın sarısı efekti başlatır
+#   5. Jarvis sesli olarak "Barista mode activated" anonsu yapar
+#   6. Arka planda kısık seste "Lo-Fi Coffee Shop" müziği başlar
+#
+# NOT: Bu otomasyon sadece "başlatma" aksiyonlarını yapar.
+#      Kahvenin hazır olduğunu tespit eden ayrı bir otomasyon
+#      (smart_readiness_sensor.yaml) güç tüketimini izler ve
+#      "kahveniz hazır" anonsunu yapar.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# INPUT BOOLEAN — Barista modu aktif durumu
+# -----------------------------------------------------------------------------
+# Bu switch, modülün aktif/pasif durumunu saklar. NFC veya ses komutu ON yapar;
+# modülden çıkışta (manuel veya otomatik) OFF yapılır. Aynı zamanda
+# smart_readiness_sensor.yaml otomasyonu bu switch'in ON olmasını şart koşar.
+input_boolean:
+  barista_mode_active:
+    name: "Barista Mode"
+    icon: mdi:coffee
+    initial: off
+
+# -----------------------------------------------------------------------------
+# OTOMASYON
+# -----------------------------------------------------------------------------
+automation:
+  # ===========================================================================
+  # OTOMASYON: Barista Modunu Başlat
+  # ===========================================================================
+  - id: barista_mode_start
+    alias: "Barista Mode — Başlat"
+    description: >
+      NFC etiketi okutulması veya Jarvis ses komutu ile tetiklenir.
+      Kahve makinesini ısıtmaya başlar, ortamı cafe atmosferine çevirir,
+      sesli anons yapar ve arka plan müziği başlatır.
+
+    trigger:
+      # -------------------------------------------------------------------------
+      # Tetikleyici 1: NFC etiketi okutma
+      # -------------------------------------------------------------------------
+      # Misafir telefonu masanın altındaki NTAG215 etiketine dokundurur.
+      # HA Companion App NFC okumasını HA'a iletir ve tag_id ile tetikler.
+      - platform: tag
+        id: "nfc_coffee_table"
+        # tag_id, NFC etiketi yazılırken HA tarafından atanır.
+        # Kurulum sırasında HA Companion App → Settings → NFC Tags'den
+        # etiket okutulduğunda bu ID otomatik oluşur.
+
+      # -------------------------------------------------------------------------
+      # Tetikleyici 2: Jarvis ses komutu (HA conversation agent)
+      # -------------------------------------------------------------------------
+      # Kullanıcı "Jarvis, barista modunu başlat" dediğinde tetiklenir.
+      - platform: conversation
+        command: "barista modunu başlat"
+        id: voice_trigger_tr
+
+      # Tetikleyici 3: Jarvis ses komutu (İngilizce alternatif)
+      - platform: conversation
+        command: "start barista mode"
+        id: voice_trigger_en
+
+      # -------------------------------------------------------------------------
+      # Tetikleyici 4: Webhook (jarvis_core Python modülünden)
+      # -------------------------------------------------------------------------
+      # jarvis_core, OpenAI API'den gelen komutu işledikten sonra
+      # HA Webhook'a POST isteği gönderir. Bu, sesli komutun daha
+      # akıllı işlenmesi için kullanılır (örn: "misafirler için kahve hazırla").
+      - platform: webhook
+        webhook_id: "barista_mode_start"
+        id: webhook_trigger
+
+    condition:
+      # -------------------------------------------------------------------------
+      # Koşul 1: Modül zaten aktif değilse çalıştır
+      # -------------------------------------------------------------------------
+      # Aynı anda iki kez tetiklenmeyi engeller (NFC + ses komutu çakışırsa)
+      - condition: state
+        entity_id: input_boolean.barista_mode_active
+        state: "off"
+
+      # Koşul 2: Kahve makinesi prizi kapalıysa çalıştır
+      # (Zaten açıksa tekrar açmaya gerek yok)
+      - condition: state
+        entity_id: switch.coffee_machine_plug
+        state: "off"
+
+    action:
+      # -------------------------------------------------------------------------
+      # AKSİYON 0: Modülü aktif işaretle
+      # -------------------------------------------------------------------------
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.barista_mode_active
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 1: DONANIM — Kahve makinesi prizini aç
+      # -------------------------------------------------------------------------
+      # Akıllı priz açılır → makine fişe takılı ve güç anahtarı ON konumunda
+      # olduğu için doğrudan ısınmaya başlar.
+      #
+      # Eğer makine DİJİTAL anahtarlıysa (Fingerbot gerektiren), burada
+      # switch.coffee_machine_plug yerine switch.fingerbot_coffee kullanılır.
+      # Fingerbot, makinenin güç düğmesine fiziksel basar.
+      - service: switch.turn_on
+        target:
+          entity_id: switch.coffee_machine_plug
+        # Eğer Fingerbot kullanılıyorsa, yukarıdaki yerine:
+        # - service: button.press
+        #   target:
+        #     entity_id: button.fingerbot_coffee_power
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 2: ATMOSFER — Oda ışıkları "Lounge/Cafe" konseptine geçer
+      # -------------------------------------------------------------------------
+      # Ana ışıkları %30 parlaklığa, sıcak amber (2700K) tonuna getir.
+      # 2700K = sıcak beyaz/amber — cafe/restoran aydınlatması standart rengi.
+      # Bu renk sıcaklığı, melatonin salınımını etkilemez ve "akşam/rahatlama"
+      # hissi yaratır. Misafir, odanın bir "yaşam alanı" değil bir "cafe" olduğunu hisseder.
+
+      # Ana tavan/oda ışıkları
+      - service: light.turn_on
+        target:
+          entity_id:
+            - light.ceiling_light
+            - light.room_main_lights
+        data:
+          brightness_pct: 30 # %30 parlaklık — loş, intim
+          color_temp: 370 # 370 mireds ≈ 2700K (sıcak amber)
+          transition: 3 # 3 saniyede yumuşak geçiş
+
+      # WLED ambiyans ışıkları — loş, kahverengi/altın sarısı efekt
+      # Kahverengi/altın: cafe atmosferini tamamlayan sıcak, topraklı ton
+      # RGB: (101, 67, 33) = Kahverengi tonu, altın sarısı vurgu için G biraz yüksek
+      - service: light.turn_on
+        target:
+          entity_id: light.wled_ambient
+        data:
+          rgb_color: [101, 67, 33] # Kahverengi/altın sarısı
+          brightness: 100 # Loş (%39)
+          effect: "Breathe" # Yavaş nefes efekti — rahatlatıcı
+          transition: 4
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 3: SESLİ GERİ BİLDİRİM — TTS Anonsu
+      # -------------------------------------------------------------------------
+      # Jarvis, medya oynatıcı üzerinden İngilizce karizmatik bir anons yapar.
+      # Neden İngilizce? "Barista mode activated" ifadesi, Türkçe karşılığından
+      # daha "premium" ve "sinematik" hissettirir. Misafir, bir asistanla değil
+      # bir "Jarvis" ile etkileşimde olduğunu hisseder.
+      #
+      # TTS motoru: OpenAI TTS (jarvis_core üzerinden) veya HA yerleşik TTS.
+      # media_player.jarvis_speaker: Odadaki akıllı hoparlör (ESP32-S3 veya Echo)
+      - delay:
+          seconds: 2 # Işıkların oturması için kısa bekleme
+
+      - service: tts.speak
+        target:
+          entity_id: tts.jarvis_voice
+        data:
+          message: "Barista mode activated. Pre-heating the espresso machine."
+          # Alternatif Türkçe:
+          # message: "Barista modu aktif. Espresso makinesi ısınıyor."
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 4: MÜZİK — Arka plan "Lo-Fi Coffee Shop" çalma listesi
+      # -------------------------------------------------------------------------
+      # Spotify'dan "Lo-Fi Coffee Shop" veya "Acoustic Jazz" çalma listesi.
+      # %15 ses seviyesi — arka plan, dikkat dağıtmayan, yormayan müzik.
+      # Lo-Fi: düşük frekanslı, tekrarlayan, sakinleştirici — cafe ortamının
+      # simgesi haline gelmiş bir tür. Misafir, "bir odada değil, bir cafe'de" hisseder.
+      - service: media_player.play_media
+        target:
+          entity_id: media_player.spotify
+        data:
+          media_content_type: "playlist"
+          # "Lo-Fi Coffee Shop" — Spotify çalma listesi ID'si
+          # Not: Gerçek Spotify playlist ID'si ile değiştirilmeli
+          media_content_id: "spotify:playlist:37i9dQZF1DX4PP3DA4J0N8"
+          # Alternatif: "Acoustic Jazz"
+          # media_content_id: "spotify:playlist:37i9dQZF1DX9XIFQuFvzMq"
+
+      # Ses seviyesini %15'e ayarla — kısık, arka plan
+      - service: media_player.volume_set
+        target:
+          entity_id: media_player.spotify
+        data:
+          volume_level: 0.15
+
+  # ===========================================================================
+  # OTOMASYON: Barista Modunu Kapat
+  # ===========================================================================
+  - id: barista_mode_stop
+    alias: "Barista Mode — Kapat"
+    description: >
+      Barista modunu manuel olarak kapatır. Işıklar normale döner,
+      müzik durur, priz kapanır (makine soğumaya başlar).
+
+    trigger:
+      # Tetikleyici 1: Jarvis ses komutu
+      - platform: conversation
+        command: "barista modunu kapat"
+        id: voice_stop_tr
+
+      # Tetikleyici 2: Webhook (jarvis_core'tan)
+      - platform: webhook
+        webhook_id: "barista_mode_stop"
+        id: webhook_stop
+
+      # Tetikleyici 3: 45 dakika sonra otomatik kapatma
+      # (Güvenlik: makine unutulursa kapanır)
+      - platform: template
+        value_template: >
+          {{ is_state('input_boolean.barista_mode_active', 'on') and
+             (now() - states.input_boolean.barista_mode_active.last_changed).total_seconds() > 2700 }}
+        id: auto_stop
+
+    condition:
+      - condition: state
+        entity_id: input_boolean.barista_mode_active
+        state: "on"
+
+    action:
+      # Modülü pasif işaretle
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.barista_mode_active
+
+      # Kahve makinesi prizini kapat (makine soğumaya başlar)
+      - service: switch.turn_off
+        target:
+          entity_id: switch.coffee_machine_plug
+
+      # Müziği durdur
+      - service: media_player.media_stop
+        target:
+          entity_id: media_player.spotify
+
+      # WLED'i kapat
+      - service: light.turn_off
+        target:
+          entity_id: light.wled_ambient
+        data:
+          transition: 5
+
+      # Ana ışıkları normale döndür
+      - service: light.turn_on
+        target:
+          entity_id:
+            - light.ceiling_light
+            - light.room_main_lights
+        data:
+          brightness_pct: 100
+          color_temp: 250 # 250 mireds ≈ 4000K (nötr beyaz — normal oda aydınlatması)
+          transition: 5
+
+      # Sesli onay
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.id == 'auto_stop' }}"
+            sequence:
+              - service: tts.speak
+                target:
+                  entity_id: tts.jarvis_voice
+                data:
+                  message: "Barista mode has been deactivated automatically. Goodbye."
+        default:
+          - service: tts.speak
+            target:
+              entity_id: tts.jarvis_voice
+            data:
+              message: "Barista mode deactivated."

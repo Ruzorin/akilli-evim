@@ -1,0 +1,36 @@
+# intimacy_sync_mode - Sensory Rhythm (Duyusal Senkron)
+# MPU6050 ivmeölçer ile fiziksel ritim algılama + WLED/Spatial Audio/Klima/Difüzör senkronizasyonu
+
+mpu6050:
+  i2c_address: "0x68"
+  sample_rate_hz: 50
+  sensitivity:
+    threshold: 0.3
+    smoothing_window: 5
+
+rhythm:
+  detection_mode: "adaptive"
+  bpm_range: [40, 180]
+  idle_timeout_sec: 120
+
+wled_sync:
+  topic: "jarvis/lighting/wled"
+  palette:
+    active: ["red", "amber", "warm_white"]
+    intensity_scale: 1.2
+
+spatial_audio_sync:
+  topic: "jarvis/audio/preset"
+  preset: "intimacy"
+  volume_floor: 0.15
+  volume_ceiling: 0.45
+
+climate_sync:
+  ir_target: "invisible_remote"
+  device: "ac"
+  target_temp_c: 22
+  fan_mode: "low"
+
+diffuser_sync:
+  topic: "jarvis/diffuser/scene"
+  scene: "relax"

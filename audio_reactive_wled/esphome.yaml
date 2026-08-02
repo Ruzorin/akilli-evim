@@ -1,0 +1,17 @@
+# audio_reactive_wled - ESP32 WLED Ses Reaktif Yapılandırması
+
+esphome:
+  name: audio-reactive-wled
+  platform: ESP32
+  board: esp32dev
+
+wifi:
+  ssid: "GL-MT3000"
+  password: "YOUR_WIFI_PASSWORD"
+
+mqtt:
+  broker: "gl-mt3000.local"
+  port: 1883
+
+# I2S mikrofon ve WLED entegrasyonu
+# TODO: i2s_audio ve light bileşenleri eklenecek

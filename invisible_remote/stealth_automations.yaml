@@ -1,0 +1,347 @@
+# =============================================================================
+# invisible_remote — Stealth Otomasyonları (Senaryolar)
+# =============================================================================
+# Bu dosya 3 senaryo için otomasyon tanımlar:
+#
+#   Senaryo 1 (Thermal Comfort):  Intimacy modunda klimayı sessizce 20°C'ye ayarla
+#   Senaryo 2 (Netflix & Chill):  Film modunda TV aç + HDMI + sinema ışıkları
+#   Senaryo 3 (Oda Boş/Tasarruf): 1 saat hareketsizlik → klima otomatik kapat
+#
+# 🎭 "STEALTH" ÇALIŞMA MANTIĞI — TÜM OTOMASYONLARDA ORTAK:
+# =============================================================================
+# Klimanın açılışı ve TV'nin açılışı, misafirin dikkatini DAĞTMADAN arka
+# planda çalışır. Bu, "Tony Stark" hissiyatının temelidir:
+#
+#   - Klima açılırken "beep" sesi varsa, SmartIR'de "quiet" mod kullanılır
+#   - TV açılırken 3 saniye bekleme vardır (TV'nin açılması için)
+#   - Işık geçişleri yavaştır (transition: 5-10 saniye)
+#   - Hiçbir aksiyon "aniden" olmaz — her şey "nefes alır" gibi
+#
+# Misafir, teknolojinin nasıl çalıştığını düşünmez; sadece "çalıştığını"
+# deneyimler. Plastik kumanda yok, tuş basma yok — sadece "sihir".
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# INPUT BOOLEAN — Film Modu durumu
+# -----------------------------------------------------------------------------
+# NFC etiketi veya Flic butonu ile "Film Modu" başlatıldığında ON olur.
+input_boolean:
+  movie_mode_active:
+    name: "Movie Mode"
+    icon: mdi:movie-open
+    initial: off
+
+# -----------------------------------------------------------------------------
+# OTOMASYONLAR
+# -----------------------------------------------------------------------------
+automation:
+  # ===========================================================================
+  # SENARYO 1: Thermal Comfort — "The Chill Effect" (Vücut Isısı Oyunu)
+  # ===========================================================================
+  - id: stealth_thermal_comfort
+    alias: "Stealth — Thermal Comfort (The Chill Effect)"
+    description: >
+      Modül 12 (intimacy_sync_mode) veya Modül 10 (audio_reactive_wled Date/Lounge)
+      aktifleştiğinde; Jarvis klimayı SESSİZCE 19-20 dereceye (normalden biraz
+      daha serin) düşürür.
+
+      🧊 "THE CHILL EFFECT" — BİYOLOJİK HACK:
+      Odanın hafif serinletilmesi, insan biyolojisinde "yakınlaşma, sarılma
+      ve ısınma" içgüdüsü (Oksitosin salgılanması) yaratır. Sıcak ve bunaltıcı
+      bir oda cinsel/romantik çekimi ÖLDÜRÜRKEN, serin bir oda fiziksel temas
+      (battaniye uzatma veya sarılma) için KUSURSUZ bir bahane yaratır.
+
+      "Üşüdün mü? Al, battaniye." → dokunma → oksitosin → güven → yakınlık.
+      Bu, Tony Stark'ın oda sıcaklığını bir "silah" olarak kullanmasıdır.
+
+      🎭 STEALTH: Klima açılışı misafirin dikkatini dağıtmadan arka planda
+      çalışır. Klima "beep" sesi varsa, önce fan modu "quiet" olarak ayarlanır
+      (bazı klima modelleri sessiz açılış destekler). Misafir, bir süre sonra
+      odanın serinlediğini "hisseder" — klimanın açıldığını "duymaz".
+      Ve "hisseder" — çünkü üşümeye başlar → "battaniye?" → dokunma → oksitosin.
+
+    trigger:
+      # -------------------------------------------------------------------------
+      # Tetikleyici 1: Intimacy Sync Mode aktif olduğunda
+      # -------------------------------------------------------------------------
+      - platform: state
+        entity_id: input_boolean.intimacy_sync_active
+        to: "on"
+        id: intimacy_on
+
+      # -------------------------------------------------------------------------
+      # Tetikleyici 2: Audio WLED "Date Lounge" moduna geçtiğinde
+      # -------------------------------------------------------------------------
+      - platform: state
+        entity_id: input_select.audio_wled_mode
+        to: "date_lounge"
+        id: date_lounge_on
+
+    condition:
+      # Koşul: Klima şu an kapalıysa (zaten açıksa sadece sıcaklığı ayarla)
+      - condition: state
+        entity_id: climate.room_ac
+        state: "off"
+
+    action:
+      # -------------------------------------------------------------------------
+      # AKSİYON 1: Klimayı "Cool" modunda 19°C'ye ayarla (The Chill Effect)
+      # -------------------------------------------------------------------------
+      # 🧊 19°C — normalden 2-3 derece daha serin.
+      # Bu, "The Chill Effect" için kusursuz sıcaklıktır:
+      # - Çok soğuk değil (titreme → rahatsızlık)
+      # - Hafif serin (üşüme hissi → "battaniye?" → dokunma → oksitosin)
+      # - Sıcak ve bunaltıcı DEĞİL (romantik çekimi öldürmez)
+      #
+      # Önce sıcaklık ve mod ayarla, SONRA klimayı aç.
+      - service: climate.set_temperature
+        target:
+          entity_id: climate.room_ac
+        data:
+          temperature: 19
+          hvac_mode: cool
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 2: Fan hızını "quiet" (sessiz) moduna al
+      # -------------------------------------------------------------------------
+      # "quiet" fan modu: Klimanın fan motoru minimum hızda çalışır.
+      # Bu, klimanın "esinti" sesini neredeyse sıfıra indirir.
+      # Romantik/intim atmosferde klima fan sesi "mood killer"dır.
+      # Misafir, klimanın çalıştığını duymamalı — sadece serinliği hissetmeli.
+      - service: climate.set_fan_mode
+        target:
+          entity_id: climate.room_ac
+        data:
+          fan_mode: quiet
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 3: Swing modunu kapat
+      # -------------------------------------------------------------------------
+      # Swing (salınım) modu, havayı oda içinde dağıtır ama ses yapar.
+      # Intimacy modunda sabit, sessiz hava akışı tercih edilir.
+      - service: climate.set_swing_mode
+        target:
+          entity_id: climate.room_ac
+        data:
+          swing_mode: "off"
+
+      # -------------------------------------------------------------------------
+      # 🎭 STEALTH GECİKME: 2 saniye bekle
+      # -------------------------------------------------------------------------
+      # Klima açıldıktan sonra difüzör ve müzik zaten çalışıyor olabilir.
+      # Klima komutunun diğer modüllerle "çakışmaması" için kısa bekleme.
+      # Bu bekleme, misafirin klima açılışını "fark etmemesini" sağlar —
+      # diğer sesler (müzik, difüzör) klimanın sessiz açılışını maskeler.
+      - delay:
+          seconds: 2
+
+  # ===========================================================================
+  # SENARYO 2: Netflix & Chill Vibe — Film Modu
+  # ===========================================================================
+  - id: stealth_netflix_chill
+    alias: "Stealth — Netflix & Chill (Film Modu)"
+    description: >
+      Özel bir "Film Modu" tetiklendiğinde (NFC veya buton); odadaki ışıkları
+      kapatır, WLED'leri "Sinema (Koyu Mavi)" moduna alır, Broadlink ile
+      TV'yi açar ve 3 saniye sonra "Input HDMI" sinyali göndererek ekranı
+      hazırlar.
+
+      🎭 STEALTH: TV açılışı 3 saniye gecikmeli yapılır. Bu, TV'nin tam
+      açılması için gereken süredir. Misafir, TV'nin "kendiliğinden"
+      açılıp doğru girişe geçtiğini görür — kumanda yok, sadece "sihir".
+      Işıklar yavaşça sönülür (transition: 5) → sinematik geçiş.
+
+    trigger:
+      # -------------------------------------------------------------------------
+      # Tetikleyici 1: NFC etiketi okutma (Film Modu etiketi)
+      # -------------------------------------------------------------------------
+      - platform: tag
+        id: "nfc_movie_mode"
+        # Masadaki veya yatak başındaki NFC etiketi
+
+      # -------------------------------------------------------------------------
+      # Tetikleyici 2: Flic butonu (tek tıklama)
+      # -------------------------------------------------------------------------
+      - platform: state
+        entity_id: sensor.flic_bedside_action
+        to: "single_click"
+        id: flic_movie
+
+      # -------------------------------------------------------------------------
+      # Tetikleyici 3: Jarvis ses komutu
+      # -------------------------------------------------------------------------
+      - platform: conversation
+        command: "film modu"
+        id: voice_movie_tr
+
+      - platform: conversation
+        command: "netflix and chill"
+        id: voice_movie_en
+
+    condition:
+      # Film modu zaten aktif değilse
+      - condition: state
+        entity_id: input_boolean.movie_mode_active
+        state: "off"
+
+    action:
+      # -------------------------------------------------------------------------
+      # AKSİYON 0: Film modunu aktif işaretle
+      # -------------------------------------------------------------------------
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.movie_mode_active
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 1: Işıkları yavaşça kapat (Sinema atmosferi)
+      # -------------------------------------------------------------------------
+      # Tavan ışıkları 5 saniyede sönülür → sinematik geçiş.
+      # Ani karanlık "korkutucu"; yavaş sönüm "sinema salonu" hissi.
+      - service: light.turn_off
+        target:
+          entity_id:
+            - light.ceiling_light
+            - light.room_main_lights
+        data:
+          transition: 5 # 5 saniyede sön — sinematik
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 2: WLED'leri "Sinema (Koyu Mavi)" moduna al
+      # -------------------------------------------------------------------------
+      # Koyu mavi: Sinema salonu atmosferi — gözü yormaz, ekrana odaklanmayı sağlar.
+      # WLED Preset 2 (Deep Focus) kullanılır — statik nefes efekti, sese duyarlı değil.
+      # Neden sese duyarlı değil? Film izlerken ışığın sese tepki vermesi
+      # dikkat dağıtır. Statik nefes, gözü yormadan hafif atmosfer sağlar.
+      - service: rest_command.wled_deep_focus
+      # WLED parlaklığını loş seviyeye indir
+      - service: light.turn_on
+        target:
+          entity_id: light.wled_ambient
+        data:
+          brightness: 60 # %23 — çok loş, sinema salonu
+          transition: 5 # 5 saniyede geçiş
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 3: TV'yi aç + HDMI 1'e geç
+      # -------------------------------------------------------------------------
+      # 🎭 STEALTH: TV açılışı kompozit script ile yapılır.
+      # Script: Power → 3 saniye bekle → HDMI 1 → ses ayarla
+      # Bu 3 saniyelik bekleme, TV'nin tam açılması için KRİTİKTİR.
+      # Misafir, TV'nin "kendiliğinden" açılıp doğru girişe geçtiğini görür.
+      - service: script.tv_power_on_hdmi1
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 4: Medya oynatıcıyı hazırla (opsiyonel)
+      # -------------------------------------------------------------------------
+      # Eğer Apple TV / Chromecast kullanılıyorsa, Netflix'i aç
+      - service: media_player.play_media
+        target:
+          entity_id: media_player.apple_tv
+        data:
+          media_content_type: "app"
+          media_content_id: "com.netflix.Netflix"
+        # Bu aksiyon, TV HDMI 1'e geçtikten sonra çalışır
+        # (tv_power_on_hdmi1 script'i 3 saniye sürer)
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 5: Klimayı sessiz modda 22°C'ye ayarla
+      # -------------------------------------------------------------------------
+      # Film izlerken oda biraz serin olmalı (22°C) ama fan sesi olmamalı.
+      # Klima "quiet" fan modunda çalışır → misafir klima sesini duymaz.
+      - service: climate.set_temperature
+        target:
+          entity_id: climate.room_ac
+        data:
+          temperature: 22
+          hvac_mode: cool
+
+      - service: climate.set_fan_mode
+        target:
+          entity_id: climate.room_ac
+        data:
+          fan_mode: quiet
+
+  # ===========================================================================
+  # SENARYO 3: Oda Boş / Tasarruf — Klima Otomatik Kapatma
+  # ===========================================================================
+  - id: stealth_room_empty_savings
+    alias: "Stealth — Oda Boş / Tasarruf (Klima Kapatma)"
+    description: >
+      Odada 1 saat boyunca hareket algılanmazsa veya kapıdan çıkılırsa,
+      açık unutulan klimayı otomatik kapatır. Güvenlik ve enerji tasarrufu.
+
+      🎭 STEALTH: Klima kapatılırken "beep" sesi olabilir. Bu, misafir
+      odadayken rahatsız edici olabilir. Bu yüzden bu otomasyon SADECE
+      oda boşaldığında çalışır — misafir zaten odada değil, beep sesini
+      duymaz. Misafir odadayken klima asla otomatik kapatılmaz.
+
+    trigger:
+      # -------------------------------------------------------------------------
+      # Tetikleyici 1: Odada 1 saat boyunca hareket yok
+      # -------------------------------------------------------------------------
+      # Varlık sensörü (LD2410) 1 saat "off" durumunda kalırsa tetiklenir.
+      # 1 saat: Misafir kısa süreli çıkışlarda (tuvalet, mola) klima açık kalsın.
+      - platform: state
+        entity_id: binary_sensor.room_presence
+        to: "off"
+        for:
+          hours: 1
+        id: room_empty_1h
+
+      # -------------------------------------------------------------------------
+      # Tetikleyici 2: Kapıdan çıkış (kontak sensörü)
+      # -------------------------------------------------------------------------
+      # Kapı sensörü "open" durumuna geçtiğinde ve 5 dakika sonra
+      # "closed" olmazsa → kişi odadan çıkmış demektir.
+      - platform: state
+        entity_id: binary_sensor.room_door
+        to: "open"
+        for:
+          minutes: 5
+        id: door_open_long
+
+    condition:
+      # Koşul 1: Klima açık olmalı (kapalıysa kapatmaya gerek yok)
+      - condition: not
+        conditions:
+          - condition: state
+            entity_id: climate.room_ac
+            state: "off"
+
+      # Koşul 2: Odada kimse yok (varlık sensörü off)
+      - condition: state
+        entity_id: binary_sensor.room_presence
+        state: "off"
+
+    action:
+      # -------------------------------------------------------------------------
+      # AKSİYON: Klimayı kapat
+      # -------------------------------------------------------------------------
+      - service: climate.turn_off
+        target:
+          entity_id: climate.room_ac
+
+      # -------------------------------------------------------------------------
+      # Opsiyonel: Mobil bildirim (klima açık unutulmuş)
+      # -------------------------------------------------------------------------
+      - service: notify.mobile_app
+        data:
+          title: "🏠 Klima Kapatıldı"
+          message: "Oda 1 saattir boş. Klima otomatik olarak kapatıldı (tasarruf)."
+          data:
+            push:
+              interruption_level: "passive" # Sessiz bildirim — acil değil
+
+      # -------------------------------------------------------------------------
+      # Opsiyonel: Film modunu da kapat (TV açık unutulmuş olabilir)
+      # -------------------------------------------------------------------------
+      - choose:
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.movie_mode_active
+                state: "on"
+            sequence:
+              - service: script.tv_power_toggle
+              - service: input_boolean.turn_off
+                target:
+                  entity_id: input_boolean.movie_mode_active

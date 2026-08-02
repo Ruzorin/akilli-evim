@@ -1,0 +1,17 @@
+# invisible_remote - ESP32 IR Blaster Yapılandırması
+
+esphome:
+  name: invisible-remote
+  platform: ESP32
+  board: esp32dev
+
+wifi:
+  ssid: "GL-MT3000"
+  password: "YOUR_WIFI_PASSWORD"
+
+mqtt:
+  broker: "gl-mt3000.local"
+  port: 1883
+
+# IR transmitter ve Broadlink entegrasyonu
+# TODO: remote_transmitter bileşeni eklenecek

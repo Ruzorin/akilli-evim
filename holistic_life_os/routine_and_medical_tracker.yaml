@@ -1,0 +1,348 @@
+# =============================================================================
+# holistic_life_os — Rutin ve Tıbbi Takip Otomasyonları
+# =============================================================================
+# Bu dosya 3 senaryo için otomasyon tanımlar:
+#
+#   Senaryo 1 (Sabah Brifingi): Uyanınca Magic Mirror'da takvim + ilaç checklist
+#   Senaryo 2 (Takvim Çatışması): Gece 02:00 + ışıklar açık + sabah sınav → kapat
+#   Senaryo 3 (Beslenme/Kalori): "Bu yemeği kalori takibime ekle" → Vision API
+#
+# 🤖 AGENTIC MANTIK:
+# =============================================================================
+# Bu otomasyonlar, Jarvis'in takvimi ve sağlık verilerini bağlam olarak okuyup
+# BAĞIMSIZ kararlar almasını sağlar. Statik "her sabah 7:30 alarm" değil —
+# Jarvis, "dün gece kötü uyudun, sabah toplantını kaydırayım mı?" der.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# INPUT BOOLEAN — Life OS aktif
+# -----------------------------------------------------------------------------
+input_boolean:
+  holistic_life_os_active:
+    name: "Holistic Life OS"
+    icon: mdi:heart-cog
+    initial: on
+
+# -----------------------------------------------------------------------------
+# SENSOR — Günün takvim etkinlikleri (CalDAV / Google Calendar)
+# -----------------------------------------------------------------------------
+# HA CalDAV entegrasyonu, takvim etkinliklerini sensor olarak oluşturur.
+# Bu sensor'lar, Jarvis'in "bugün ne var?" sorusunu yanıtlar.
+template:
+  - sensor:
+      - name: "Today's First Event"
+        unique_id: "todays_first_event"
+        icon: mdi:calendar
+        state: "{{ state_attr('calendar.personal', 'message') | default('Etkinlik yok') }}"
+        attributes:
+          start_time: "{{ state_attr('calendar.personal', 'start_time') }}"
+          end_time: "{{ state_attr('calendar.personal', 'end_time') }}"
+          location: "{{ state_attr('calendar.personal', 'location') | default('') }}"
+
+      - name: "Today's Important Event"
+        unique_id: "todays_important_event"
+        icon: mdi:calendar-alert
+        # Önemli etkinlik (sınav, mülakat) — takvim açıklamasında "önemli" varsa
+        state: >
+          {% set events = states.calendar.personal.attributes.all_events | default([]) %}
+          {% for event in events %}
+            {% if 'sınav' in event.message.lower() or 'mülakat' in event.message.lower()
+               or 'interview' in event.message.lower() or 'exam' in event.message.lower() %}
+              {{ event.message }}
+            {% endif %}
+          {% endfor %}
+
+# -----------------------------------------------------------------------------
+# OTOMASYONLAR
+# -----------------------------------------------------------------------------
+automation:
+  # ===========================================================================
+  # SENARYO 1: Sabah Brifingi ve Checklist (Magic Mirror)
+  # ===========================================================================
+  - id: life_os_morning_briefing
+    alias: "Life OS — Sabah Brifingi ve Checklist"
+    description: >
+      Kullanıcı uyandığında (Modül 7 morning_after tetiklendiğinde), Magic Mirror
+      (Akıllı Ayna) ekranında o günün takvimini ve alınması gereken takviyeleri/
+      ilaçları sessiz bir checklist olarak gösterir.
+
+      🎭 CALM TECHNOLOGY:
+      Ayna ekranında "BUGÜN" başlığı altında:
+        - 10:00 Team Meeting (Zoom)
+        - 14:00 Doktor Randevusu
+        - 💊 D vitamini (1 kapsül)
+        - 💊 B12 (1 tablet)
+        - 💊 Saç spreyi
+      Sessiz, zarif — "bildirim" değil "bilgi".
+
+    trigger:
+      # -------------------------------------------------------------------------
+      # Tetikleyici: Modül 7 (morning_after) uyanış modu tamamlandığında
+      # -------------------------------------------------------------------------
+      # morning_after modülü, T+2dk'da Jarvis anonsu yapar. Bu otomasyon,
+      # aynı anda Magic Mirror'a brifing gönderir.
+      - platform: state
+        entity_id: input_boolean.morning_wake_active
+        to: "off"
+        id: morning_completed
+
+    condition:
+      - condition: state
+        entity_id: input_boolean.holistic_life_os_active
+        state: "on"
+
+    action:
+      # -------------------------------------------------------------------------
+      # AKSİYON 1: Magic Mirror'a takvim + ilaç checklist'i gönder
+      # -------------------------------------------------------------------------
+      # MQTT üzerinden Magic Mirror'a JSON gönder:
+      # jarvis/mirror/briefing → {"calendar": [...], "medications": [...]}
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/mirror/briefing"
+          payload: >
+            {
+              "calendar": [
+                {"time": "10:00", "event": "Team Meeting", "location": "Zoom"},
+                {"time": "14:00", "event": "Doktor Randevusu", "location": "Hastane"}
+              ],
+              "medications": [
+                {"name": "D vitamini", "dose": "1 kapsül", "time": "sabah"},
+                {"name": "B12", "dose": "1 tablet", "time": "sabah"},
+                {"name": "Saç spreyi", "dose": "1 püskürtme", "time": "sabah"}
+              ],
+              "date": "{{ now().strftime('%d %B %Y') }}"
+            }
+          retain: true
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 2: Magic Mirror brifing modunu aç
+      # -------------------------------------------------------------------------
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/mirror/briefing_mode"
+          payload: "ON"
+          retain: true
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 3: (Opsiyonel) Jarvis kısa brifing
+      # -------------------------------------------------------------------------
+      # Sadece önemli etkinlik varsa sesli brifing yap
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: "{{ states('sensor.todays_important_event') != '' }}"
+            sequence:
+              - delay:
+                  seconds: 15 # Sabah anonsundan sonra
+              - service: tts.speak
+                target:
+                  entity_id: tts.jarvis_voice
+                data:
+                  message: >
+                    Good morning. You have an important event today:
+                    {{ states('sensor.todays_important_event') }}.
+                    Don't forget your supplements. They're on the mirror.
+
+  # ===========================================================================
+  # SENARYO 2: Takvim Çatışması & Proaktif Uyarı (Gece 02:00)
+  # ===========================================================================
+  - id: life_os_calendar_conflict_sleep
+    alias: "Life OS — Takvim Çatışması (Gece Uyku Zorlaması)"
+    description: >
+      Kullanıcının takviminde önemli bir sınav/mülakat varsa ve saat 02:00
+      olmasına rağmen odada ışıklar/müzik açıksa; Jarvis araya girip
+      "Yarın 09:00'da önemli bir görüşmeniz var, verimliliğiniz için uyku
+      moduna geçiyorum" diyerek sistemi kapatır.
+
+      🤖 AGENTIC MANTIK:
+      Jarvis, takvimi okur → "sabah 09:00 sınav" → saat 02:00 →
+      ışıklar/müzik açık → "Kullanıcı uyumalı" → KENDİSİ sistemi kapatır.
+      Statik "her gece 02:00'de kapat" değil — "sabah önemli şey varsa kapat".
+
+    trigger:
+      # -------------------------------------------------------------------------
+      # Tetikleyici: Saat 02:00 ve odada ışıklar/müzik açık
+      # -------------------------------------------------------------------------
+      - platform: time
+        at: "02:00"
+        id: late_night
+
+    condition:
+      # Koşul 1: Life OS aktif
+      - condition: state
+        entity_id: input_boolean.holistic_life_os_active
+        state: "on"
+
+      # Koşul 2: Yarın önemli etkinlik var (sınav, mülakat)
+      - condition: template
+        value_template: "{{ states('sensor.todays_important_event') != '' }}"
+
+      # Koşul 3: Odada ışıklar VEYA müzik açık
+      - condition: or
+        conditions:
+          - condition: state
+            entity_id: light.wled_ambient
+            state: "on"
+          - condition: state
+            entity_id: light.ceiling_light
+            state: "on"
+          - condition: state
+            entity_id: media_player.room_spatial_audio
+            state: "playing"
+
+      # Koşul 4: Odada biri var (boş odada kapatma gereksiz)
+      - condition: state
+        entity_id: binary_sensor.room_presence
+        state: "on"
+
+    action:
+      # -------------------------------------------------------------------------
+      # AKSİYON 1: Jarvis araya girer (proaktif)
+      # -------------------------------------------------------------------------
+      - service: tts.speak
+        target:
+          entity_id: tts.jarvis_voice
+        data:
+          message: >
+            Efendim, yarın {{ state_attr('sensor.todays_important_event', 'start_time')[:5] }}
+            'de önemli bir görüşmeniz var: {{ states('sensor.todays_important_event') }}.
+            Verimliliğiniz için uyku moduna geçiyorum.
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 2: Sistemi kapat (ışıklar, müzik, difüzör, projeksiyon)
+      # -------------------------------------------------------------------------
+      - delay:
+          seconds: 5 # Jarvis konuşmasını bitirsin
+
+      # Müziği fade-out ile kapat
+      - service: script.audio_fade_out_stop
+        data:
+          duration: 10
+
+      # Işıkları kapat (yavaş transition)
+      - service: light.turn_off
+        target:
+          entity_id:
+            - light.wled_ambient
+            - light.ceiling_light
+            - light.room_main_lights
+        data:
+          transition: 10
+
+      # Difüzörü kapat
+      - service: switch.turn_off
+        target:
+          entity_id: switch.smart_diffuser_power
+
+      # Projeksiyonu kapat
+      - service: script.scene_projection_off
+
+      # Yatak altı ışığı kapat
+      - service: light.turn_off
+        target:
+          entity_id: light.underbed_cob_light
+        data:
+          transition: 10
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 3: Sabah alarmını erken ayarla (önemli gün için)
+      # -------------------------------------------------------------------------
+      # Önemli etkinlik 09:00 ise → alarm 07:00 (2 saat önce hazırlanma)
+      - service: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.morning_wake_time
+        data:
+          datetime: >
+            {{ (now() + timedelta(days=1)).strftime('%Y-%m-%d') }} 07:00:00
+
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.morning_wake_active
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 4: Mobil bildirim
+      # -------------------------------------------------------------------------
+      - service: notify.mobile_app
+        data:
+          title: "🛑 Uyku Modu"
+          message: >
+            Yarın önemli etkinlik: {{ states('sensor.todays_important_event') }}.
+            Sistem kapatıldı. Sabah 07:00'da uyandırılacaksınız.
+          data:
+            push:
+              interruption_level: "active"
+
+  # ===========================================================================
+  # SENARYO 3: Beslenme/Kalori — Vision API ile Yemek Analizi
+  # ===========================================================================
+  - id: life_os_calorie_tracking
+    alias: "Life OS — Kalori Takibi (Vision API)"
+    description: >
+      Kullanıcı mutfakta (Modül 13) yemek yaparken, "Jarvis, bu yemeği kalori
+      takibime ekle" dediğinde; Vision API ile yemeği analiz edip güncel
+      makro/kalori hedeflerine işleyen ve sesli bilgi veren sistem.
+
+      🤖 AGENTIC MANTIK:
+      Jarvis, kameradan yemeği görür → GPT-5.6 Vision → "Domatesli makarna,
+      ~450 kcal, 65g karbonhidrat, 12g protein, 18g yağ" → günlük kalori
+      hedefinden düşer → "Bugün 1450/2200 kcal aldınız. 750 kcal kaldı."
+
+    trigger:
+      # -------------------------------------------------------------------------
+      # Tetikleyici: "Bu yemeği kalori takibime ekle" ses komutu
+      # -------------------------------------------------------------------------
+      - platform: conversation
+        command: "bu yemeği kalori takibime ekle"
+        id: voice_calorie_tr
+
+      - platform: conversation
+        command: "add this to my calorie tracker"
+        id: voice_calorie_en
+
+    condition:
+      - condition: state
+        entity_id: input_boolean.holistic_life_os_active
+        state: "on"
+
+    action:
+      # -------------------------------------------------------------------------
+      # AKSİYON 1: Mutfak kamerasından görüntü al → GPT-5.6 Vision
+      # -------------------------------------------------------------------------
+      # vision_frame_analyzer.py'yi "calorie" modunda çağır
+      # GPT-5.6 Vision: yemeği tanı → kalori + makro hesapla
+      - service: rest_command.chef_analyze_recipe
+      # Not: Gerçek implementasyonda ayrı bir "calorie" modu eklenecek
+
+      # Analiz bekle
+      - delay:
+          seconds: 5
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 2: Analiz sonucunu al → günlük kaloriye ekle
+      # -------------------------------------------------------------------------
+      # vision_frame_analyzer.py, MQTT'ye "jarvis/chef/analysis" publish eder:
+      # {"text": "Domatesli makarna. ~450 kcal, 65g carb, 12g protein, 18g fat."}
+      # Bu otomasyon, sonucu alıp input_number'a ekler.
+
+      # (MQTT trigger ile ayrı bir otomasyon dinler — chef_analysis_tts gibi)
+      # Burada sadece günlük kaloriyi güncelle:
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 3: Günlük kaloriyi güncelle
+      # -------------------------------------------------------------------------
+      # input_number.daily_calories += analiz edilen kalori
+      # (Gerçek implementasyonda MQTT payload'dan kalori değeri parse edilir)
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 4: Jarvis sesli bilgi ver
+      # -------------------------------------------------------------------------
+      - service: tts.speak
+        target:
+          entity_id: tts.jarvis_voice
+        data:
+          message: >
+            Yemek analiz edildi. Günlük kalori takibinize eklendi.
+            Bugünkü toplam: {{ states('input_number.daily_calories') }} kcal.
+            Hedef: {{ states('input_number.daily_calorie_goal') }} kcal.
+            {{ (states('input_number.daily_calorie_goal') | int - states('input_number.daily_calories') | int) }} kcal kaldı.

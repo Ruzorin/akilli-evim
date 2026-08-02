@@ -1,0 +1,19 @@
+# magic_mirror - Akıllı Ayna
+# Raspberry Pi Zero + Sensör tetiklemeleri
+
+display:
+  resolution: "1024x600"
+  rotation: 0
+
+modules:
+  - name: "clock"
+    enabled: true
+  - name: "weather"
+    enabled: true
+  - name: "jarvis_status"
+    enabled: true
+
+sensors:
+  proximity:
+    entity_id: "sensor.mirror_proximity"
+    trigger_distance_cm: 30

@@ -1,0 +1,283 @@
+# =============================================================================
+# life_os_superapp — Çağrı Yönlendirme Otomasyonu (Odaya Çağrı Aktarma)
+# =============================================================================
+# Telefon çağrılarını odanın hoparlörlerine aktaran Bluetooth Proxy mimarisi.
+#
+# 🎯 "HANDS-FREE CALLING" MANTIĞI:
+# =============================================================================
+# Telefon çağrısı geldi → müzik duraklat → WLED "çağrı geliyor" modu →
+# çağrı cevaplanır → Bluetooth Proxy → ses odaya aktar →
+# I2S mikrofon → senin sesin → çağrı bitti → atmosfer geri döner.
+#
+# Bu, "telefon kulakta" → "odada hands-free" dönüşümüdür.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# INPUT BOOLEAN — Çağrı yönlendirme aktif
+# -----------------------------------------------------------------------------
+input_boolean:
+  call_routing_active:
+    name: "Call Routing"
+    icon: mdi:phone-bluetooth
+    initial: on
+
+# -----------------------------------------------------------------------------
+# OTOMASYONLAR
+# -----------------------------------------------------------------------------
+automation:
+  # ===========================================================================
+  # SENARYO 1: Çağrı Geliyor — Müzik Duraklat + WLED Çağrı Modu
+  # ===========================================================================
+  - id: call_routing_incoming
+    alias: "Call Routing — Çağrı Geliyor"
+    description: >
+      Telefon çağrısı geldiğinde (HA Companion App call_state "ringing"):
+      1. Çalan müziği duraklat (Auto-Ducking) veya sesini %5'e düşür
+      2. WLED ışıklarını "Çağrı Geliyor" moduna al (yanıp sönen mavi/beyaz)
+      3. Jarvis kısa uyarı
+
+    trigger:
+      # -------------------------------------------------------------------------
+      # Tetikleyici: Telefon çağrı durumu "ringing"
+      # -------------------------------------------------------------------------
+      # HA Companion App → sensor.phone_state → "ringing"
+      - platform: state
+        entity_id: sensor.phone_state
+        to: "ringing"
+        id: phone_ringing
+
+    condition:
+      - condition: state
+        entity_id: input_boolean.call_routing_active
+        state: "on"
+
+    action:
+      # -------------------------------------------------------------------------
+      # AKSİYON 1: Müziği duraklat veya sesini %5'e düşür (Auto-Ducking)
+      # -------------------------------------------------------------------------
+      - choose:
+          # Spotify çalıyorsa → duraklat
+          - conditions:
+              - condition: state
+                entity_id: media_player.room_spatial_audio
+                state: "playing"
+            sequence:
+              - service: media_player.media_pause
+                target:
+                  entity_id: media_player.room_spatial_audio
+        # Çalmıyorsa → sesi %5'e düşür (arka plan)
+        default:
+          - service: media_player.volume_set
+            target:
+              entity_id: media_player.room_spatial_audio
+            data:
+              volume_level: 0.05
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 2: WLED "Çağrı Geliyor" modu (yanıp sönen mavi/beyaz)
+      # -------------------------------------------------------------------------
+      # 🎨 Mavi-beyaz yanıp sönme = "çağrı geliyor" görsel sinyali
+      # Premium hissi: yavaş yanıp sönme (disco değil, zarif)
+      - service: light.turn_on
+        target:
+          entity_id: light.wled_ambient
+        data:
+          rgb_color: [0, 100, 255] # Mavi
+          brightness: 150
+          effect: "Strobe" # Yanıp sönme (çağrı sinyali)
+          transition: 1
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 3: Jarvis kısa uyarı (sadece müzik çalıyorsa)
+      # -------------------------------------------------------------------------
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.from_state.state == 'playing' }}"
+            sequence:
+              - service: tts.speak
+                target:
+                  entity_id: tts.jarvis_voice
+                data:
+                  message: "Çağrı geliyor, efendim."
+
+  # ===========================================================================
+  # SENARYO 2: Çağrı Cevaplandı — Bluetooth Proxy → Odaya Ses Aktar
+  # ===========================================================================
+  - id: call_routing_answered
+    alias: "Call Routing — Çağrı Cevaplandı (Odaya Aktar)"
+    description: >
+      Çağrı cevaplandığında (phone_state "offhook"):
+      1. WLED'i sakin mavi'ye al (çağrı modu — yanıp sönme durur)
+      2. Bluetooth Proxy üzerinden sesi odaya ver
+      3. I2S mikrofon → senin sesin → çağrıya aktar
+
+    trigger:
+      - platform: state
+        entity_id: sensor.phone_state
+        to: "offhook"
+        id: phone_answered
+
+    condition:
+      - condition: state
+        entity_id: input_boolean.call_routing_active
+        state: "on"
+
+    action:
+      # -------------------------------------------------------------------------
+      # AKSİYON 1: WLED sakin mavi (çağrı modu — yanıp sönme durur)
+      # -------------------------------------------------------------------------
+      - service: light.turn_on
+        target:
+          entity_id: light.wled_ambient
+        data:
+          rgb_color: [0, 100, 200] # Sakin mavi
+          brightness: 100 # Loş (çağrı sırasında gözü yormaz)
+          effect: "Solid" # Sabit (yanıp sönme yok)
+          transition: 3
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 2: Bluetooth Proxy → sesi odaya aktar
+      # -------------------------------------------------------------------------
+      # ESP32-S3 Bluetooth Proxy aktif → telefon çağrısı odaya aktarılır
+      # Hoparlör: karşı tarafın sesi
+      # I2S mikrofon: senin sesin
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/bluetooth/call_route"
+          payload: "ON"
+          retain: false
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 3: Klima fanını quiet moduna al (çağrıda ses yapmasın)
+      # -------------------------------------------------------------------------
+      - service: climate.set_fan_mode
+        target:
+          entity_id: climate.room_ac
+        data:
+          fan_mode: quiet
+
+  # ===========================================================================
+  # SENARYO 3: Çağrı Bitti — Atmosferi Geri Döndür
+  # ===========================================================================
+  - id: call_routing_ended
+    alias: "Call Routing — Çağrı Bitti (Atmosfer Geri Döndür)"
+    description: >
+      Çağrı bittiğinde (phone_state "idle"):
+      1. Bluetooth Proxy'yi kapat
+      2. Müziği devam ettir (duraklatılmışsa) veya eski seviyeye döndür
+      3. WLED'i çağrı öncesi atmosfere geri döndür
+      4. Klima fanını eski moda döndür
+
+    trigger:
+      - platform: state
+        entity_id: sensor.phone_state
+        to: "idle"
+        id: phone_idle
+
+    condition:
+      - condition: state
+        entity_id: input_boolean.call_routing_active
+        state: "on"
+
+    action:
+      # -------------------------------------------------------------------------
+      # AKSİYON 1: Bluetooth Proxy'yi kapat
+      # -------------------------------------------------------------------------
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/bluetooth/call_route"
+          payload: "OFF"
+          retain: false
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 2: Müziği devam ettir (duraklatılmışsa)
+      # -------------------------------------------------------------------------
+      - service: media_player.media_play
+        target:
+          entity_id: media_player.room_spatial_audio
+      # Ses seviyesini eski seviyeye döndür
+      - service: media_player.volume_set
+        target:
+          entity_id: media_player.room_spatial_audio
+        data:
+          volume_level: 0.15 # Eski seviye (varsayılan)
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 3: WLED'i eski atmosfere döndür
+      # -------------------------------------------------------------------------
+      # Çağrı öncesi hangi mod aktifse ona dön
+      - choose:
+          # Intimacy modu aktifse → kırmızı
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.intimacy_sync_active
+                state: "on"
+            sequence:
+              - service: light.turn_on
+                target:
+                  entity_id: light.wled_ambient
+                data:
+                  rgb_color: [139, 0, 0] # Yakut kırmızısı
+                  brightness: 120
+                  effect: "Breathe"
+                  transition: 5
+
+          # Stadyum modu aktifse → takım rengi
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.stadium_mode_active
+                state: "on"
+            sequence:
+              - service: light.turn_on
+                target:
+                  entity_id: light.wled_ambient
+                data:
+                  rgb_color: [200, 16, 46] # Kırmızı (GS)
+                  brightness: 180
+                  effect: "Breathe"
+                  transition: 5
+
+          # Film modu aktifse → lacivert
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.movie_mode_active
+                state: "on"
+            sequence:
+              - service: rest_command.wled_deep_focus
+              - service: light.turn_on
+                target:
+                  entity_id: light.wled_ambient
+                data:
+                  brightness: 60
+                  transition: 5
+
+        # Varsayılan → Rest Idle (loş amber)
+        default:
+          - service: rest_command.wled_rest_idle
+          - service: light.turn_on
+            target:
+              entity_id: light.wled_ambient
+            data:
+              brightness: 60
+              transition: 5
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 4: Klima fanını eski moda döndür
+      # -------------------------------------------------------------------------
+      - service: climate.set_fan_mode
+        target:
+          entity_id: climate.room_ac
+        data:
+          fan_mode: low
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 5: Jarvis kısa kapanış
+      # -------------------------------------------------------------------------
+      - delay:
+          seconds: 2
+      - service: tts.speak
+        target:
+          entity_id: tts.jarvis_voice
+        data:
+          message: "Çağrı sona erdi. Atmosfer geri döndü, efendim."

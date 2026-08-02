@@ -1,0 +1,209 @@
+# =============================================================================
+# morning_after — Yapay Güneş Işığı (Sunrise Simulation)
+# =============================================================================
+# Bu script, WLED sistemini kullanarak yapay bir gündoğumu simülasyonu yaratır.
+#
+# 🌅 NEDEN YAPAY GÜNEŞ IŞIĞI?
+# =============================================================================
+# Kış aylarında veya havanın kapalı olduğu günlerde, perdeler açılsa bile
+# içeri yeterli doğal ışık girmeyebilir. Bu durumda WLED, güneşin doğuşunu
+# taklit ederek misafirin sirkadiyen ritmini destekler.
+#
+# 🎨 RENK PSİKOLOJİSİ — GÜNDOĞUMU RENK GEÇİŞİ:
+# =============================================================================
+# Gerçek bir gündoğumu şu renk geçişini yapar:
+#   1. Koyu kırmızı/bordo (#100000) → Ufukta ilk ışık
+#   2. Turuncu (#FF4500) → Güneş ufuktan yükseliyor
+#   3. Sıcak beyaz (Warm White #FFAA55) → Tam gün ışığı
+#
+# Bu renk geçişi, melatonin (uyku hormonu) salınımını kademeli olarak
+# azaltır ve kortizol (uyanış hormonu) salınımını artırır.
+# Misafir, "ışıkla uyandırıldığını" hissetmez; "güneş doğdu" hisseder.
+#
+# ⏱️ ZAMANLAMA MANTIĞI:
+# =============================================================================
+# Toplam süre: 10 dakika (600 saniye)
+#   0-3 dk:   Koyu kırmızı (#100000) → Turuncu (#FF4500)  [transition: 180]
+#   3-6 dk:   Turuncu (#FF4500) → Altın (#FFD700)          [transition: 180]
+#   6-10 dk:  Altın (#FFD700) → Sıcak beyaz (#FFAA55)      [transition: 240]
+#
+# 🎭 "KORKUTMAMA" PRENSİBİ:
+# =============================================================================
+# transition değerleri ÇOK YÜKSEK tutulmuştur (180-240 saniye).
+# Bu, ışığın renginin ve parlaklığının MİLİSANİYELER içinde değil,
+# DAKİKALAR içinde değişmesi demektir. Misafir uyurken göz kapalı
+# olsa bile, retinal hücreler ışık değişimini algılar ve beyne
+# "güneş doğuyor" sinyali gönderir — ama bu o kadar yavaştır ki,
+# misafir "uyandırıldığını" hissetmez, "doğal olarak uyandığını" hisseder.
+#
+# Ani ışık = "Alarm" → Korku, stres, kalp atışı fırlar
+# Kademeli ışık = "Gündoğumu" → Sakin uyanış, doğal ritim
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# SCRIPT: Yapay Gündoğumu (Sunrise Simulation)
+# -----------------------------------------------------------------------------
+# Bu script, morning_orchestration_automation.yaml'daki [T-10dk] aşamasında
+# çağrılır. 10 dakikalık kademeli ışık geçişi yapar.
+# -----------------------------------------------------------------------------
+script:
+  sunrise_simulation:
+    alias: "Sunrise Simulation — Yapay Gündoğumu"
+    icon: mdi:weather-sunset-up
+    description: >
+      WLED ile 10 dakikalık yapay gündoğumu simülasyonu.
+      Koyu kırmızıdan sıcak beyaza kademeli renk ve parlaklık geçişi.
+      Misafiri korkutmadan, doğal gündoğumu ritmiyle uyandırır.
+
+    sequence:
+      # =========================================================================
+      # AŞAMA 1: WLED'i aç — Çok koyu kırmızı, çok loş parlaklık
+      # =========================================================================
+      # #100000 = Çok koyu bordo kırmızısı — neredeyse siyah
+      # Parlaklık: 10/255 = %4 — gözle zor görülür, ama retina algılar
+      #
+      # Bu aşama, "ufukta ilk ışık" hissi yaratır. Misafir uykudayken
+      # gözleri kapalı olsa bile, retinadaki ipRGC hücreleri (intrinsically
+      # photosensitive retinal ganglion cells) bu loş kırmızı ışığı algılar
+      # ve sirkadiyen ritme "güneş doğuyor" sinyali gönderir.
+      - service: light.turn_on
+        target:
+          entity_id: light.wled_ambient
+        data:
+          rgb_color: [16, 0, 0] # #100000 — çok koyu bordo
+          brightness: 10 # %4 parlaklık — neredeyse görünmez
+          effect: "Solid" # Sabit ışık — efekt yok, sade
+          transition: 5 # 5 saniyede aç (ani değil)
+
+      # 2 saniye bekle — WLED'in açılması ve rengi stabilize etmesi için
+      - delay:
+          seconds: 2
+
+      # =========================================================================
+      # AŞAMA 2: Koyu kırmızı → Turuncu (3 dakika)
+      # =========================================================================
+      # #FF4500 = Turuncu-Kırmızı — güneş ufuktan yükselirken
+      # Parlaklık: 60/255 = %23 — hafif görünür, ama hâlâ loş
+      #
+      # transition: 180 = 3 DAKİKA içinde renk değişimi
+      # Bu kadar yavaş geçiş, misafirin gözünün karanlığa alışmasını sağlar.
+      # Misafir uyanmaya başlarken ışık hâlâ loş ve sıcaktır — "güneş doğuyor"
+      # hissi, "ışık açıldı" hissi değil.
+      - service: light.turn_on
+        target:
+          entity_id: light.wled_ambient
+        data:
+          rgb_color: [255, 69, 0] # #FF4500 — turuncu-kırmızı
+          brightness: 60 # %23 — hafif görünür
+          transition: 180 # 3 DAKİKA — çok yavaş geçiş
+
+      # 3 dakika bekle — turuncu ışığın oturması için
+      - delay:
+          minutes: 3
+
+      # =========================================================================
+      # AŞAMA 3: Turuncu → Altın sarısı (3 dakika)
+      # =========================================================================
+      # #FFD700 = Altın sarısı — güneş yükseldikçe ışık sarılaşıyor
+      # Parlaklık: 120/255 = %47 — artık net görünür, oda aydınlanıyor
+      #
+      # Bu aşamada misafir muhtemelen uyanmaya başlamıştır. Işık artık
+      # "loş" değil, "sabah ışığı" seviyesinde. Ama hâlâ yumuşak ve sıcak —
+      # gözü yormaz, "beyaz ofis ışığı" değil "sabah güneşi" hissi.
+      - service: light.turn_on
+        target:
+          entity_id: light.wled_ambient
+        data:
+          rgb_color: [255, 215, 0] # #FFD700 — altın sarısı
+          brightness: 120 # %47 — net görünür
+          transition: 180 # 3 DAKİKA — yavaş geçiş
+
+      # 3 dakika bekle — altın ışığın oturması için
+      - delay:
+          minutes: 3
+
+      # =========================================================================
+      # AŞAMA 4: Altın → Sıcak beyaz (Warm White) (4 dakika)
+      # =========================================================================
+      # #FFAA55 = Sıcak beyaz (Warm White) — tam gün ışığı, ama sıcak ton
+      # Parlaklık: 200/255 = %78 — neredeyse tam parlaklık
+      #
+      # Bu son aşamada oda tam aydınlanır. Sıcak beyaz (2700K civarı),
+      # gözü yormayan "sabah güneşi" rengidir. Soğuk beyaz (6500K)
+      # "ofis/ampul" hissi verir; sıcak beyaz "doğal sabah" hissi.
+      #
+      # transition: 240 = 4 DAKİKA — en yavaş geçiş
+      # Misafir tam uyanış aşamasında, ışık yavaşça tam parlaklığa ulaşır.
+      # "Güneş tam doğdu" — oda aydınlık, ama hâlâ sıcak ve davetkar.
+      - service: light.turn_on
+        target:
+          entity_id: light.wled_ambient
+        data:
+          rgb_color: [255, 170, 85] # #FFAA55 — sıcak beyaz (warm white)
+          brightness: 200 # %78 — neredeyse tam parlaklık
+          transition: 240 # 4 DAKİKA — en yavaş geçiş
+
+      # 4 dakika bekle — sıcak beyaz ışığın tam parlaklığa ulaşması için
+      - delay:
+          minutes: 4
+
+      # =========================================================================
+      # AŞAMA 5: Gündoğumu tamamlandı
+      # =========================================================================
+      # Bu noktada WLED, sıcak beyaz %78 parlaklıkta sabit yanıyor.
+      # morning_orchestration_automation.yaml'daki [T-0dk] aşamasında
+      # perde %100 açılır ve doğal ışık WLED'e katılır.
+      #
+      # Eğer güneş varsa: WLED + doğal ışık = tam aydınlık
+      # Eğer kapalıysa: WLED tek başına yeterli aydınlık sağlar
+      # =========================================================================
+
+  # -----------------------------------------------------------------------------
+  # ALTERNATİF: KISALTIMLI GÜNDOĞUMU (5 dakika)
+  # -----------------------------------------------------------------------------
+  # Eğer 10 dakika çok uzunsa, bu kısaltılmış versiyon kullanılabilir.
+  # Renk geçişi aynı ama her aşama 1 dakika daha kısa.
+  # -----------------------------------------------------------------------------
+  sunrise_simulation_short:
+    alias: "Sunrise Simulation — Kısa (5 dk)"
+    icon: mdi:weather-sunset-up
+    sequence:
+      - service: light.turn_on
+        target:
+          entity_id: light.wled_ambient
+        data:
+          rgb_color: [16, 0, 0]
+          brightness: 10
+          effect: "Solid"
+          transition: 5
+      - delay:
+          seconds: 2
+      - service: light.turn_on
+        target:
+          entity_id: light.wled_ambient
+        data:
+          rgb_color: [255, 69, 0]
+          brightness: 60
+          transition: 90 # 1.5 dakika
+      - delay:
+          minutes: 1
+          seconds: 30
+      - service: light.turn_on
+        target:
+          entity_id: light.wled_ambient
+        data:
+          rgb_color: [255, 215, 0]
+          brightness: 120
+          transition: 90
+      - delay:
+          minutes: 1
+          seconds: 30
+      - service: light.turn_on
+        target:
+          entity_id: light.wled_ambient
+        data:
+          rgb_color: [255, 170, 85]
+          brightness: 200
+          transition: 120 # 2 dakika
+      - delay:
+          minutes: 2

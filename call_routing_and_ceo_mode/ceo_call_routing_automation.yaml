@@ -1,0 +1,363 @@
+# =============================================================================
+# call_routing_and_ceo_mode — Akıllı Çağrı Otomasyonu (CEO Modu)
+# =============================================================================
+# Telefon çağrısı geldiğinde odayı "yönetim merkezine" çeviren otomasyon.
+#
+# 🎯 "CEO MODU" MANTIĞI:
+# =============================================================================
+# Telefon çalar → oda otomatik "yönetim merkezine" dönüşür:
+#   1. Auto-Ducking: Müzik %5'e düşer veya durur
+#   2. Ambiyans: WLED "Görüşme Modu" (sakin beyaz/mavi nefes)
+#   3. Akıllı Kimlik: VIP arıyor → Jarvis "Önemli arama, [Ad] arıyor"
+#   4. Çağrı cevapla → BT Proxy → eller serbest (hands-free)
+#   5. Çağrı bit → müzik fade-in devam + ışıklar normale
+#
+# 🎨 UX — CEO DENEYİMİ:
+# =============================================================================
+# Kullanıcı odaya girer, telefon çalar, oda "yönetim merkezine" dönüşür.
+# Işıklar sakinleşir, müzik durur, koku kapanır. Kullanıcı odanın ortasında
+# durur ve normal ses tonuyla konuşur — "telefon kulakta" değil,
+# "oda bir konferans salonu" hissi. Bu, "CEO otoritesi" yaratır.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# INPUT BOOLEAN — CEO modu aktif
+# -----------------------------------------------------------------------------
+input_boolean:
+  ceo_call_mode_active:
+    name: "CEO Call Mode"
+    icon: mdi:phone-settings
+    initial: on
+
+# -----------------------------------------------------------------------------
+# SENSOR — Arayan kişi (HA Companion App)
+# -----------------------------------------------------------------------------
+# HA Companion App, çağrı geldiğinde arayan numarayı/kişiyi sensör olarak verir.
+template:
+  - sensor:
+      - name: "Incoming Caller"
+        unique_id: "incoming_caller"
+        icon: mdi:account-phone
+        # HA Companion App → sensor.phone_call_state + caller info
+        state: "{{ state_attr('sensor.phone_call_state', 'caller') | default('Bilinmiyor') }}"
+
+      - name: "Is VIP Caller"
+        unique_id: "is_vip_caller"
+        icon: mdi:star
+        # Arayan kişi VIP listesinde mi?
+        # VIP listesi: takvimde "önemli" etiketli kişiler veya manuel VIP listesi
+        state: >
+          {% set caller = states('sensor.incoming_caller') | lower %}
+          {% set vip_list = ['ayşe', 'ahmet', 'patron', 'avukat', 'doktor'] %}
+          {{ caller in vip_list or 'vip' in caller }}
+
+# -----------------------------------------------------------------------------
+# OTOMASYONLAR
+# -----------------------------------------------------------------------------
+automation:
+  # ===========================================================================
+  # SENARYO 1: Çağrı Geliyor — Auto-Ducking + CEO Ambiyansı + VIP Analizi
+  # ===========================================================================
+  - id: ceo_call_incoming
+    alias: "CEO Call — Çağrı Geliyor (Auto-Ducking + Ambiyans + VIP)"
+    description: >
+      Telefon çağrısı geldiğinde:
+      1. Auto-Ducking: Spotify müzik %5'e düşür veya duraklat
+      2. WLED "Görüşme Modu" (sakin beyaz/mavi nefes)
+      3. VIP arıyor → Jarvis "Önemli arama, [Ad] arıyor"
+      4. Klima fan quiet, difüzör kapat, projeksiyon kapat
+
+      🎨 CEO DENEYİMİ:
+      Oda anında "yönetim merkezine" dönüşür. Işıklar sakinleşir,
+      müzik durur, koku kapanır. "Çağrı önemli" mesajı verilir.
+
+    trigger:
+      # -------------------------------------------------------------------------
+      # Tetikleyici: Telefon çağrı durumu "ringing"
+      # -------------------------------------------------------------------------
+      - platform: state
+        entity_id: sensor.phone_call_state
+        to: "ringing"
+        id: phone_ringing
+
+    condition:
+      - condition: state
+        entity_id: input_boolean.ceo_call_mode_active
+        state: "on"
+
+    action:
+      # -------------------------------------------------------------------------
+      # AKSİYON 1: AUTO-DUCKING — Müzik %5'e düşür veya duraklat
+      # -------------------------------------------------------------------------
+      - choose:
+          # Spotify çalıyorsa → ses %5'e düşür (tamamen duraklatma, çağrı bitince devam)
+          - conditions:
+              - condition: state
+                entity_id: media_player.room_spatial_audio
+                state: "playing"
+            sequence:
+              # Önce mevcut ses seviyesini kaydet (çağrı bitince geri dönmek için)
+              - service: input_number.set_value
+                target:
+                  entity_id: input_number.pre_call_volume
+                data:
+                  value: "{{ state_attr('media_player.room_spatial_audio', 'volume_level') | float(0.15) }}"
+              # Sesi %5'e düşür (fade ile 2 saniyede)
+              - service: script.audio_fade
+                data:
+                  start_volume: "{{ state_attr('media_player.room_spatial_audio', 'volume_level') | float(0.15) }}"
+                  target_volume: 0.05
+                  duration: 2
+                  steps: 4
+        # Çalmıyorsa → bir şey yapma
+        default:
+          - delay:
+              milliseconds: 100
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 2: AMBİYANS — WLED "Görüşme Modu" (sakin beyaz/mavi nefes)
+      # -------------------------------------------------------------------------
+      # 🎨 Sakin beyaz/mavi: "profesyonel, odaklı" hissi
+      # "Breathe" efekti: yavaş nefes → "sakin ama dikkatli"
+      # Parlaklık orta: ne çok loş (uykulu) ne çok parlak (stresli)
+      - service: light.turn_on
+        target:
+          entity_id: light.wled_ambient
+        data:
+          rgb_color: [200, 220, 255] # Sakin beyaz/mavi
+          brightness: 120 # Orta parlaklık
+          effect: "Breathe" # Yavaş nefes
+          transition: 3 # 3 saniyede geçiş
+
+      # Ana ışıkları kapat (CEO modu — sadece WLED ambiyans)
+      - service: light.turn_off
+        target:
+          entity_id:
+            - light.ceiling_light
+            - light.room_main_lights
+        data:
+          transition: 3
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 3: İKLİM — Klima quiet, difüzör kapat, projeksiyon kapat
+      # -------------------------------------------------------------------------
+      # Klima fan quiet: çağrıda hava sesi olmasın
+      - service: climate.set_fan_mode
+        target:
+          entity_id: climate.room_ac
+        data:
+          fan_mode: quiet
+
+      # Difüzörü kapat: koku = dinlenme, iş modunda dikkat dağıtmasın
+      - service: switch.turn_off
+        target:
+          entity_id: switch.smart_diffuser_power
+
+      # Projeksiyonu kapat: görsel dikkat dağıtmasın
+      - service: script.scene_projection_off
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 4: AKILLI KİMLİK ANALİZİ — VIP arıyor → Jarvis fısıldar
+      # -------------------------------------------------------------------------
+      # 🎯 VIP kişiyi tanı → Jarvis "Önemli arama, [Ad] arıyor"
+      # Bu, "CEO asistanı" hissi — asistan önemli çağrıları filtreler
+      - choose:
+          # VIP arıyor → sesli uyarı
+          - conditions:
+              - condition: template
+                value_template: "{{ states('sensor.is_vip_caller') == 'True' }}"
+            sequence:
+              - delay:
+                  seconds: 1 # Ambiyansın oturması için
+              - service: tts.speak
+                target:
+                  entity_id: tts.jarvis_voice
+                data:
+                  message: >
+                    Önemli arama efendim. {{ states('sensor.incoming_caller') }} arıyor.
+        # Normal arama → sessiz (sadece ambiyans değişir)
+        default:
+          - delay:
+              milliseconds: 100
+
+  # ===========================================================================
+  # SENARYO 2: Çağrı Cevaplandı — CEO Modu Aktif (eller serbest)
+  # ===========================================================================
+  - id: ceo_call_answered
+    alias: "CEO Call — Cevaplandı (Eller Serbest)"
+    description: >
+      Çağrı cevaplandığında (offhook):
+      1. WLED sabit beyaz/mavi (yanıp sönme durur — "görüşme başladı")
+      2. Bluetooth Proxy → ses odaya aktar (hands-free)
+      3. Kullanıcı odanın ortasında normal sesle konuşur
+
+    trigger:
+      - platform: state
+        entity_id: sensor.phone_call_state
+        to: "offhook"
+        id: phone_answered
+
+    condition:
+      - condition: state
+        entity_id: input_boolean.ceo_call_mode_active
+        state: "on"
+
+    action:
+      # -------------------------------------------------------------------------
+      # AKSİYON 1: WLED sabit (yanıp sönme durur — görüşme başladı)
+      # -------------------------------------------------------------------------
+      - service: light.turn_on
+        target:
+          entity_id: light.wled_ambient
+        data:
+          rgb_color: [200, 220, 255] # Sakin beyaz/mavi
+          brightness: 100 # Biraz daha loş (görüşme sırasında)
+          effect: "Solid" # Sabit (nefes durur — "odaklan")
+          transition: 2
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 2: Bluetooth Proxy → ses odaya aktar
+      # -------------------------------------------------------------------------
+      # ESP32-S3 HFP → telefon çağrısı → oda hoparlörü
+      # INMP441 mikrofon → senin sesin → çağrıya
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/bluetooth/call_route"
+          payload: "ON"
+          retain: false
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 3: Magic Mirror'a "Görüşme Modu" mesajı
+      # -------------------------------------------------------------------------
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/mirror/message"
+          payload: '{"text": "Görüşme modu aktif.", "duration": 3}'
+
+  # ===========================================================================
+  # SENARYO 3: Çağrı Bitti — Müzik Fade-in + Işıklar Normale
+  # ===========================================================================
+  - id: ceo_call_ended
+    alias: "CEO Call — Bitti (Müzik Devam + Atmosfer Geri Döndür)"
+    description: >
+      Çağrı bittiğinde (idle):
+      1. Bluetooth Proxy kapat
+      2. Müzik fade-in ile kaldığı yerden devam
+      3. WLED eski atmosfere döndür
+      4. Klima fan eski moda
+      5. Jarvis kısa kapanış
+
+    trigger:
+      - platform: state
+        entity_id: sensor.phone_call_state
+        to: "idle"
+        id: phone_idle
+
+    condition:
+      - condition: state
+        entity_id: input_boolean.ceo_call_mode_active
+        state: "on"
+
+    action:
+      # -------------------------------------------------------------------------
+      # AKSİYON 1: Bluetooth Proxy kapat
+      # -------------------------------------------------------------------------
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/bluetooth/call_route"
+          payload: "OFF"
+          retain: false
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 2: Müzik fade-in ile kaldığı yerden devam
+      # -------------------------------------------------------------------------
+      # Çağrı öncesi ses seviyesini geri yükle (input_number.pre_call_volume)
+      - service: script.audio_fade
+        data:
+          start_volume: 0.05
+          target_volume: "{{ states('input_number.pre_call_volume') | float(0.15) }}"
+          duration: 5
+          steps: 10
+
+      # Müiği devam ettir (duraklatılmışsa)
+      - service: media_player.media_play
+        target:
+          entity_id: media_player.room_spatial_audio
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 3: WLED eski atmosfere döndür
+      # -------------------------------------------------------------------------
+      - choose:
+          # Intimacy → kırmızı
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.intimacy_sync_active
+                state: "on"
+            sequence:
+              - service: light.turn_on
+                target:
+                  entity_id: light.wled_ambient
+                data:
+                  rgb_color: [139, 0, 0]
+                  brightness: 120
+                  effect: "Breathe"
+                  transition: 5
+
+          # Stadyum → takım rengi
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.stadium_mode_active
+                state: "on"
+            sequence:
+              - service: light.turn_on
+                target:
+                  entity_id: light.wled_ambient
+                data:
+                  rgb_color: [200, 16, 46]
+                  brightness: 180
+                  effect: "Breathe"
+                  transition: 5
+
+          # Film → lacivert
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.movie_mode_active
+                state: "on"
+            sequence:
+              - service: rest_command.wled_deep_focus
+              - service: light.turn_on
+                target:
+                  entity_id: light.wled_ambient
+                data:
+                  brightness: 60
+                  transition: 5
+
+        # Varsayılan → Rest Idle (loş amber)
+        default:
+          - service: rest_command.wled_rest_idle
+          - service: light.turn_on
+            target:
+              entity_id: light.wled_ambient
+            data:
+              brightness: 60
+              transition: 5
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 4: Klima fan eski moda
+      # -------------------------------------------------------------------------
+      - service: climate.set_fan_mode
+        target:
+          entity_id: climate.room_ac
+        data:
+          fan_mode: low
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 5: Jarvis kısa kapanış
+      # -------------------------------------------------------------------------
+      - delay:
+          seconds: 2
+      - service: tts.speak
+        target:
+          entity_id: tts.jarvis_voice
+        data:
+          message: "Görüşme sona erdi. Atmosfer geri döndü, efendim."

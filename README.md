@@ -1,0 +1,569 @@
+# 🏨 Jarvis Premium Automation Suite — Executive Edition (2026)
+
+> **"Sinematik atmosfer, duyusal optimizasyon ve otonom yapay zeka ile yaşam ve mobil alanları tek bir akıllı ekosistemde birleştiren premium otomasyon platformu."**
+
+Bu proje, bir yaşam alanını ve aracı; sesli komutlarla yönetilebilen, sensörlerle çevresel farkındalığa sahip, görsel-işitsel-duyusal olarak sinematik bir atmosfer sunan ve çok-modelli yapay zeka ile proaktif karar veren **premium bir otomasyon ekosistemine** dönüştürür. Sistem, merkezi bir AGI beyni (`jarvis_core` 3.0) etrafında **25 modülden** oluşan tek bir kod tabanı (Single Codebase) mimarisiyle inşa edilmiştir.
+
+---
+
+## 🏗️ Executive Mimarisi Özeti
+
+### Bulut / Sunucu Altyapısı
+- **VPS (Bulut):** Docker tabanlı Home Assistant + jarvis_core 3.0 (Python) + ChromaDB (yüz hafızası)
+- **Tailscale VPN:** VPS ↔ GL-MT3000 (Beryl AX) arasında şifreli mesh tünel (<50ms gecikme)
+- **Edge-to-Cloud:** Tüm yerel cihazlar (ESP32, WLED, Jetson Nano) bu tünel üzerinden VPS tarafından milisaniyelik hızda kontrol edilir
+
+### Yapay Zeka Beyni (Multi-Model Orchestration)
+- **GPT-5.6-Realtime:** Cihaz kontrolü, vision, hızlı eylemler, espri/wingman
+- **Claude 5 Opus:** Derin felsefi/psikolojik sohbet, yaratıcı rol yapma
+- **Claude 5 Fable:** Dil eğitimi (IELTS/TEF/TCF), pedagoji
+- **Gemini 3.6 Pro:** Biyometrik duygu analizi (2M+ token bağlam)
+- **Agentic Framework:** LangGraph 2026 — statik intent'ler YOK, AI dinamik karar verir
+
+### Donanım Katmanı
+- **Mikrodenetleyiciler:** ESP32/ESP32-S3, ESPHome 2026
+- **Aydınlatma:** WLED (Sound Reactive) + COB LED + Hyperion.ng (ekran senk)
+- **Sensörler:** LD2410/LD2450 mmWave radar, MPU6050 ivmeölçer, TTP223 kapasitif, INMP441 I2S mikrofon
+- **Araç:** OBD2 ELM327, Nvidia Jetson Nano 4GB + Sony IMX219 (Edge-AI ADAS)
+- **Gömülü:** Raspberry Pi Zero 2 W (Magic Mirror), Raspberry Pi 4 (jarvis_core + Hyperion)
+
+### Modül İsimlendirme Standartları (Executive Sanitizasyon)
+| İç Ad | Dış Ad (GitHub/Public) |
+|---|---|
+| `intimacy_sync_mode` | `ambient_rhythm_sync` |
+| `mobile_seduction_suite` | `executive_lounge_profile` |
+| `digital_grooming_coach` | `smart_mirror_vision_assistant` |
+
+> **Not:** Modüllerin arkasındaki mantık (koku hafızası, otonom iklim ayarı, düşük frekanslı binaural beats entegrasyonu ve duyusal tetikleyiciler) tam güçle ve eksiksiz bir şekilde çalışmaya devam etmektedir. İsimlendirme sadece dış yüzey için profesyonelleştirilmiştir.
+
+---
+
+## 📐 Proje Vizyonu
+
+- **Sinematik Atmosfer:** Tavan projeksiyonu ile "derin uzay" illüzyonu, sese duyarlı ambiyans aydınlatması, konumsal ses yönlendirme
+- **Premium Otel Konforu:** Akıllı koku difüzörü, yatak altı rehber aydınlatma, otomatik perde, kahve makinesi otomasyonu
+- **Görünmez Kontrol:** Flic butonları, gizli dokunmatik yüzeyler, NFC etiketleri, kapasitif ahşap dokunma
+- **Duyusal Senkronizasyon:** Fiziksel ritmi algılayan ivmeölçer ile ışık nabzı, ses, iklim ve koku senkronizasyonu
+- **Yapay Zeka Orkestrasyonu:** OpenAI GPT-5.6 Sol + ElevenLabs TTS + Yüz Tanıma + Hafıza + Proaktif konuşma
+- **Mutfak Şefi:** OpenAI Vision ile tezgah analizi, tarif önerisi, güvenlik uyarısı, Gordon Ramsay kişiliği
+
+---
+
+## 🌐 Ağ ve Donanım Mimarisi
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         VPS (Bulut)                              │
+│  ┌─────────────────┐    ┌──────────────────────────────────┐    │
+│  │  Tailscale VPN   │◄──►│  Home Assistant (Docker)         │    │
+│  │  (Mesh Ağı)      │    │  - Otomasyon Motoru              │    │
+│  │                  │    │  - Zigbee2MQTT                   │    │
+│  │                  │    │  - SmartIR / LocalTuya           │    │
+│  └────────┬─────────┘    └──────────────────────────────────┘    │
+└───────────┼─────────────────────────────────────────────────────┘
+            │ Tailscale VPN (Şifreli Tünel)
+┌───────────┼─────────────────────────────────────────────────────┐
+│           ▼            Oda (Yerel Ağ)                            │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │  GL-MT3000 (Beryl AX) — Yerel Yönlendirici               │   │
+│  │  - WiFi 6 + Tailscale Client + Yerel MQTT Broker         │   │
+│  └───────────┬──────────────────────┬───────────────────────┘   │
+│              │                      │                            │
+│     ┌────────┴────────┐   ┌────────┴─────────┐                  │
+│     │  ESP32/ESP8266   │   │  Zigbee Ağı      │                  │
+│     │  (ESPHome)       │   │  (Sensörler,     │                  │
+│     │  - WLED Audio    │   │   Prizler,       │                  │
+│     │  - LD2410 Radar  │   │   Perdeler,      │                  │
+│     │  - MPU6050       │   │   Butonlar)      │                  │
+│     │  - TTP223 Touch  │   │                  │                  │
+│     │  - INMP441 Mic   │   │                  │                  │
+│     └─────────────────┘   └──────────────────┘                  │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
+│  │ Raspberry Pi │  │ Tuya Proj.   │  │ Broadlink / Akıllı    │  │
+│  │ Zero (Ayna)  │  │ + Difüzör    │  │ Prizler / IP Kamera  │  │
+│  └──────────────┘  └──────────────┘  └──────────────────────┘  │
+└────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🌐 Edge-to-Cloud Mimari — Donanım Maliyetini Sıfırlama
+
+> **"Tony Stark bir sunucu odası tutmaz. Bulutun gücünü cebine koyar."**
+
+Bu proje, fiziksel bir Raspberry Pi / PC sunucusu gerektirmez. Sistem **ucuz bir Bulut VPS** üzerinde kurulur ve **Tailscale VPN** aracılığıyla Kıbrıs'taki yurt odasında bulunan **GL-MT3000 (Beryl AX)** yönlendiriciye tünellenir.
+
+### Edge-to-Cloud Architecture
+
+```
+  ┌─────────────────────────────────────────────────────────────┐
+  │                    BULUT VPS (~$10/ay)                       │
+  │                                                             │
+  │  ┌─────────────────┐  ┌──────────────────────────────────┐  │
+  │  │  Tailscale VPN  │  │  Home Assistant (Docker)          │  │
+  │  │  (Mesh Ağı)     │  │  + jarvis_core 3.0 (Python)      │  │
+  │  │  Şifreli tünel   │  │  + ChromaDB (Yüz hafızası)       │  │
+  │  │  <50ms gecikme   │  │  + Multi-Model Orchestrator      │  │
+  │  └────────┬─────────┘  └──────────────────────────────────┘  │
+  └───────────┼─────────────────────────────────────────────────┘
+              │ Tailscale VPN (Şifreli tünel — WireGuard tabanlı)
+              │ Gecikme: <50ms (Kıbrıs ↔ VPS arası)
+              │
+  ┌───────────┼─────────────────────────────────────────────────┐
+  │           ▼            Kıbrıs / Yurt Odası (Edge)            │
+  │  ┌────────────────────────────────────────────────────────┐ │
+  │  │  GL-MT3000 (Beryl AX) — Yerel Yönlendirici             │ │
+  │  │  - WiFi 6 Erişim Noktası                               │ │
+  │  │  - Tailscale Client (VPS'e köprü)                      │ │
+  │  │  - Yerel MQTT Broker (ESP32 ↔ HA arası)                │ │
+  │  │  - Zigbee2MQTT (USB dongle)                            │ │
+  │  └───────────┬──────────────────────┬──────────────────────┘ │
+  │              │                      │                          │
+  │     ┌────────┴────────┐   ┌────────┴─────────┐              │
+  │     │  ESP32/ESP8266   │   │  Zigbee Ağı      │              │
+  │     │  (ESPHome)       │   │  (Sensörler,     │              │
+  │     │  - WLED Audio    │   │   Prizler,       │              │
+  │     │  - LD2410 Radar  │   │   Perdeler,      │              │
+  │     │  - MPU6050       │   │   Butonlar)      │              │
+  │     │  - TTP223 Touch  │   │                  │              │
+  │     │  - INMP441 Mic   │   │                  │              │
+  │     └─────────────────┘   └──────────────────┘              │
+  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐  │
+  │  │ Pi Zero (Ayna)│  │ Tuya Proj.   │  │ Broadlink/Prizler│  │
+  │  └──────────────┘  └──────────────┘  └──────────────────┘  │
+  └────────────────────────────────────────────────────────────┘
+```
+
+### Neden Edge-to-Cloud?
+
+| Faktör | Fiziksel Sunucu (Evde) | Edge-to-Cloud (VPS + Tailscale) |
+|---|---|---|
+| **Maliyet** | ~$55 (Pi 4) + elektrik + internet | ~$10/ay VPS (elektrik/internet dahil) |
+| **Kesinti** | Kıb-Tek kesintisi → HA çöker | VPS 7/24 çalışır, Kıb-Tek bağımsız |
+| **Güncelleme** | Manuel, fiziksel erişim gerekir | SSH ile uzaktan, her yerden |
+| **Gecikme** | 0ms (yerel) | <50ms (Tailscale VPN) — yeterli |
+| **Güvenlik** | Yerel ağ, fiziksel erişim riski | Tailscale (WireGuard) şifreli tünel |
+| **Scalability** | Sabit donanım | VPS yükseltilebilir (RAM, CPU) |
+
+> **Sonuç:** Fiziksel sunucu almak yerine, ~$10/ay VPS + Tailscale ile tüm sistem bulutta çalışır. Yurt odasındaki GL-MT3000, VPS'e şifreli tünel üzerinden bağlanır. ESP32'ler, WLED, Zigbee cihazları — hepsi bu tünel üzerinden milisaniyelik hızla VPS'teki HA tarafından kontrol edilir. **Donanım maliyeti sıfırlanır, sadece ~$10/ay bulut bedeli.**
+
+---
+
+## 📦 Modüller (20 Modül — 2026)
+
+### 1. `jarvis_core` — Sistemin Beyni 🧠 (Core 3.0 — 2026 AGI)
+
+**Sürüm 1 (HA Orkestrasyonu):**
+- OpenAI GPT-4o + Extended OpenAI Conversation entegrasyonu (eski nesil — artık v3.0 kullanılıyor)
+- Whisper STT (ses→metin) + ElevenLabs TTS (metin→ses, "Adam" sesi)
+- System Prompt: Karizmatik uşak kişiliği (kısa cevap, zarif dil, gizemli, sessiz işleyiş)
+- 10 function calling: ışık, difüzör, klima, medya, perde, projeksiyon, modül tetikleme
+- NLP Intent Script'leri: "Misafirimizi ağırlayalım" → barista + diffuser, "Modumuzu değiştir" → audio + spatial
+
+**Sürüm 2.0 (Bilinç Kazandı):**
+- **Zero-Latency Voice Pipeline:** OpenAI Realtime API (WebRTC streaming) → <500ms gecikme
+- **Duygusal Tonlama (Voice Design):** 5 duygu profili — charming, sarcastic, neutral, intimate, authoritative
+- **Yüz Tanıma + Hafıza:** IP kamera → OpenCV face_recognition → ChromaDB (yerel vektör DB). Tüm veriler LOKAL
+- **Karakter Anayasası (v2):** 10 kural — Iron Man Jarvis kişiliği, hafif alaycı, wingman, proaktif
+- **Proaktif Sohbet (Autonomous):** 15dk sessizlik → sohbet başlat. Bilinen misafir → ismiyle karşıla
+
+**Sürüm 3.0 (2026 AGI — Agentic Orchestrator):**
+- **Mixture of Experts (Uzmanlık Dağılımı):** GPT-5.6-Realtime (cihaz kontrolü, vision, espri), Claude 5 Opus (felsefe, empati), Claude 5 Mythos (yaratıcı rol yapma), Claude 5 Fable (dil eğitimi), Gemini 3.6 Pro (biyometrik analiz, 2M+ token bağlam)
+- **Agentic HA API:** Statik intent script'leri SİLİNDİ. GPT-5.6, HA REST API'yi doğrudan manipüle eder. "Bize cyberpunk ortamı yap" → AI KENDİSİ WLED JSON + Spotify + klima ÜRETİR → HA'a gönderir
+- **Biyometrik Duygu Sync:** LD2450 radar (kalp atışı + nefes) + kamera mikro-ifadeleri → Gemini 3.6 → duygu analizi → proaktif ortam ayarı (üzgün → sıcak amber + rahatlatıcı müzik)
+- **AGI System Prompt 2026:** 6 kural — Agentic zihin, dinamik dil eğitimi, proaktif empati, karakter, agentic HA, duygu verisi okuma
+- **LangGraph 2026:** Asenkron agent graph — statik intent'ler YOK, her şey dinamik
+
+### 2. `hidden_triggers` — Gizli Tetikleyiciler 🔘
+
+- **Zigbee Mini Buton:** Sonoff/Tuya ZBMINI, yatak başı + masa altı gizli. Tek tık → Lounge, çift tık → Sinema, basılı tut → sistem kapat
+- **TTP223 Kapasitif Dokunmatik:** Ahşap masa altına yapıştırılmış, ahşabın üstünden dokunma algılar. 2sn basılı tutma → Intimacy modu. ESP32 + ESPHome, debounce kalibrasyonu (ahşap kalınlığına göre)
+- **NFC Bardak Altlığı:** NTAG215 bardak altlığı altında. Telefon koy → auto-ducking (müzik %15'e kıs, sohbet modu)
+- **Gecikmesiz çalışma:** <100ms → "sihir" hissi
+
+### 3. `space_projection` — Derin Uzay Projeksiyonu 🌌
+
+- **Tuya Galaksi Projeksiyon:** Yatak başucunda, doğrudan yukarı bakar. Nebula (bulutsu) + yeşil lazer (yıldız)
+- **Yeşil lazer KAPALI:** "Çocuk odası" hissinden kaçınılır, sadece yavaş dönen nebula → "Interstellar" sinematik hissi
+- **Motor hızı %10:** Çok yavaş → hipnotik, meditatif. Hızlı = "disko" → göz yorucu
+- **5 sahne:** Deep Space (derin mavi), Romantic Nebula (koyu pembe), Cinema Night (lacivert), Morning Amber (kehribar), Off
+- **Broadlink IR alternatifi:** Tuya uyumlu değilse, Broadlink ile IR kontrol
+- **Sleep Fade-Out:** 45dk hareketsizlik → projeksiyon kapat → melatonin → derin uyku
+
+### 4. `magic_mirror` — Akıllı Ayna 🪞
+
+- **Two-way mirror akrilik + çerçevesiz LCD:** Siyah bant ile ışık sızdırmazlık
+- **Akıllı priz mantığı:** LCD siyah ekran gösterse bile backlight çalışır → ayna illüzyonu bozulur. Güç kesik → %100 normal ayna
+- **MagicMirror²:** Saf beyaz yazı, siyah arka plan (OLED hissi). Renkli ikonlar YOK. Saat (sağ üst), hava (sol üst), MMM-Spotify (alt orta — o an çalan şarkı), MMM-MQTT (orta — sinematik mesajlar)
+- **Calm Technology:** Kullanılmadığında sadece ayna, kişi yaklaştığında "canlanır" (~10-15sn boot)
+- **3 senaryo:** Yaklaşma → ekran aç, Intimacy/Date → MQTT mesajı ("Atmosphere set to Deep Flow..."), Uzaklaşma → 1dk sonra kapat
+
+### 5. `spatial_audio` — Konumsal Ses 🔊
+
+- **Stereo Pair (Cocoon Effect):** İki Echo Dot çapraz köşelerde, kulak hizasının altında, gizli. Tek hoparlör = "müzik orada", stereo pair = "müzik her yerde"
+- **7 Mood:** acoustic_morning, lofi_focus, deep_rnb_date, intimacy_flow, coffee_shop, sleep_ambient, party_energy
+- **Fade Script:** `audio_fade` — kademeli ses artırma/azaltma (0.5sn adımlar, insan kulağı fark etmez). Müzik ASLA aniden başlamaz/durmaz
+- **Intimacy Dynamic Volume:** Activity Level arttıkça ses %25→%35 dinamik ayar
+- **Sleep Timer:** 30 dakikada 6 adımda kademeli kısma → %0 → durdurma. "Müzik yavaşça uzaklaşıyor" → uykuya dalma
+
+### 6. `underbed_lighting` — Yatak Altı Aydınlatma 🛏️
+
+- **HLK-LD2410 mmWave Radar:** PIR sensörlerin 5 sorununu çözer (hareketsizken kapanma, yatakta dönmeyi algılama, sıcaklık bağımlılık, ölü bölge, gecikme)
+- **Gate Filtresi (KRİTİK):** Gate 0-2 (0-2.25m) = yatak yanı → algıla. Gate 3+ (2.25m+) = yatak içi → görmezden gel. Yatakta dönmek ışığı tetiklemez
+- **COB LED (Pürüzsüz Işık):** WS2812B noktasal LED yerine COB → "Floating Bed" illüzyonu (yatak havada duruyor)
+- **3 senaryo:** Gece yönlendirmesi (ayak algıla → %15 aç, 3sn transition), Kapanış (2dk sonra fade-out), Vibe/Date modu (gece yönlendirmesi OFF, %30 sabit amber)
+
+### 7. `morning_after` — Ertesi Sabah 🌅
+
+- **Sirkadiyen Ritim:** Kortizol uyanış tepkisi — sesli alarm = "savaş ya da kaç" stresi, ışıkla uyanış = doğal ritim
+- **SwitchBot Curtain:** Kornişe kırma-dökme yapmadan takılır, sessiz mod (~40dB)
+- **WLED Yapay Gündoğumu:** 10 dakikada 4 aşama — #100000 (koyu bordo) → #FF4500 (turuncu) → #FFD700 (altın) → #FFAA55 (sıcak beyaz). transition: 180-240sn → "korkutmadan" uyanış
+- **T-Eksi Orkestra:** T-10dk (WLED gündoğumu + perde %20), T-5dk (Spotify %5→%15 fade-in), T-0dk (perde %100 + barista_mode), T+2dk (Jarvis "Good morning. Weather is 24 degrees. Your espresso machine is ready.")
+- **Barista entegrasyonu:** T-0dk'da barista_mode tetiklenir → espresso ısınmaya başlar → T+5dk "Espresso ready"
+
+### 8. `invisible_remote` — Görünmez Kumanda 📡
+
+- **Broadlink RM4 Mini:** 360° IR, TV ve klimayı görecek konumda gizli
+- **SmartIR:** Klimayı termostat olarak HA'a entegre (sıcaklık, fan hızı, mod). 100+ klima markası hazır kod veritabanı
+- **TV IR Script'leri:** Power, HDMI 1/2, Volume Up/Down, Mute. Kompozit script: Power → 3sn bekle → HDMI 1
+- **Stealth otomasyonlar:** Intimacy → klima 20°C quiet (sessizce, arka planda). Netflix & Chill → TV aç + HDMI + sinema ışıkları. Oda boş 1saat → klima otomatik kapat
+- **ESP32 + IR LED alternatifi:** Broadlink yerine ESP32 + ESPHome
+
+### 9. `smart_diffuser` — Akıllı Koku Difüzörü 🌿
+
+- **LocalTuya:** Bulut gecikmesi olmadan (<100ms) difüzör kontrolü
+- **Koku Psikolojisi:** Koku → amigdala doğrudan (limbik sistem). Sandalağacı (topraklayıcı), Amber (lüks/güven), Ylang-Ylang (afrodizyak)
+- **5 karışım reçetesi:** Pre-Arrival (Amber+Sandal 60/40), Date/Lounge (Sandal+Ylang 60/40), Intimacy (Ylang+Sandal 50/50), Barista (Amber+Vanilya 70/30), Deep Sleep (Sandal 100%)
+- **RGB KAPALI:** Difüzörün ucuz RGB LED'i WLED ile çakışır → her zaman KAPALI. "Difüzör sadece koku yayar, ışık vermez"
+- **3 senaryo:** Pre-Arrival (GPS yaklaşıma → high mist), Intimacy/Date (modül tetikleme → low/medium mist), Maintenance (oda boş/deep sleep → kapat)
+
+### 10. `audio_reactive_wled` — Sese Duyarlı Ambiyans 💡
+
+- **ESP32 + INMP441 I2S Mikrofon:** ESP8266 yetersiz (FPU yok, I2S yok). FFT için ESP32 şart
+- **Difüzör Profil:** Çıplak LED = "oyuncu odası", alüminyum + mat akrilik difüzör = "premium lounge"
+- **4 Preset:** Date Lounge (Amber/Kırmızı, Gravimeter bas odaklı), Deep Focus (Koyu Mavi, statik nefes), Party Energy (Turuncu+Altın+Magenta, Freqwave), Rest Idle (Loş amber, sabit)
+- **Gökkuşağı YOK:** Sadece sıcak tonlar (amber, kırmızı, altın) → "premium" hissi. Gökkuşağı = "ucuz pavyon"
+- **3 otomasyon:** Müzik başladı → Date Lounge preset (güneş batmışsa), Müzik durdu → Rest Idle, Mod değiştir (parti/odaklanma/lounge)
+
+### 11. `barista_mode` — Kahve Otomasyonu ☕
+
+- **NFC Etiketi (NTAG215):** Masanın altına gizli, telefon dokundur → kahve makinesi ısınmaya başlar
+- **Güç Ölçüm (Smart Readiness):** Akıllı priz Watt değerini izler. 1000W+ (ısınma) → 20W altı (hazır) tespiti. "Su kaynadı" anını yakalama
+- **Premium materyaller:** Çift cidarlı porselen fincan, Monin vanilya/karamel şurupları, Nespresso/Illy kahve, bambu sunum tepsisi
+- **Atmosfer:** Işıklar %30 amber (2700K), WLED kahverengi/altın, Lo-Fi müzik %15
+- **TTS:** "Barista mode activated. Pre-heating the espresso machine." → "The water is at optimal temperature. Your espresso is ready to brew."
+
+### 12. `intimacy_sync_mode` — Sensory Rhythm ❤️‍🔥
+
+- **MPU6050 İvmeölçer:** Yatak iskeletine gizli, fiziksel ritim algılama. ESP32 + ESPHome
+- **Ritim Algılama Algoritması (C++ lambda):** 4 aşama — birleşik ivme, RMS pencere filtresi (tek darbeleri eler), ritmik hareket tespiti (ardışık darbe ±%30), Activity Level (0-100, EMA yumuşatma)
+- **Duyusal Senkron:** Activity Level → WLED kırmızı nabız hızı + renk (#8B0000→#FF4500), Spatial Audio %25→%35, klima 20°C quiet, difüzör Ylang-Ylang+Sandalağacı
+- **3 senaryo:** Başlat (ışıklar kırmızı, müzik R&B, klima serin, koku), Dinamik senkron (Activity Level'a göre WLED hızı/parlaklığı), Kapat (30dk hareketsizlik → otomatik)
+
+### 13. `vision_chef_assistant` — Multimodal Aşçı 🧑‍🍳
+
+- **IP Kamera (RTSP):** TP-Link Tapo, mutfak dolabı altına gizli, SADECE tezgahı görür (privacy)
+- **OpenAI GPT-4o-mini Vision:** Kameradan kare → base64 → Vision API → tarif/uyarı/eleştiri
+- **On-Demand Analiz:** Sürekli analiz YOK — sadece istek geldiğinde (CPU + API tasarrufu). Güvenlik modunda 0.5 FPS
+- **Gordon Ramsay + Tony Stark kişiliği:** Hafif kibirli, zekice dalga geçen, yardımcı şef. Wingman taktiği (misafir varsa patronu ezerek misafiri yücelt)
+- **3 senaryo:** "Bunlardan ne çıkar?" → tarif öner, Duman/yanma → proaktif uyarı + mobil critical bildirim, Çift tık → komik durum güncellemesi
+
+### 14. `wingman_guest_protocol` — Giriş/Karşılama ve Wingman *(Planlanan)*
+
+> Misafir odaya girişte Jarvis'in proaktif karşılama, yüz tanıma ile isimle hitap, geçmiş sohbet hatırlama, flörtöz wingman taktiği ve "premium hospitality" deneyimi.
+
+### 15. `immersive_language_tutor` — Derinlemesine Dil Eğitmeni 📚
+
+- **Ekstra donanım YOK:** Mevcut Jarvis Core, WLED, Spatial Audio, Magic Mirror ve klima altyapısını kullanarak odayı fiziksel bir "dil kapsülü"ne çevirir
+- **Dil Eğitmeni Kişiliği:** Jarvis "Language Coach" moduna geçer — ASLA Türkçe konuşma, sadece hedef dil (İngilizce/Fransızca). Hataları doğal akış içinde düzeltme ("Şunu demek istedin sanırım..."). Kanada göçmenlik hedefi (IELTS/TEF/TCF, Quebec) odaklı role-play
+- **Fiziksel Çalışma Kapsülü:** WLED soğuk beyaz (5000K, zihin açıcı), klima 21°C (uyanık tutan serin), difüzör biberiye/limon (odaklanma) veya kapat, Spatial Audio kelimesiz Lo-Fi/Binaural Beats %10
+- **Magic Mirror Pasif Öğrenme:** Ayna ekranında her 4 saatte bir değişen 5 İngilizce-Fransızca kelime çifti (MMM-Vocabulary modülü). Kullanıcı aynaya baktıkça bilinçaltı kaydeder
+- **2 senaryo:** Başlat ("Fransızca çalışmaya başlayalım" / NFC "Study Book" → ortam + Jarvis dil eğitmeni), Kapat (2 saat otomatik veya sesli komut)
+
+### 16. `holistic_life_os` — Yaşam İşletim Sistemi 🧬
+
+- **Ekstra donanım GEREKMEZ:** Mevcut akıllı saat (Apple Watch/Wear OS), yatak radarı (LD2450), kamera ve HA altyapısını kullanır
+- **Sensor Fusion:** Yatak radarı (kalp atışı + nefes + uyku evreleri) + akıllı saat (uyku süresi + adım + nabız) birleştirilir → en doğru uyku analizi
+- **Agentic Takvim Esnetme:** Kötü uyku + esnetilebilir etkinlik → "10:00 toplantısını 11:00'e kaydırmamı ister misin?" → kullanıcı "evet" → Google Calendar API → etkinlik taşınır
+- **Kan Tahlili Analizi:** PDF → PyPDF2 → metin → Gemini 3.5 (2M token) → değerleri referans aralıklarıyla karşılaştır → "D vitamini düşük, demir eksik" + beslenme önerileri
+- **Sabah Brifingi:** Magic Mirror'da takvim + ilaç/takviye checklist'i (D vitamini, B12, saç spreyi)
+- **Takvim Çatışması:** Gece 02:00 + ışıklar açık + sabah sınav → "Verimliliğiniz için uyku moduna geçiyorum" → sistem kapat + alarm erken ayarla
+- **Kalori Takibi:** "Bu yemeği kalori takibime ekle" → Vision API → kalori + makro → günlük hedefe ekle
+- **Sağlık Koçu Kişiliği:** Doktor değil ama tatlı sert, bilimsel, isabetli tavsiyeler. "D vitamini düşük. Güneşe çıkın. Pencereden bakmak sayılmaz."
+
+### 17. `hyperion_media_sync` — Ekran Senkronizasyonu ve Medya Atmosferi 🎬
+
+- **Hyperion.ng:** Ekran kenar piksellerini anlık olarak WLED'e UDP ile yansıtır (<16ms = 1 frame). "Ekranın sınırları kaybolur" → imersif deneyim. UDP seçimi KRİTİK (TCP çok yavaş)
+- **HDMI Grabber:** UCV007/MS2109 USB grabber + HDMI splitter → kaynak → TV + grabber → Hyperion
+- **Stadyum Modu:** "Jarvis, maç başlıyor" → Hyperion ON + takım renkleri (GS Sarı-Kırmızı, FB Sarı-Lacivert, BJK Siyah-Beyaz) + difüzör narenciye/mentol + klima 20°C. 2 saat sonra otomatik Rest Idle
+- **Agentic Media Orchestrator:** GPT-5.6 Vision ekranı analiz eder → içerik tipi (cyberpunk, nature, horror, romance, action, sports, anime, sci_fi) → AI KENDİSİ WLED/difüzör/klima/Spotify JSON üretir → HA REST API. "Blade Runner" → neon pembe + synthwave; doğa belgeseli → yeşil + ambient
+- **Medya Yoldaşı Kişiliği:** Maç izlerken fanatik ama zeki spor yorumcusu (nadiren, tam yerinde). Film izlerken sinema eleştirmeni (trivia + tavsiye, sadece başlangıç/bitiş). "Sessizlik, en iyi yoldaşlıktır"
+
+### 18. `life_os_superapp` — PWA SuperApp ve Çağrı Yönlendirme 📱
+
+- **Ekstra donanım GEREKMEZ:** Mevcut HA PWA + Mushroom/Bubble Card (HACS) + ESP32-S3 Bluetooth Proxy (Modül 1) kullanır
+- **PWA (Progressive Web App):** HA'ı telefona tam ekran native uygulama olarak ekle (adres çubuğu yok, kendi ikonu, app drawer'da)
+- **Mushroom + Bubble Card:** Apple/Tesla tarzı minimalist UI — yuvarlak kartlar, boşluklu tasarım, swipeable sekmeler. "Kontrol paneli" değil "yaşam alanı" hissi
+- **SuperApp Dashboard:** Üst (karşılama + takvim), Orta (swipeable: Ev kontrolü + Sağlık), Alt (Spotify/Hyperion medya), Sağ alt (floating AGI chat)
+- **AGI Chat (Floating):** Sağ alt köşede sürekli duran chat butonu → GPT-5.6/Claude 5'a yazılı komut → "Bize cyberpunk ortamı yap" → oda değişir. Fotoğraf at → "Bunu kalori takibime ekle" → Vision API
+- **Bluetooth Proxy Çağrı Yönlendirme:** Telefon çağrısı → müzik duraklat + WLED mavi yanıp sönme → çağrı cevapla → ESP32-S3 BT Proxy → ses odaya aktar (hands-free) → çağrı bitince atmosfer geri döner
+
+### 19. `call_routing_and_ceo_mode` — Gelişmiş Çağrı Yönlendirme ve CEO Modu 📞
+
+- **Ekstra donanım:** I2S DAC (MAX98357A, ~$3) — diğer her şey Modül 1 ile paylaşımlı
+- **Bluetooth Proxy + HFP:** ESP32-S3, HFP (Hands-Free Profile) ile telefon çağrısını alır → I2S DAC → oda hoparlörü (karşı taraf) + INMP441 mikrofon → çağrıya (senin sesin). Gecikme <50ms, AEC (yankı önleme)
+- **CEO Modu:** Çağrı gel → Auto-Ducking (müzik %5) + WLED "Görüşme Modu" (sakin beyaz/mavi nefes) + klima quiet + difüzör kapat + projeksiyon kapat. "Oda bir yönetim merkezine dönüşür"
+- **Akıllı Kimlik Analizi:** Arayan VIP mi? → Jarvis "Önemli arama efendim, [Ad] arıyor". Normal arama → sessiz (sadece ambiyans değişir)
+- **Eller Serbest (Hands-Free):** Çağrı cevapla → BT Proxy ON → telefon cebinde, oda seni duyar. Normal ses tonuyla konuş, bağırmadan. "Telefon kulakta" değil "oda konferans salonu"
+- **Kapanış:** Çağrı bit → BT Proxy OFF + müzik fade-in (5sn, pre_call_volume) + WLED eski atmosfere + klima eski fan + Jarvis "Görüşme sona erdi"
+
+### 20. `magic_mirror_comm_and_grooming` — Ayna İletişim Konsolu ve Stil Koçu 🪞
+
+- **Ekstra donanım:** USB web kamera (Logitech C270, ~$25), USB mikrofon (~$10), mini hoparlör (~$5), USB hub (~$5) — Pi Zero 2 W (Modül 4) üzerine monte
+- **Görüntülü Arama (WebRTC):** Ayna kamerası + mikrofon + hoparlör → WebRTC peer connection → WhatsApp/Telegram görüntülü arama. "Jarvis, aramayı aynadan aç" → kamera/mikrofon otomatik görüşmeye yönlendirilir
+- **Dijital Stil Koçu (GPT-5.6 Vision):** "Jarvis, kombin nasıl?" → ayna kamerasından snapshot → GPT-5.6 Vision → kıyafet/saç/tarz analizi → ElevenLabs TTS (charming) → "Kombin harika ama o ayakkabılar bu ceketle gitmemiş patron"
+- **İmaj Danışmanı (Life OS Entegre):** Takvim (etkinlik tipi: formal/business/casual/date) + hava durumu + Vision analizi → "Bugün CEO görüşmesi var ama tişört casual kalmış, lacivert ceket giymelisin. Saçında yatışmazlık var, acele et"
+- **Grooming Checklist UI:** MagicMirror² sağ alt köşede minimalist checklist (diş ipi, saç spreyi, D vitamini, B12) + kombin puanı (75/100) + öneri. Telefondan onayladıkça maddeler silinir
+
+---
+
+## 🚗 Araç Modülleri (Modül 21-24 — Mobil Komuta Merkezi)
+
+### 21. `car_knight_rider_core` — Araç Beyni ve The Giant's Throne 🚗
+
+- **Android Multimedya Ekranı:** 9-10" Head Unit → HA Companion App (PWA) + Tailscale → VPS. "Aractayım ama evim elimde"
+- **OBD2 → HA:** ELM327 Bluetooth/Wi-Fi adaptörü → Torque/Car Scanner app → Webhook → HA sensörleri (RPM, hız, yakıt, motor sıcaklığı, DTC kodları)
+- **The Giant's Throne:** 2.10m/125kg için milimetrik koltuk + direksiyon + dikiz aynası senkronizasyonu. Telefon aracın BT ağına bağlanınca → koltuk %85 geri, %30 alçak; direksiyon %75 uzak, %20 alçak; aynalar %60/%65. "Tony Stark araca bindiğinde, araç ona uyum sağlar"
+- **İklim Optimizasyonu:** Araç içi sıcaklık → kullanıcının tercih ettiği seviyeye önceden ayar (21°C)
+- **Tesla Tarzı Dashboard:** Hız (renkli: >120 kırmızı), RPM, yakıt + ev durumu (sıcaklık, kilit, WLED, difüzör) + Jarvis sesli komut + DTC arıza kodları
+
+### 22. `car_omniscience_copilot` — Gözetmen Copilot ve OBD2 Kehanet 🔮
+
+- **IR Kamera + Akıllı Saat + OBD2 Sensor Fusion:** FLIR One / Seek Thermal IR kamera → PERCLOS (göz kırpma oranı) + esneme tespiti. Akıllı saat → nabız, HRV, stres. OBD2 Wi-Fi → MAF, yağ basıncı, şanzıman sıcaklığı
+- **Fatigue & Ergonomic Guard:** PERCLOS >%15 → klima -2°C + difüzör nane/limon + Jarvis "Mola verin". >%25 → koltuk bel desteği %100 şişir + "Mola zorunlu". Omurga stres skoru (2.10m/125kg → %55 daha fazla bel yükü) >70 → bel desteği şişir
+- **Predictive Maintenance (Kehanet):** OBD2 trend analizi → arıza lambası yanmadan tespit. "Yağ basıncı düşüyor, 500 km içinde bakım" / "Şanzıman 95°C, yağ kontrolü" / "MAF sapması, hava filtresi temizliği" / "Bujiler kontrol" / "Akü 11.5V, değişim"
+- **G-Kuvveti Optimizasyonu:** Yatay G >0.8g → "Viraj sert, yavaşlayın" + çekiş kontrolü enhanced. Yağmurlu zemin (sürtünme <0.5) → "Fren mesafesi 2x" + çekiş maximum + motor freni soft. Agresif fren (<-0.7g) → ABS maximum + mobil bildirim. 125kg → %25 daha uzun fren mesafesi hesaba katılır
+
+### 23. `car_stealth_and_seduction` — Blackout, Seduction Suite, Sci-Fi Soundspace 🌑
+
+- **Night Ops / Blackout:** "Jarvis, Blackout" → ekran %0 parlaklık + konsol ışıkları off + minimalist HUD (sadece hız + navigasyon). "Savaş uçağı cockpit'i — sadece yol, gerisi karanlık"
+- **Mobile Seduction Suite:** "Date Mode" → WLED derin Yakut Kırmızısı #8B0000 + "Breathe" nefes efekti + klima 21°C quiet + difüzör imza koku (Odunsu/Amber — Pavlov etkisi) + Spotify "deep_rnb_date" %12 fade-in. "Misafir araca bindiğinde → bu bir araç değil, bir deneyim"
+- **Sci-Fi Soundspace:** OBD2 RPM → fütüristik uzay gemisi sesi (sawtooth dalga, 55-220Hz, %8 volüm). RPM yükseldikçe hum frekansı yükselir → "Iron Man cockpit" hissi. Gece only, müzikten ayrı → "duyulmaz ama hissedilir"
+
+### 24. `car_edge_ai_vision` — Nvidia Jetson Nano Edge-AI Vision & ADAS 🚀
+
+- **Nvidia Jetson Nano 4GB + Sony IMX219:** 128 CUDA core, JetPack SDK (CUDA + TensorRT + OpenCV GPU). Kamera dikiz aynası arkasına monte (70° FOV, yola bakar)
+- **OpenADAS + YOLO:** Açık kaynaklı OpenADAS projesi → YOLOv4-Tiny / YOLOv5s ağırlıkları → TensorRT FP16 optimizasyonu (FP32: 200ms/5FPS → FP16: 30ms/30FPS → gerçek zamanlı)
+- **Canlı Şerit Takibi:** Canny edge + Hough transform → neon mavi/yeşil şerit çizgileri (sol yeşil, sağ sarı). 30 FPS gerçek zamanlı
+- **Nesne Algılama (Bounding Box):** YOLO → araç, kamyon, otobüs, yaya, tabela algılama → renkli kutular + etiket
+- **Forward Collision Warning (FCW):** Ön aracın Bounding Box genişliği → mesafe tahmini → genişlik >200px → kırmızı kutu + "FCW: COLLISION WARNING" → MQTT → HA → WLED kırmızı strobe + Jarvis sesli uyarı (~110ms gecikme)
+- **MQTT → HA → WLED + TTS:** Tehlike → `jarvis/car/adas/warning` → HA → WLED kırmızı strobe (brightness 255, effect Strobe, transition 0) + TTS "{{ message }}" + 5sn sonra WLED normale. 5 uyarı tipi: FCW, LDW, AEB, PEDESTRIAN, TAILGATING
+
+### 25. `car_sentry_mode_security` — Sentry Mode ve Akıllı Güvenlik 🛡️
+
+- **Jetson Nano Deep Sleep:** Park halinde ~0.5W (GPU kapalı, sadece GPIO interrupt). 60Ah akü → 5 gün güvenli park. Akü <11.5V → akıllı röle → Jetson tamamen kapanır
+- **PIR + Şok Tetikleme:** HC-SR501 PIR (GPIO 7) + MPU6050 şok (I2C + INT GPIO 8). Hareket/darbe → milisaniyeler içinde Jetson uyanır → kamera aç → snapshot + 30sn video kayıt
+- **Telegram/WhatsApp Anlık Bildirim:** Snapshot → Telegram Bot API → "⚠️ Dikkat! Aracınızın yanına biri yaklaştı. Kayıt başlatıldı." + fotoğraf → telefona anlık (2-5sn). WhatsApp Business API alternatif
+- **HA SuperApp Sentry Panel:** Tek dokunuş → Sentry ON/OFF. Son ihlal fotoğrafı + zaman + toplam ihlal sayısı + 7 gün ihlal geçmişi (history graph). "Tesla Sentry Mode" standardı
+
+---
+
+## 🔗 Modüller Arası Haberleşme
+
+### MQTT Topic Yapısı
+```
+jarvis/#
+├── jarvis/core/command              → Jarvis komut kanalı
+├── jarvis/audio/in                  → Mikrofon → Jarvis
+├── jarvis/audio/out                 → Jarvis → Hoparlör
+├── jarvis/voice/emotion             → Duygu profili (charming/sarcastic/intimate)
+├── jarvis/face/detected             → Bilinen yüz algılandı
+├── jarvis/face/new                  → Yeni yüz algılandı
+├── jarvis/context                   → Bağlam (yüz, modül durumu)
+├── jarvis/mirror/message            → Magic Mirror sinematik mesaj
+├── jarvis/triggers/desk_touch       → TTP223 dokunma
+├── jarvis/triggers/desk_touch/gesture → Jest (single/double/long_press)
+├── jarvis/intimacy/rhythm           → Ritim verisi
+├── jarvis/intimacy/active           → Intimacy modu ON/OFF
+├── jarvis/chef/analysis             → Şef analiz sonucu
+├── jarvis/chef/warning              → Şef güvenlik uyarısı
+├── jarvis/chef/safety_mode          → Güvenlik modu ON/OFF
+├── jarvis/lighting/wled             → WLED efekti
+├── jarvis/lighting/underbed         → Yatak altı ışık
+├── jarvis/audio/preset             → Spatial audio mood
+├── jarvis/remote/ir                 → IR komutu
+├── jarvis/diffuser/scene            → Difüzör sahnesi
+└── jarvis/sensor/presence           → Varlık sensörü
+├── jarvis/persona/switch            → Jarvis kişiliği değiştir (default/language_tutor)
+├── jarvis/mirror/vocabulary         → Magic Mirror kelime modülü ON/OFF
+└── jarvis/chef/safety_mode          → Mutfak güvenlik modu
+```
+
+### Haberleşme Protokolleri
+- **MQTT:** Olay tabanlı, düşük gecikme (<100ms). ESP32 ↔ HA, modüller arası
+- **HA REST/WebSocket API:** Cihaz kontrolü, durum sorgulama
+- **Webhook:** Harici tetikleyiciler (jarvis_core Python → HA)
+- **OpenAI Realtime API (WebRTC):** Sıfır gecikme sesli konuşma
+- **OpenAI Vision API:** Görüntü analizi (mutfak şefi)
+
+---
+
+## 📁 Klasör Yapısı
+
+```
+akilli-evim/
+├── README.md                          ← Bu dosya (Proje Anayasası)
+├── EQUIPMENT.md                       ← Tüm teçhizat listesi
+├── jarvis_core/                       ← Modül 1: Sistemin Beyni (7 dosya)
+│   ├── architecture_and_ai_persona.md
+│   ├── openai_conversation_agent.yaml
+│   ├── master_orchestration_intents.yaml
+│   ├── zero_latency_voice_pipeline.py
+│   ├── facial_memory_and_vector_db.py
+│   ├── advanced_system_prompt_v2.md
+│   └── autonomous_conversation_trigger.yaml
+├── hidden_triggers/                   ← Modül 2: Gizli Tetikleyiciler
+│   ├── hardware_and_stealth_psychology.md
+│   ├── stealth_button_esphome.yaml
+│   └── invisible_orchestration_automations.yaml
+├── space_projection/                  ← Modül 3: Derin Uzay Projeksiyonu
+│   ├── hardware_and_visual_psychology.md
+│   ├── tuya_projector_config.yaml
+│   └── celestial_automations.yaml
+├── magic_mirror/                      ← Modül 4: Akıllı Ayna
+│   ├── hardware_and_glass_crafting.md
+│   ├── magicmirror_config.js
+│   └── mirror_presence_automation.yaml
+├── spatial_audio/                     ← Modül 5: Konumsal Ses
+│   ├── hardware_and_acoustic_design.md
+│   ├── media_player_integration.yaml
+│   └── dynamic_volume_automations.yaml
+├── underbed_lighting/                 ← Modül 6: Yatak Altı Aydınlatma
+│   ├── hardware_and_radar_tech.md
+│   ├── ld2410_bed_radar_esphome.yaml
+│   └── night_routing_automations.yaml
+├── morning_after/                     ← Modül 7: Ertesi Sabah
+│   ├── hardware_and_morning_psychology.md
+│   ├── sunrise_simulation.yaml
+│   └── morning_orchestration_automation.yaml
+├── invisible_remote/                  ← Modül 8: Görünmez Kumanda
+│   ├── hardware_and_ir_hacking.md
+│   ├── smartir_climate_media.yaml
+│   └── stealth_automations.yaml
+├── smart_diffuser/                    ← Modül 9: Akıllı Difüzör
+│   ├── hardware_and_scent_psychology.md
+│   ├── tuya_local_integration.yaml
+│   └── diffuser_automations.yaml
+├── audio_reactive_wled/               ← Modül 10: Sese Duyarlı WLED
+│   ├── hardware_and_wiring.md
+│   ├── wled_api_presets.json
+│   └── audio_wled_automation.yaml
+├── barista_mode/                      ← Modül 11: Kahve Otomasyonu
+│   ├── hardware_and_setup.md
+│   ├── barista_automation.yaml
+│   └── smart_readiness_sensor.yaml
+├── intimacy_sync_mode/                ← Modül 12: Duyusal Senkron
+│   ├── hardware_and_setup.md
+│   ├── bed_sensor_esphome.yaml
+│   └── intimacy_automation.yaml
+└── vision_chef_assistant/             ← Modül 13: Mutfak Şefi
+│   ├── hardware_and_counter_vision.md
+│   ├── vision_frame_analyzer.py
+│   ├── chef_persona_system_prompt.yaml
+│   └── kitchen_automations.yaml
+└── immersive_language_tutor/          ← Modül 15: Dil Eğitmeni
+│   ├── tutor_persona_prompt.yaml
+│   ├── study_environment_automation.yaml
+│   └── mirror_vocabulary_integration.js
+└── holistic_life_os/                 ← Modül 16: Yaşam İşletim Sistemi
+│   ├── health_and_calendar_integrations.md
+│   ├── biometric_fusion_engine.py
+│   ├── routine_and_medical_tracker.yaml
+│   └── life_coach_prompt_extension.md
+└── hyperion_media_sync/             ← Modül 17: Ekran Senkronizasyonu
+│   ├── hardware_and_hyperion_setup.md
+│   ├── dynamic_stadium_atmosphere.yaml
+│   ├── agentic_media_orchestrator.py
+│   └── media_companion_prompt.md
+└── life_os_superapp/                ← Modül 18: PWA SuperApp
+│   ├── ui_and_pwa_architecture.md
+│   ├── superapp_lovelace_dashboard.yaml
+│   ├── agi_chat_interface.yaml
+│   └── call_routing_automation.yaml
+└── call_routing_and_ceo_mode/       ← Modül 19: CEO Çağrı Modu
+│   ├── bluetooth_proxy_audio_config.md
+│   ├── ceo_call_routing_automation.yaml
+│   └── hands_free_interraction_script.yaml
+└── magic_mirror_comm_and_grooming/  ← Modül 20: Ayna İletişim + Stil Koçu
+│   ├── mirror_comm_hardware_setup.md
+│   ├── whatsapp_video_integration_module.py
+│   ├── digital_grooming_coach_vision.yaml
+│   ├── digital_grooming_coach_module.yaml
+│   └── grooming_checklist_mirror_ui.js
+└── car_knight_rider_core/          ← Modül 21: Araç Beyni + Giant's Throne
+│   ├── car_hardware_and_obd2_architecture.md
+│   ├── giants_throne_automation.yaml
+│   └── car_android_dashboard_config.yaml
+└── car_omniscience_copilot/        ← Modül 22: Gözetmen Copilot + OBD2 Kehanet
+│   ├── omniscience_copilot_architecture.md
+│   ├── fatigue_and_ergonomic_guard.py
+│   ├── predictive_maintenance_obd2.py
+│   └── g_force_and_driving_dynamics.yaml
+└── car_stealth_and_seduction/      ← Modül 23: Blackout + Seduction + Sci-Fi
+│   ├── car_stealth_architecture.md
+│   ├── stealth_blackout_protocol.yaml
+│   ├── mobile_seduction_suite.yaml
+│   └── scifi_soundspace_augmenter.py
+└── car_edge_ai_vision/             ← Modül 24: Jetson Nano Edge-AI + ADAS
+│   ├── jetson_hardware_and_sdk_setup.md
+│   ├── open_adas_installation_script.sh
+│   ├── adas_hmi_display_config.py
+│   └── adas_home_assistant_bridge.py
+└── car_sentry_mode_security/       ← Modül 25: Sentry Mode + Güvenlik
+    ├── sentry_hardware_and_power_architecture.md
+    ├── sentry_motion_trigger_daemon.py
+    ├── telegram_whatsapp_alert_bridge.py
+    └── car_security_home_assistant_integration.yaml
+```
+
+---
+
+## 🚀 Geliştirme Yol Haritası
+
+1. **Faz 1 — İskelet:** Klasör yapısı + yapılandırma dosyaları ✅
+2. **Faz 2 — Modül 12-9:** Intimacy → Barista → WLED → Diffuser ✅
+3. **Faz 3 — Modül 8-6:** Invisible Remote → Morning → Underbed ✅
+4. **Faz 4 — Modül 5-3:** Spatial Audio → Magic Mirror → Space Projection ✅
+5. **Faz 5 — Modül 2-1:** Hidden Triggers → Jarvis Core ✅
+6. **Faz 6 — Core 2.0:** Zero-Latency + Face ID + Memory + Proactive ✅
+7. **Faz 7 — Modül 13:** Vision Chef Assistant ✅
+8. **Faz 8 — Modül 14:** Wingman Guest Protocol (Planlanan)
+9. **Faz 9 — Entegrasyon:** Tüm modüllerin Jarvis ile orkestrasyonu
+
+---
+
+## ⚙️ Teknoloji Yığını
+
+| Katman | Teknoloji (2026 — 2 Ağustos) |
+|---|---|
+| Yapay Zeka | **GPT-5.6-Realtime** (cihaz kontrolü, vision, espri), **Claude 5 Opus** (felsefe, empati), **Claude 5 Mythos** (yaratıcı rol yapma), **Claude 5 Fable** (dil eğitimi), **Gemini 3.6 Pro** (biyometrik analiz, 2M+ token bağlam), OpenAI Realtime API (WebRTC streaming) |
+| Ses | ElevenLabs TTS (Voice Design 2026, duygusal tonlama, "Adam" voice) |
+| Orkestrasyon | **LangGraph 2026** (Agentic Framework), Home Assistant (Docker), Python 3.13, MQTT 5.0 |
+| Ağ | Tailscale VPN, GL-MT3000 (Beryl AX), WiFi 6 |
+| Mikrodenetleyici | ESP32/ESP32-S3, ESPHome 2026 |
+| Sensör | LD2410/LD2450 (mmWave radar — varlık/hareket), MPU6050 (ivmeölçer), TTP223 (kapasitif), INMP441 (I2S mic). ⚠️ Kalp atışı/nefes için akıllı saat (Apple Health/Google Fit) veya HLK-LD6002 (60GHz Vital Signs Radar) gerekir. LD2410/LD2450/LD2420/LD6001 kalp/nefes ÖLÇMEZ |
+| Kablosuz | Zigbee (Zigbee2MQTT), WiFi 6, IR (Broadlink) |
+| Görüntü | OpenCV 2026, face_recognition, ChromaDB (vektör DB), Hyperion.ng (ekran senk) |
+| Medya | Spotify Web API, WLED (Sound Reactive), Tuya, Hyperion (Ambilight) |
+| Gömülü | Raspberry Pi Zero 2 W (Magic Mirror), Raspberry Pi 4 (Jarvis Core + Hyperion) |
+| Sağlık | Apple Health / Google Fit (akıllı saat), CalDAV/Google Calendar, PyPDF2 (kan tahlili) |
+
+---
+
+## 📝 Lisans
+
+Bu proje kişisel kullanım için geliştirilmiştir. Tüm API anahtarları ve hassas bilgiler `.env` dosyasında saklanmalıdır. Yüz tanıma verileri LOKAL saklanır (buluta gönderilmez).
+
+---
+
+*Bu README, projenin anayasasıdır. Modüller geliştikçe bu dosya güncellenmektedir.*

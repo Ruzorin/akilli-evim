@@ -1,0 +1,191 @@
+# =============================================================================
+# car_knight_rider_core — Araç İçi Android Dashboard (Tesla Tarzı)
+# =============================================================================
+# Android Multimedya Ekranı için minimalist, sürüş sırasında dikkati
+# dağıtmayan (Tesla tarzı) Home Assistant Lovelace arayüz konfigürasyonu.
+#
+# 🎨 UX (Kullanıcı Deneyimi) — SÜRÜŞ GÜVENLİĞİ:
+# =============================================================================
+# Bu arayüz sürüş sırasında kullanılır → DİKKAT DAĞITMAMAK şarttır:
+#   - Büyük, yuvarlak kartlar (Mushroom) → tek bakışta okunur
+#   - Az bilgi, büyük font → sürüş sırasında 2 saniyeden fazla bakma yok
+#   - Renkli uyarılar → kırmızı = sorun, yeşil = normal
+#   - Jarvis sesli komut → ekrana dokunmadan kontrol
+#
+# "Tesla tarzı": temiz, boşluklu, koyu tema, sadece gerekli bilgi.
+# Sürcü otoritesi: ekran sürücüye hizmet eder, sürücü ekran'a değil.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# LOVELACE DASHBOARD — ARAÇ İÇİ
+# -----------------------------------------------------------------------------
+# HA → Settings → Dashboards → New → YAML mode
+# Bu dosya araç içi Android ekranında PWA olarak açılır.
+# -----------------------------------------------------------------------------
+
+views:
+  # ===========================================================================
+  # ANA GÖRÜNÜM — Araç İçi Komuta Merkezi
+  # ===========================================================================
+  - title: Knight Rider
+    icon: mdi:car
+    theme: Jarvis Dark # Koyu tema (sürüşte gözü yormaz)
+    cards:
+      # -------------------------------------------------------------------------
+      # ÜST: ARAÇ DURUMU (OBD2 verileri — büyük, tek bakış)
+      # -------------------------------------------------------------------------
+      # 🎨 UX: Sürüşte en kritik bilgi → en üstte, en büyük font
+      - type: grid
+        columns: 3
+        square: false
+        cards:
+          # Hız (en büyük — sürüşte en önemli)
+          - type: custom:mushroom-template-card
+            primary: "{{ states('sensor.car_speed') | int }}"
+            secondary: "km/h"
+            icon: mdi:speedometer
+            icon_color: >
+              {% set speed = states('sensor.car_speed') | int %}
+              {% if speed > 120 %} red
+              {% elif speed > 90 %} amber
+              {% else %} green
+              {% endif %}
+            layout: vertical
+            # 🎯 Hız >120 → kırmızı (tehlike), >90 → amber, normal → yeşil
+
+          # Motor devri (RPM)
+          - type: custom:mushroom-template-card
+            primary: "{{ states('sensor.car_rpm') | int }}"
+            secondary: "RPM"
+            icon: mdi:engine
+            icon_color: >
+              {% set rpm = states('sensor.car_rpm') | int %}
+              {% if rpm > 5000 %} red
+              {% elif rpm > 3500 %} amber
+              {% else %} green
+              {% endif %}
+            layout: vertical
+
+          # Yakıt seviyesi
+          - type: custom:mushroom-template-card
+            primary: "{{ states('sensor.car_fuel_level') | int }}%"
+            secondary: "Yakıt"
+            icon: mdi:gas-station
+            icon_color: >
+              {% set fuel = states('sensor.car_fuel_level') | int %}
+              {% if fuel < 20 %} red
+              {% elif fuel < 40 %} amber
+              {% else %} green
+              {% endif %}
+            layout: vertical
+            # 🎯 Yakıt <20% → kırmızı (doldur), <40% → amber
+
+      # -------------------------------------------------------------------------
+      # ORTA: EV DURUMU (Tailscale üzerinden — araçtan evi kontrol)
+      # -------------------------------------------------------------------------
+      # 🎨 UX: "Aractayım ama evim elimde" — Tony Stark hissi
+      - type: grid
+        columns: 2
+        square: false
+        cards:
+          # Ev sıcaklığı
+          - type: custom:mushroom-template-card
+            primary: "{{ state_attr('climate.room_ac', 'current_temperature') | float(22) | round(0) }}°C"
+            secondary: "Ev Sıcaklığı"
+            icon: mdi:home-thermometer
+            icon_color: blue
+            layout: horizontal
+            tap_action:
+              action: more-info
+              entity_id: climate.room_ac
+
+          # Ev kilit durumu
+          - type: custom:mushroom-entity-card
+            entity: lock.front_door
+            name: "Kapı Kilidi"
+            icon: mdi:lock
+            layout: horizontal
+            primary_info: name
+            secondary_info: state
+            # 🎯 "Aractan evi kilitle/aç" → Tony Stark
+
+          # Ev ışıkları (hızlı kontrol)
+          - type: custom:mushroom-light-card
+            entity: light.wled_ambient
+            name: "Ev Ambiyans"
+            icon: mdi:led-strip-variant
+            layout: horizontal
+            show_brightness_control: true
+
+          # Ev difüzörü
+          - type: custom:mushroom-entity-card
+            entity: switch.smart_diffuser_power
+            name: "Difüzör"
+            icon: mdi:scent
+            layout: horizontal
+            primary_info: name
+            secondary_info: state
+
+      # -------------------------------------------------------------------------
+      # ALT: JARVIS SESLİ KOMUT (sürüşte dokunmadan kontrol)
+      # -------------------------------------------------------------------------
+      # 🎨 UX: Sürüşte ekrana dokunmak tehlikeli → SESLİ KOMUT
+      # "Jarvis, eve varışıma 10 dk kaldı, ışıkları aç" → araçtan evi hazırla
+      - type: custom:bubble-card
+        card_type: button
+        name: "Jarvis"
+        icon: mdi:robot-outline
+        button_type: name
+        sub_button:
+          - name: "Sesli Komut"
+            icon: mdi:microphone
+        styles: |
+          .bubble-button {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+          }
+          .bubble-name {
+            font-size: 20px;
+            font-weight: 300;
+            color: #FFFFFF;
+          }
+        tap_action:
+          action: fire-dom-event
+          browser_mod:
+            service: browser_mod.popup
+            data:
+              title: "Jarvis — Sesli Komut"
+              content:
+                type: custom:openai-conversation-card
+                # Sürüş sırasında yazmadan sesli komut ver
+                # "Jarvis, eve varışıma 5 dk kaldı, kahve makinesini aç"
+
+      # -------------------------------------------------------------------------
+      # ALT: ARAÇ DİYAGNOSTİK (arıza kodları — sadece sorun varsa)
+      # -------------------------------------------------------------------------
+      - type: conditional
+        conditions:
+          - condition: template
+            value_template: "{{ states('sensor.car_dtc_codes') != 'none' and states('sensor.car_dtc_codes') != '' }}"
+        card:
+          type: custom:mushroom-template-card
+          primary: "⚠️ Arıza Kodu"
+          secondary: "{{ states('sensor.car_dtc_codes') }}"
+          icon: mdi:car-alert
+          icon_color: red
+          layout: horizontal
+          # 🎯 Arıza varsa kırmızı kart → sürücüye uyarı
+          # Arıza yoksa kart görünmez → dikkat dağıtmaz
+
+# -----------------------------------------------------------------------------
+# TEMA: Jarvis Dark (Araç içi — koyu, gözü yormaz)
+# -----------------------------------------------------------------------------
+# frontend:
+#   themes:
+#     Jarvis Dark:
+#       primary-color: "#FFD700"
+#       accent-color: "#FF4500"
+#       background-color: "#0A0A0F"      # Çok koyu (gece sürüşü için)
+#       card-background-color: "#1A1A2E"
+#       text-primary-color: "#FFFFFF"
+#       text-secondary-color: "#888888"
+# -----------------------------------------------------------------------------

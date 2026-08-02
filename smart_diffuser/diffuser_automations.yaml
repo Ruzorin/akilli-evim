@@ -1,0 +1,311 @@
+# =============================================================================
+# smart_diffuser — Home Assistant Otomasyonları
+# =============================================================================
+# Bu dosya 3 senaryo için otomasyon tanımlar:
+#
+#   Senaryo 1 (Pre-Arrival):    Misafir odaya yaklaşırken difüzörü "high" modda aç
+#   Senaryo 2 (Intimacy/Date):  Intimacy veya Audio WLED modu tetiklendiğinde difüzör aç
+#   Senaryo 3 (Maintenance):    Odada kimse yoksa veya gece modunda difüzörü kapat
+#
+# 🚨 DİFÜZÖR RGB IŞIĞI HAKKINDA KRİTİK NOT:
+# =============================================================================
+# Tüm otomasyonlarda, difüzör açıldıktan HEMEN SONRA difüzörün kendi RGB
+# ışığı KAPATILIR. Bu, premium WLED ambiyans tasarımını korumak için ŞARTTIR.
+#
+# Difüzörün ucuz RGB LED halkası (genellikle gökkuşağı döngüsü yapar) WLED'in
+# özenle seçilmiş amber/kırmızı paleti ile ÇAKIŞIR. Odada iki farklı ışık
+# kaynağı birbiriyle yarışırsa, "premium lounge" hissi anında "ucuz pavyon"
+# hissine dönüşür.
+#
+# Altın Kural: Difüzör sadece KOKU yayar, IŞIK VERMEZ.
+#              Odanın tek ışık kaynağı WLED'dir.
+# =============================================================================
+# KOKU PSİKOLOJİSİ NOTU:
+# =============================================================================
+# Koku, limbik sisteme (amigdalaya) DOĞRUDAN bağlanan tek duydur. Misafir
+# odaya girdiğinde, ışık ve müzikten ÖNCE koku algılanır. Bu yüzden
+# "Pre-Arrival" senaryosu çok kritiktir — misafir kapıyı açtığında oda
+# zaten Amber + Sandalağacı kokusuyla dolu olmalıdır. Bu, "ilk izlenim"
+# silahıdır ve "burası sıradan bir oda değil, bir otel lobisi" mesajını
+# milisaniyeler içinde beyne işler.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# INPUT BOOLEAN — Difüzör manuel kontrol bayrağı
+# -----------------------------------------------------------------------------
+# Kullanıcı difüzörü manuel olarak açtıysa, otomasyonların onu kapatmasını
+# engellemek için bu bayrak kullanılır.
+input_boolean:
+  diffuser_manual_override:
+    name: "Diffuser Manual Override"
+    icon: mdi:hand-back-right
+    initial: off
+
+# -----------------------------------------------------------------------------
+# OTOMASYONLAR
+# -----------------------------------------------------------------------------
+automation:
+  # ===========================================================================
+  # SENARYO 1: Pre-Arrival — Misafir Odaya Yaklaşıyor
+  # ===========================================================================
+  - id: diffuser_pre_arrival
+    alias: "Diffuser — Pre-Arrival (Misafir Yaklaşıyor)"
+    description: >
+      Telefonun GPS konumu yurda 100 metre yaklaştığında ve odada kimse yoksa,
+      difüzörü "high" modda çalıştırır. Misafir odaya girildiğinde muazzam
+      bir koku karşılaması (Amber + Sandalağacı) için oda önceden hazırlanır.
+      Koku, limbik sisteme doğrudan ulaştığı için "ilk izlenim" silahıdır.
+
+    trigger:
+      # -------------------------------------------------------------------------
+      # Tetikleyici: Telefon zone.home'a 100m yaklaştığında
+      # -------------------------------------------------------------------------
+      # HA Companion App, telefonun GPS konumunu HA'a gönderir.
+      # zone.home, yurt binasının konumunu tanımlar.
+      # "zone" trigger, telefon belirli bir zone'a girdiğinde tetiklenir.
+      - platform: zone
+        entity_id: device_tracker.batin_phone
+        zone: zone.home
+        event: enter
+        id: phone_approaching
+
+    condition:
+      # Koşul 1: Odada şu an kimse yok (varlık sensörü)
+      # Neden? Eğer biri odadaysa difüzör zaten çalışıyor olabilir;
+      # gereksiz tetikleme yapma.
+      - condition: state
+        entity_id: binary_sensor.room_presence
+        state: "off"
+
+      # Koşul 2: Difüzör şu an kapalı
+      - condition: state
+        entity_id: switch.smart_diffuser_power
+        state: "off"
+
+    action:
+      # -------------------------------------------------------------------------
+      # AKSİYON 1: Difüzörü "high" modda aç
+      # -------------------------------------------------------------------------
+      # "high" mod: Maksimum buhar hızı — oda hızla kokuyla dolar.
+      # Misafir kapıyı açtığında (30-60 saniye içinde) oda zaten dolu olmalı.
+      - service: switch.turn_on
+        target:
+          entity_id: switch.smart_diffuser_power
+
+      # Buhar hızını "high" olarak ayarla
+      - service: select.select_option
+        target:
+          entity_id: select.diffuser_mist_level
+        data:
+          option: "high"
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 2: Difüzör RGB ışığını KAPAT (KRİTİK!)
+      # -------------------------------------------------------------------------
+      # 🚨 Difüzör açıldığında kendi RGB LED'i otomatik yanar.
+      # Bu ışık WLED ambiyansıyla ÇAKIŞIR ve premium atmosferi BOZAR.
+      # Bu yüzden difüzör açıldıktan HEMEN SONRA ışığı kapatırız.
+      #
+      # Difüzör sadece KOKU yayar, IŞIK VERMEZ.
+      # Odanın tek ışık kaynağı WLED'dir.
+      - delay:
+          milliseconds: 500 # Difüzörün açılması için kısa bekleme
+
+      - service: light.turn_off
+        target:
+          entity_id: light.diffuser_led
+
+      # Işık güç anahtarını da kapat (bazı modellerde ayrı switch)
+      - service: switch.turn_off
+        target:
+          entity_id: switch.diffuser_light_power
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 3: Zamanlayıcı ayarla (güvenlik)
+      # -------------------------------------------------------------------------
+      # 2 saat sonra otomatik kapanma — su bitse bile makine boş çalışmasın
+      - service: select.select_option
+        target:
+          entity_id: select.diffuser_timer
+        data:
+          option: "2h"
+
+  # ===========================================================================
+  # SENARYO 2: Intimacy Mode & Date Vibe — Duyusal Derinlik
+  # ===========================================================================
+  - id: diffuser_intimacy_date
+    alias: "Diffuser — Intimacy & Date Vibe"
+    description: >
+      Modül 12 (intimacy_sync_mode) veya Modül 10 (audio_reactive_wled)
+      tetiklendiğinde, difüzör kapalıysa aç ve ortamın duyusal derinliğini
+      artır. Intimacy modunda Ylang-Ylang + Sandalağacı, Date/Lounge modunda
+      Sandalağacı + Amber esansı oda atmosferini tamamlar.
+
+    trigger:
+      # -------------------------------------------------------------------------
+      # Tetikleyici 1: Intimacy Sync Mode aktif olduğunda
+      # -------------------------------------------------------------------------
+      # Modül 12'nin input_boolean'ı ON olduğunda tetiklenir.
+      - platform: state
+        entity_id: input_boolean.intimacy_sync_active
+        to: "on"
+        id: intimacy_trigger
+
+      # -------------------------------------------------------------------------
+      # Tetikleyici 2: Audio WLED "Date Lounge" moduna geçtiğinde
+      # -------------------------------------------------------------------------
+      # Modül 10'un input_select'i "date_lounge" olduğunda tetiklenir.
+      - platform: state
+        entity_id: input_select.audio_wled_mode
+        to: "date_lounge"
+        id: date_lounge_trigger
+
+    condition:
+      # Koşul: Difüzör şu an kapalıysa (zaten açıksa tekrar açma)
+      - condition: state
+        entity_id: switch.smart_diffuser_power
+        state: "off"
+
+    action:
+      # -------------------------------------------------------------------------
+      # AKSİYON 1: Difüzörü aç
+      # -------------------------------------------------------------------------
+      - service: switch.turn_on
+        target:
+          entity_id: switch.smart_diffuser_power
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 2: Buhar hızını senaryoya göre ayarla
+      # -------------------------------------------------------------------------
+      # Intimacy modunda "low" — hafif, sürekli koku (aşırı değil)
+      # Date/Lounge modunda "medium" — orta yoğunluk
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.id == 'intimacy_trigger' }}"
+            sequence:
+              - service: select.select_option
+                target:
+                  entity_id: select.diffuser_mist_level
+                data:
+                  option: "low" # Intimacy: hafif, sürekli
+        default:
+          - service: select.select_option
+            target:
+              entity_id: select.diffuser_mist_level
+            data:
+              option: "medium" # Date/Lounge: orta yoğunluk
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 3: Difüzör RGB ışığını KAPAT (KRİTİK!)
+      # -------------------------------------------------------------------------
+      # 🚨 Yine ve tekrar: Difüzörün ucuz RGB LED'i WLED ile çakışır!
+      # Intimacy modunda WLED koyu yakut kırmızısı (#8B0000) çalışırken,
+      # difüzörün üstünde gökkuşağı dönerse tüm romantik atmosfer ÇÖKER.
+      # Difüzör sadece koku yayar, ışık VERMEZ.
+      - delay:
+          milliseconds: 500
+
+      - service: light.turn_off
+        target:
+          entity_id: light.diffuser_led
+
+      - service: switch.turn_off
+        target:
+          entity_id: switch.diffuser_light_power
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 4: Zamanlayıcı (güvenlik)
+      # -------------------------------------------------------------------------
+      - service: select.select_option
+        target:
+          entity_id: select.diffuser_timer
+        data:
+          option: "3h" # 3 saat sonra otomatik kapanma
+
+  # ===========================================================================
+  # SENARYO 3: Maintenance — Otomatik Kapatma
+  # ===========================================================================
+  - id: diffuser_maintenance_off
+    alias: "Diffuser — Maintenance (Otomatik Kapatma)"
+    description: >
+      Odada hiç kimse olmadığında veya "Deep Sleep/Gece" moduna geçildiğinde
+      difüzörü otomatik olarak kapatır. Esans israfını önler ve su haznesinin
+      boşalmasını engeller.
+
+    trigger:
+      # -------------------------------------------------------------------------
+      # Tetikleyici 1: Odada kimse kalmadı (varlık sensörü OFF)
+      # -------------------------------------------------------------------------
+      # LD2410 varlık sensörü (underbed_lighting modülü) oda boşaldığında
+      # "off" durumuna geçer. 5 dakika bekle (yanlış pozitif için) sonra kapat.
+      - platform: state
+        entity_id: binary_sensor.room_presence
+        to: "off"
+        for:
+          minutes: 5
+        id: room_empty
+
+      # -------------------------------------------------------------------------
+      # Tetikleyici 2: Deep Sleep / Gece modu aktif
+      # -------------------------------------------------------------------------
+      # morning_after modülü veya Jarvis "gece modu" komutu ile tetiklenir.
+      - platform: state
+        entity_id: input_boolean.deep_sleep_mode
+        to: "on"
+        id: deep_sleep
+
+      # -------------------------------------------------------------------------
+      # Tetikleyici 3: Tüm modlar kapatıldı (intimacy + audio_wled + barista)
+      # -------------------------------------------------------------------------
+      # Hiçbir premium mod aktif değilse ve oda boşsa difüzörü kapat.
+      - platform: template
+        value_template: >
+          {{ is_state('input_boolean.intimacy_sync_active', 'off') and
+             is_state('input_select.audio_wled_mode', 'off') and
+             is_state('input_boolean.barista_mode_active', 'off') and
+             is_state('binary_sensor.room_presence', 'off') }}
+        for:
+          minutes: 10
+        id: all_modes_off
+
+    condition:
+      # Koşul 1: Difüzör şu an açık
+      - condition: state
+        entity_id: switch.smart_diffuser_power
+        state: "on"
+
+      # Koşul 2: Manuel override aktif DEĞİL
+      # (Kullanıcı manuel olarak açtıysa otomasyon kapatmasın)
+      - condition: state
+        entity_id: input_boolean.diffuser_manual_override
+        state: "off"
+
+    action:
+      # -------------------------------------------------------------------------
+      # AKSİYON: Difüzörü kapat
+      # -------------------------------------------------------------------------
+      - service: switch.turn_off
+        target:
+          entity_id: switch.smart_diffuser_power
+
+      # Zamanlayıcıyı iptal et
+      - service: select.select_option
+        target:
+          entity_id: select.diffuser_timer
+        data:
+          option: "cancel"
+
+      # -------------------------------------------------------------------------
+      # Opsiyonel: Jarvis sesli onay (sadece deep_sleep tetikleyicisinde)
+      # -------------------------------------------------------------------------
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.id == 'deep_sleep' }}"
+            sequence:
+              - service: tts.speak
+                target:
+                  entity_id: tts.jarvis_voice
+                data:
+                  message: "Difüzör kapatıldı. İyi geceler."

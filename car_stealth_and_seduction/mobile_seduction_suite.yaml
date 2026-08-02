@@ -1,0 +1,217 @@
+# =============================================================================
+# car_stealth_and_seduction — Mobile Seduction Suite (Araba İçi Date Modu)
+# =============================================================================
+# Odadaki seduction mantığını arabaya taşıyan mod: koku, iklim ve derin bas
+# senkronizasyonu. "Date Mode" tetiklendiğinde araç bir "mobile lounge"a dönüşür.
+#
+# ❤️‍🔥 "MOBILE SEDUCTION SUITE" MANTIĞI — GOD MODE:
+# =============================================================================
+# "Date Mode" → araç bir "mobile lounge"a dönüşür:
+# - WLED: Derin Yakut Kırmızısı / Amber, nefes alma efekti
+# - Koku: Kullanıcının imza parfümü alt notaları (Odunsu/Amber)
+# - İklim: Konforlu sıcaklık (21°C, quiet fan)
+# - Akustik: Çok düşük volümde, bas ağırlıklı siberpunk/R&B, fade-in
+#
+# "Tony Stark'ın aracı bir lounge'a dönüşür — ışıklar, koku, ses."
+# Misafir araca bindiğinde → "bu bir araç değil, bir deneyim" hissi.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# INPUT BOOLEAN — Mobile Seduction aktif
+# -----------------------------------------------------------------------------
+input_boolean:
+  mobile_seduction_active:
+    name: "Mobile Seduction Suite"
+    icon: mdi:heart-circle
+    initial: off
+
+# -----------------------------------------------------------------------------
+# OTOMASYONLAR
+# -----------------------------------------------------------------------------
+automation:
+  # ===========================================================================
+  # SENARYO 1: Mobile Seduction Suite — Date Mode Aktif
+  # ===========================================================================
+  - id: mobile_seduction_activate
+    alias: "Mobile Seduction — Date Mode Aktif"
+    description: >
+      "Date Mode" tetiklendiğinde: WLED kırmızı/amber + nefes efekti,
+      kabin iklimi konforlu, akıllı difüzör imza koku, Spotify bas ağırlıklı
+      siberpunk/R&B fade-in.
+
+      ❤️‍🔥 GOD MODE:
+      Misafir araca bindiğinde → ışıklar kırmızı, koku imza, müzik bas.
+      "Bu bir araç değil, bir deneyim." Sürücü dominasyonu → misafir güveni.
+
+    trigger:
+      # -------------------------------------------------------------------------
+      # Tetikleyici 1: Sesli komut
+      # -------------------------------------------------------------------------
+      - platform: conversation
+        command: "Date Mode"
+        id: voice_date
+
+      - platform: conversation
+        command: "Seduction Mode"
+        id: voice_seduction
+
+      # -------------------------------------------------------------------------
+      # Tetikleyici 2: Gizli buton çift tık
+      # -------------------------------------------------------------------------
+      - platform: state
+        entity_id: sensor.car_hidden_button_action
+        to: "double"
+        id: hidden_double
+
+    condition:
+      - condition: state
+        entity_id: input_boolean.mobile_seduction_active
+        state: "off"
+
+    action:
+      # -------------------------------------------------------------------------
+      # AKSİYON 0: Modu aktif et
+      # -------------------------------------------------------------------------
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.mobile_seduction_active
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 1: AMBİYANS — WLED derin Yakut Kırmızısı / Amber, nefes efekti
+      # -------------------------------------------------------------------------
+      # 🎨 Derin Yakut Kırmızısı (#8B0000) → tutkulu, sinematik
+      # Amber (#BF8000) → sıcak, güven
+      # "Breathe" efekti → yavaş nefes → sakinleştirici, hipnotik
+      - service: light.turn_on
+        target:
+          entity_id:
+            - light.car_wled_footwell
+            - light.car_wled_door
+        data:
+          rgb_color: [139, 0, 0] # Derin Yakut Kırmızısı
+          brightness: 100 # Loş — %39
+          effect: "Breathe" # Yavaş nefes
+          transition: 5 # 5 saniyede yumuşak geçiş
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 2: İKLİM & KOKU — Kabin konforlu + imza koku
+      # -------------------------------------------------------------------------
+      # Klima 21°C, fan quiet (sessiz — romantik atmosferde fan sesi mood killer)
+      - service: climate.set_temperature
+        target:
+          entity_id: climate.car_ac
+        data:
+          temperature: 21
+          hvac_mode: cool
+
+      - service: climate.set_fan_mode
+        target:
+          entity_id: climate.car_ac
+        data:
+          fan_mode: quiet
+
+      # Akıllı difüzör → imza koku (Odunsu/Amber alt notaları)
+      # 🎭 Pavlov etkisi: misafir kullanıcının kokusunu alır → "bu onun alanı" → güven
+      - service: switch.turn_on
+        target:
+          entity_id: switch.car_diffuser
+      - delay:
+          milliseconds: 500
+      - service: light.turn_off
+        target:
+          entity_id: light.car_diffuser_led
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 3: AKUSTİK — Spotify bas ağırlıklı siberpunk/R&B, fade-in
+      # -------------------------------------------------------------------------
+      # 🎵 Çok düşük volümde (%12) — arka plan, ön plan değil
+      # Bas ağırlıklı → vücutta hissedilir → savunma mekanizması düşer
+      # Siberpunk/R&B → "gece, tutku, gizem" hissi
+      - service: input_select.select_option
+        target:
+          entity_id: input_select.spatial_audio_mood
+        data:
+          option: "deep_rnb_date"
+
+      - service: script.spatial_play_mood
+        data:
+          target_volume: 0.12 # %12 — çok kısık, arka plan
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 4: Jarvis sesli karşılama
+      # -------------------------------------------------------------------------
+      - delay:
+          seconds: 3
+
+      - service: tts.speak
+        target:
+          entity_id: tts.jarvis_voice
+        data:
+          message: >
+            {{ [
+              "Date modu aktif. Atmosfer hazır, efendim.",
+              "Mobile Seduction Suite aktif. Keyifli sürüşler.",
+              "Işıklar, koku ve müzik senkronize. İyi eğlenceler, efendim."
+            ] | random }}
+
+  # ===========================================================================
+  # SENARYO 2: Mobile Seduction Kapat
+  # ===========================================================================
+  - id: mobile_seduction_deactivate
+    alias: "Mobile Seduction — Kapat"
+    description: >
+      Date modundan çıkış: WLED kapat, difüzör kapat, müzik fade-out,
+      klima normale. "Lounge'dan normal araca dönüş."
+
+    trigger:
+      - platform: conversation
+        command: "Date Mode off"
+        id: voice_date_off
+
+      - platform: state
+        entity_id: sensor.car_hidden_button_action
+        to: "hold"
+        id: hidden_hold
+
+    condition:
+      - condition: state
+        entity_id: input_boolean.mobile_seduction_active
+        state: "on"
+
+    action:
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.mobile_seduction_active
+
+      # WLED kapat
+      - service: light.turn_off
+        target:
+          entity_id:
+            - light.car_wled_footwell
+            - light.car_wled_door
+        data:
+          transition: 5
+
+      # Difüzör kapat
+      - service: switch.turn_off
+        target:
+          entity_id: switch.car_diffuser
+
+      # Müzik fade-out
+      - service: script.audio_fade_out_stop
+        data:
+          duration: 5
+
+      # Klima normale
+      - service: climate.set_temperature
+        target:
+          entity_id: climate.car_ac
+        data:
+          temperature: 23
+          hvac_mode: cool
+
+      - service: tts.speak
+        target:
+          entity_id: tts.jarvis_voice
+        data:
+          message: "Date modu kapatıldı. Normale döndü, efendim."

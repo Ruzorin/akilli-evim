@@ -1,0 +1,248 @@
+# =============================================================================
+# car_sentry_mode_security — HA Sentry Mode Güvenlik Paneli
+# =============================================================================
+# Home Assistant PWA SuperApp arayüzüne eklenecek "Sentry Mode" anahtarı.
+# Kullanıcı tek dokunuşla araç güvenliğini aktif/deaktif eder, otoparkta iken
+# gelen son ihlal fotoğraflarını ve güvenlik loglarını takip eder.
+#
+# 🛡️ "SENTRY MODE" MANTIĞI — TESLA STANDARDI:
+# =============================================================================
+# Tesla Sentry Mode: park halinde tehdit algılama + kayıt + bildirim.
+# Bu modül aynı standardı HA + Jetson Nano ile uygular:
+# - Tek dokunuş → Sentry ON/OFF (SuperApp)
+# - İhlal fotoğrafları → SuperApp'te görüntüle
+# - Güvenlik logları → zaman çizelgesi
+# - MQTT → Jetson daemon → Deep Sleep → PIR tetikleme → fotoğraf → Telegram
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# INPUT BOOLEAN — Sentry Mode aktif/pasif
+# -----------------------------------------------------------------------------
+input_boolean:
+  car_sentry_mode:
+    name: "Sentry Mode"
+    icon: mdi:shield-car
+    initial: off
+
+# -----------------------------------------------------------------------------
+# INPUT DATETIME — Son ihlal zamanı
+# -----------------------------------------------------------------------------
+input_datetime:
+  car_last_intrusion:
+    name: "Last Intrusion"
+    has_date: true
+    has_time: true
+    icon: mdi:clock-alert
+
+# -----------------------------------------------------------------------------
+# SENSOR — Sentry durumu (MQTT'den)
+# -----------------------------------------------------------------------------
+template:
+  - sensor:
+      - name: "Car Sentry Status"
+        unique_id: "car_sentry_status"
+        icon: mdi:shield-car
+        state: "{{ states('sensor.mqtt_car_sentry_status') | default('DISARMED') }}"
+        attributes:
+          last_intrusion: "{{ states('input_datetime.car_last_intrusion') }}"
+          intrusion_count: "{{ states('counter.car_intrusions') | int(0) }}"
+
+# -----------------------------------------------------------------------------
+# COUNTER — İhlal sayısı
+# -----------------------------------------------------------------------------
+counter:
+  car_intrusions:
+    name: "Car Intrusions"
+    initial: 0
+    step: 1
+    icon: mdi:counter
+
+# -----------------------------------------------------------------------------
+# OTOMASYONLAR
+# -----------------------------------------------------------------------------
+automation:
+  # ===========================================================================
+  # SENARYO 1: Sentry Mode ON → Jetson'a "ARM" sinyali
+  # ===========================================================================
+  - id: sentry_mode_arm
+    alias: "Sentry Mode — Aktif Et (ARM)"
+    description: >
+      Kullanıcı SuperApp'ten Sentry Mode'u açtığında → MQTT → Jetson daemon
+      → Deep Sleep + PIR dinleme başlar.
+
+      🛡️ "Tesla Sentry Mode" standardı:
+      Tek dokunuş → araç güvenliği aktif → akü korumalı uyku modu.
+
+    trigger:
+      - platform: state
+        entity_id: input_boolean.car_sentry_mode
+        to: "on"
+        id: sentry_on
+
+    action:
+      # MQTT → Jetson daemon → ARM
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/car/sentry/command"
+          payload: "ARM"
+          retain: true
+
+      # Jarvis sesli onay (eğer araç içi ekranda)
+      - service: tts.speak
+        target:
+          entity_id: tts.jarvis_voice
+        data:
+          message: "Sentry Mode aktif. Araç güvende, efendim."
+
+  # ===========================================================================
+  # SENARYO 2: Sentry Mode OFF → Jetson'a "DISARM" sinyali
+  # ===========================================================================
+  - id: sentry_mode_disarm
+    alias: "Sentry Mode — Kapat (DISARM)"
+    description: >
+      Kullanıcı SuperApp'ten Sentry Mode'u kapattığında → MQTT → Jetson
+      daemon → Deep Sleep'ten çık → normal mod.
+
+    trigger:
+      - platform: state
+        entity_id: input_boolean.car_sentry_mode
+        to: "off"
+        id: sentry_off
+
+    action:
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/car/sentry/command"
+          payload: "DISARM"
+          retain: true
+
+      - service: tts.speak
+        target:
+          entity_id: tts.jarvis_voice
+        data:
+          message: "Sentry Mode kapatıldı."
+
+  # ===========================================================================
+  # SENARYO 3: İhlal Algılandı → SuperApp + Mobil Bildirim
+  # ===========================================================================
+  - id: sentry_intrusion_alert
+    alias: "Sentry — İhlal Algılandı (Alert)"
+    description: >
+      Jetson daemon → MQTT → HA → SuperApp güvenlik paneli + mobil bildirim.
+      "⚠️ Dikkat! Aracınızın yanına biri yaklaştı. Kayıt başlatıldı."
+
+      🛡️ "Tesla Sentry Mode" standardı:
+      Tehdit → anlık bildirim → fotoğraf → kayıt → log.
+
+    trigger:
+      - platform: mqtt
+        topic: "jarvis/car/sentry/alert"
+        id: intrusion_alert
+
+    condition:
+      - condition: state
+        entity_id: input_boolean.car_sentry_mode
+        state: "on"
+
+    action:
+      # -------------------------------------------------------------------------
+      # AKSİYON 1: İhlal sayacını artır
+      # -------------------------------------------------------------------------
+      - service: counter.increment
+        target:
+          entity_id: counter.car_intrusions
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 2: Son ihlal zamanını kaydet
+      # -------------------------------------------------------------------------
+      - service: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.car_last_intrusion
+        data:
+          datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 3: Mobil bildirim (HA Companion App)
+      # -------------------------------------------------------------------------
+      - service: notify.mobile_app
+        data:
+          title: "🚨 Sentry Alert"
+          message: "{{ trigger.payload_json.message | default('Araç ihlali algılandı!') }}"
+          data:
+            push:
+              interruption_level: "critical"
+              sound: "siren.caf"
+            # Fotoğrafı bildirime ekle (HA media)
+            image: "{{ trigger.payload_json.snapshot | default('') }}"
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 4: Jarvis sesli uyarı (eğer araç içi ekranda)
+      # -------------------------------------------------------------------------
+      - service: tts.speak
+        target:
+          entity_id: tts.jarvis_voice
+        data:
+          message: "Efendim, aracınızda bir hareket algılandı. Fotoğraf telefonunuza gönderildi."
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 5: SuperApp güvenlik paneli → son ihlal fotoğrafı
+      # -------------------------------------------------------------------------
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/car/sentry/last_photo"
+          payload: "{{ trigger.payload_json.snapshot | default('') }}"
+          retain: true
+
+# -----------------------------------------------------------------------------
+# LOVELACE — SuperApp Sentry Mode Paneli
+# -----------------------------------------------------------------------------
+# Bu YAML, SuperApp dashboard'a (Modül 18) eklenir:
+#
+# views:
+#   - title: Sentry
+#     icon: mdi:shield-car
+#     theme: Jarvis Dark
+#     cards:
+#       # Sentry Mode anahtarı (büyük, tek dokunuş)
+#       - type: custom:mushroom-entity-card
+#         entity: input_boolean.car_sentry_mode
+#         name: "Sentry Mode"
+#         icon: mdi:shield-car
+#         layout: vertical
+#         primary_info: name
+#         secondary_info: state
+#         # 🛡️ Tek dokunuş → ARM/DISARM
+#
+#       # Son ihlal zamanı + sayı
+#       - type: grid
+#         columns: 2
+#         cards:
+#           - type: custom:mushroom-template-card
+#             primary: "{{ states('input_datetime.car_last_intrusion') }}"
+#             secondary: "Son İhlal"
+#             icon: mdi:clock-alert
+#             icon_color: red
+#             layout: horizontal
+#
+#           - type: custom:mushroom-template-card
+#             primary: "{{ states('counter.car_intrusions') | int(0) }}"
+#             secondary: "Toplam İhlal"
+#             icon: mdi:counter
+#             icon_color: amber
+#             layout: horizontal
+#
+#       # Son ihlal fotoğrafı (MQTT → image)
+#       - type: picture-entity
+#         entity: camera.car_sentry_last_photo
+#         name: "Son İhlal Fotoğrafı"
+#         show_state: false
+#         show_name: true
+#         camera_view: auto
+#
+#       # Güvenlik logları (son 10 ihlal)
+#       - type: history-graph
+#         entities:
+#           - counter.car_intrusions
+#         name: "İhlal Geçmişi"
+#         hours_to_show: 168  # 7 gün
+# -----------------------------------------------------------------------------

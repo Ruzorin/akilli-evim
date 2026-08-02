@@ -1,0 +1,348 @@
+# =============================================================================
+# audio_reactive_wled — Home Assistant Otomasyonu
+# =============================================================================
+# Bu otomasyon, odada müzik çalmaya başladığında WLED sese duyarlı moduna
+# geçer ve müzik durduğunda statik dinlenme moduna döner.
+#
+# 🎨 PREMIUM / SENSORY HİSSİYAT NASIL KORUNUR?
+# =============================================================================
+# Bu otomasyon, "ucuz pavyon" efektlerinden kaçınır:
+#
+#   1. RENK PALETİ: Gökkuşağı (Rainbow) yerine sadece Amber/Kırmızı/Altın
+#      tonları kullanılır. Bu palet, "oyuncu odası" değil "premium lounge"
+#      hissi yaratır. Gökkuşağı, gözü yorar ve melatonin salınımını bozar;
+#      sıcak tonlar ise gece/rahatlama modunu destekler.
+#
+#   2. GEÇİŞLER: Tüm ışık geçişleri yavaştır (transition: 5-10 saniye).
+#      Ani renk değişimleri "disko" hissi yaratır; yavaş geçişler
+#      "sinematik" ve "nefes alan" bir atmosfer sağlar.
+#
+#   3. PARLAKLIK: Maksimum %47 parlaklık (120/255). Tam parlaklık
+#      "göz alıcı" ve "agresif"; loş parlaklık "intim" ve "premium".
+#      Lüks otellerde aydınlatma her zaman dolaylı ve loştur.
+#
+#   4. SES DUYARLILIK: Sadece bas frekanslarına duyarlı (Gravimeter efekti).
+#      Tiz ve vokal frekanslarına tepki vermek, ışığın "spazmodik"
+#      yanıp sönmesine yol açar. Bas ritmi = "kalp atışı" hissi.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# INPUT SELECT — Aktif müzik modunu saklar
+# -----------------------------------------------------------------------------
+# Bu input_select, hangi WLED preset'inin aktif olduğunu saklar.
+# Kullanıcı Jarvis'e "müzik modunu aç" dediğinde "Date Lounge Vibe" seçilir.
+# "Parti modu" dediğinde "Party Energy" seçilir.
+input_select:
+  audio_wled_mode:
+    name: "Audio WLED Mode"
+    options:
+      - "off"
+      - "date_lounge"
+      - "deep_focus"
+      - "party_energy"
+    initial: "off"
+    icon: mdi:music-note
+
+# -----------------------------------------------------------------------------
+# RESTFUL COMMAND — WLED HTTP API'ye preset çağrısı
+# -----------------------------------------------------------------------------
+# WLED'in HTTP API'sine RESTful command tanımlar. HA otomasyonlarında
+# bu command çağrılarak preset değiştirilir.
+# MQTT yerine HTTP kullanıyoruz çünkü WLED HTTP API daha güvenilir
+# yanıt döner (MQTT'de onay yok).
+rest:
+  - resource: "http://wled-ambient.local/json"
+    scan_interval: 0
+    commands:
+      # Preset 1: Date/Lounge Vibe (Sese duyarlı Amber/Kırmızı)
+      - name: "wled_date_lounge"
+        method: "POST"
+        headers:
+          Content-Type: "application/json"
+        payload: '{"ps": 1}'
+
+      # Preset 2: Deep Focus (Statik Koyu Mavi/Beyaz Nefes)
+      - name: "wled_deep_focus"
+        method: "POST"
+        headers:
+          Content-Type: "application/json"
+        payload: '{"ps": 2}'
+
+      # Preset 3: Party/Energy (Dinamik, BPM Senkronize)
+      - name: "wled_party_energy"
+        method: "POST"
+        headers:
+          Content-Type: "application/json"
+        payload: '{"ps": 3}'
+
+      # Preset 4: Rest/Idle (Statik Loş Amber — Dinlenme)
+      - name: "wled_rest_idle"
+        method: "POST"
+        headers:
+          Content-Type: "application/json"
+        payload: '{"ps": 4}'
+
+# -----------------------------------------------------------------------------
+# OTOMASYONLAR
+# -----------------------------------------------------------------------------
+automation:
+  # ===========================================================================
+  # OTOMASYON 1: Müzik Başladı → WLED Sese Duyarlı Moda Geç
+  # ===========================================================================
+  - id: audio_wled_music_start
+    alias: "Audio WLED — Müzik Başladı"
+    description: >
+      Spotify'ta müzik çalmaya başladığında veya Jarvis'e "müzik modunu aç"
+      dendiğinde, WLED'i sese duyarlı "Date/Lounge Vibe" preset'ine geçirir.
+      Sadece güneş batmışsa veya oda ışıkları kapalıysa çalışır — gündüz
+      aydınlatma gereksiz ve göz alıcı olur.
+
+    trigger:
+      # -------------------------------------------------------------------------
+      # Tetikleyici 1: Spotify medya oynatıcı "playing" durumuna geçtiğinde
+      # -------------------------------------------------------------------------
+      # Müzik çalmaya başladığında tetiklenir. Duraklatma (paused) veya
+      # durdurma (idle) tetiklemez.
+      - platform: state
+        entity_id: media_player.spotify
+        to: "playing"
+        id: spotify_playing
+
+      # -------------------------------------------------------------------------
+      # Tetikleyici 2: Jarvis ses komutu
+      # -------------------------------------------------------------------------
+      - platform: conversation
+        command: "müzik modunu aç"
+        id: voice_music_tr
+
+      # Tetikleyici 3: Jarvis ses komutu (İngilizce)
+      - platform: conversation
+        command: "start music mode"
+        id: voice_music_en
+
+    condition:
+      # -------------------------------------------------------------------------
+      # Koşul: Sadece akşam/gece veya oda karanlıksa çalışır
+      # -------------------------------------------------------------------------
+      # Neden? Gündüz, gün ışığı zaten yeterli; WLED efektleri göz alıcı
+      # ve gereksiz olur. Premium his, "doğru zamanda doğru atmosfer" demektir.
+      # Güneş batmışsa (below_horizon) VEYA oda ana ışıkları kapalıysa çalışır.
+      - condition: or
+        conditions:
+          - condition: sun
+            after: sunset
+            after_offset: "-00:30:00" # Güneş batımından 30 dk sonra başla
+          - condition: state
+            entity_id: light.room_main_lights
+            state: "off"
+
+      # Koşul: WLED modu şu an "off" ise (zaten aktif değilse)
+      - condition: state
+        entity_id: input_select.audio_wled_mode
+        state: "off"
+
+    action:
+      # -------------------------------------------------------------------------
+      # AKSİYON 1: SAHNE HAZIRLIĞI — Tepe lambalarını yavaşça kapat
+      # -------------------------------------------------------------------------
+      # Ana ışıkları 5 saniyede yavaşça sönüm. Ani karanlık "korkutucu";
+      # yavaş geçiş "sinematik". Işıklar kapandığında WLED ambiyansı
+      # odanın tek ışık kaynağı olur → dolaylı aydınlatma etkisi.
+      - service: light.turn_off
+        target:
+          entity_id:
+            - light.ceiling_light
+            - light.room_main_lights
+        data:
+          transition: 5 # 5 saniyede sön — yumuşak, sinematik geçiş
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 2: WLED KONTROLÜ — "Date/Lounge Vibe" preset'ini aktif et
+      # -------------------------------------------------------------------------
+      # WLED'i aç ve HTTP API üzerinden Preset 1 (Date/Lounge Vibe) çağır.
+      # Preset 1: Sese duyarlı, Amber/Kırmızı/Altın paleti, Gravimeter efekti.
+      #
+      # Önce WLED ışığını aç (HA light entity üzerinden)
+      - service: light.turn_on
+        target:
+          entity_id: light.wled_ambient
+        data:
+          brightness: 120 # %47 parlaklık — loş, premium
+          transition: 5 # 5 saniyede aç
+
+      # WLED HTTP API'sine Preset 1 çağrısı
+      - service: rest_command.wled_date_lounge
+
+      # Input select'i güncelle
+      - service: input_select.select_option
+        target:
+          entity_id: input_select.audio_wled_mode
+        data:
+          option: "date_lounge"
+
+      # -------------------------------------------------------------------------
+      # Kısa gecikme — WLED preset'in yüklenmesi için
+      # -------------------------------------------------------------------------
+      - delay:
+          seconds: 2
+
+  # ===========================================================================
+  # OTOMASYON 2: Müzik Durduruldu → WLED Dinlenme Moduna Geç
+  # ===========================================================================
+  - id: audio_wled_music_stop
+    alias: "Audio WLED — Müzik Durduruldu"
+    description: >
+      Müzik duraklatıldığında veya durdurulduğunda, WLED sese duyarlı moddan
+      çıkıp "Statik Loş Amber" (Preset 4 — Rest/Idle) moduna yavaşça döner.
+      Bu, müzik bitince karanlıkta kalmamak için — loş amber ışık odada
+      yumuşak bir aydınlatma sağlar.
+
+    trigger:
+      # Spotify "paused" veya "idle" durumuna geçtiğinde
+      - platform: state
+        entity_id: media_player.spotify
+        to: "paused"
+        id: spotify_paused
+
+      - platform: state
+        entity_id: media_player.spotify
+        to: "idle"
+        id: spotify_idle
+
+      # Jarvis ses komutu: "müzik modunu kapat"
+      - platform: conversation
+        command: "müzik modunu kapat"
+        id: voice_stop_tr
+
+    condition:
+      # WLED modu şu an "off" değilse (aktif bir preset varsa)
+      - condition: not
+        conditions:
+          - condition: state
+            entity_id: input_select.audio_wled_mode
+            state: "off"
+
+    action:
+      # -------------------------------------------------------------------------
+      # AKSİYON: WLED'i "Rest/Idle" (Preset 4) moduna geçir
+      # -------------------------------------------------------------------------
+      # Preset 4: Statik loş amber, sese duyarlı değil, sabit.
+      # Transition: 10 saniye — yavaş, nefes alan geçiş.
+      # Müzik bitince ani karanlık değil, yumuşak amber ışık.
+      - service: rest_command.wled_rest_idle
+
+      # WLED parlaklığını loş seviyeye indir
+      - service: light.turn_on
+        target:
+          entity_id: light.wled_ambient
+        data:
+          brightness: 60 # %23 parlaklık — çok loş, dinlenme
+          transition: 10 # 10 saniyede geçiş — çok yavaş, sinematik
+
+      # Input select'i güncelle
+      - service: input_select.select_option
+        target:
+          entity_id: input_select.audio_wled_mode
+        data:
+          option: "off"
+
+  # ===========================================================================
+  # OTOMASYON 3: Mod Değiştirme — Jarvis Ses Komutu ile Preset Seçimi
+  # ===========================================================================
+  - id: audio_wled_mode_switch
+    alias: "Audio WLED — Mod Değiştir"
+    description: >
+      Kullanıcı Jarvis'e "parti modu" veya "odaklanma modu" dediğinde,
+      WLED preset'ini değiştirir. Müzik çalmaya devam ederken sadece
+      ışık efektini değiştirir.
+
+    trigger:
+      # Parti modu
+      - platform: conversation
+        command: "parti modu"
+        id: party_mode
+
+      # Odaklanma modu
+      - platform: conversation
+        command: "odaklanma modu"
+        id: focus_mode
+
+      # Lounge modu (varsayılana dön)
+      - platform: conversation
+        command: "lounge modu"
+        id: lounge_mode
+
+    condition:
+      # WLED modu "off" değilse (müzik modu aktifse)
+      - condition: not
+        conditions:
+          - condition: state
+            entity_id: input_select.audio_wled_mode
+            state: "off"
+
+    action:
+      - choose:
+          # -------------------------------------------------------------------------
+          # PARTİ MODU: Preset 3 (Party/Energy) — Dinamik, BPM senkronize
+          # -------------------------------------------------------------------------
+          # Neden parti modunda bile gökkuşağı yok? Çünkü premium hissi
+          # koruyoruz. Sıcak dinamik palet (turuncu, altın, magenta) enerji
+          # verir ama "ucak pavyon" hissi yaratmaz.
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.id == 'party_mode' }}"
+            sequence:
+              - service: rest_command.wled_party_energy
+              - service: light.turn_on
+                target:
+                  entity_id: light.wled_ambient
+                data:
+                  brightness: 255 # Tam parlaklık — parti modu
+                  transition: 3
+              - service: input_select.select_option
+                target:
+                  entity_id: input_select.audio_wled_mode
+                data:
+                  option: "party_energy"
+
+          # -------------------------------------------------------------------------
+          # ODAKLANMA MODU: Preset 2 (Deep Focus) — Statik koyu mavi/beyaz nefes
+          # -------------------------------------------------------------------------
+          # Sese duyarlı değil — ışık müziğe tepki vermez, dikkat dağıtmaz.
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.id == 'focus_mode' }}"
+            sequence:
+              - service: rest_command.wled_deep_focus
+              - service: light.turn_on
+                target:
+                  entity_id: light.wled_ambient
+                data:
+                  brightness: 80 # Loş — odaklanma için
+                  transition: 5
+              - service: input_select.select_option
+                target:
+                  entity_id: input_select.audio_wled_mode
+                data:
+                  option: "deep_focus"
+
+          # -------------------------------------------------------------------------
+          # LOUNGE MODU: Preset 1 (Date/Lounge Vibe) — Sese duyarlı amber/kırmızı
+          # -------------------------------------------------------------------------
+          # Varsayılan premium mod — romantik/lounge atmosferi.
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.id == 'lounge_mode' }}"
+            sequence:
+              - service: rest_command.wled_date_lounge
+              - service: light.turn_on
+                target:
+                  entity_id: light.wled_ambient
+                data:
+                  brightness: 120 # %47 — loş, premium
+                  transition: 5
+              - service: input_select.select_option
+                target:
+                  entity_id: input_select.audio_wled_mode
+                data:
+                  option: "date_lounge"

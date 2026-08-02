@@ -1,0 +1,284 @@
+# =============================================================================
+# underbed_lighting — Gece Yönlendirmesi Otomasyonları
+# =============================================================================
+# Bu dosya 3 senaryo için otomasyon tanımlar:
+#
+#   Senaryo 1 (Gece Yönlendirmesi): Ayak algılandığında yatak altı ışığı %15 aç
+#   Senaryo 2 (Kapanış):            Hareket bittikten 2 dk sonra ışığı kapat
+#   Senaryo 3 (Vibe/Date Mode):     Intimacy/Audio modunda ışığı %30 sabit amber
+#
+# 🎨 "FLOATING BED" İLLÜZYONU:
+# =============================================================================
+# Yatak altı COB LED, zemine homojen ışık yayar. Yatak kenarı gölgede
+# kalır → yatak "havada duruyormuş" gibi görünür. Bu, 5 yıldızlı otellerin
+# imza özelliğidir ve odaya derinlik/lüks hissi katar.
+#
+# 🚨 GATE FİLTRESİ ÖNEMİ:
+# =============================================================================
+# Bu otomasyonlar, ESP32'deki `binary_sensor.bed_feet_presence` sensörüne
+# dayanır. Bu sensör, LD2410'un Gate 0-2 (0-2.25m) bölgesindeki hareketi
+# algılar ve Gate 3+ (yatak içi) hareketi GÖRMEZDEN GELİR.
+#
+# Eğer Gate filtresi olmasaydı:
+#   - Gece yatakta döndüğünüzde → yatak altı ışık yanar → uyku bölünür
+#   - Nefes alırken mikro hareket → ışık yanıp söner → rahatsızlık
+#
+# Gate filtresi ile:
+#   - Sadece yataktan kalktığınızda (ayak yere değdiğinde) ışık yanar
+#   - Yatakta döndüğünüzde ışık yanmaz → uyku bölünmez
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# INPUT BOOLEAN — Gece yönlendirmesi aktif/pasif
+# -----------------------------------------------------------------------------
+# Intimacy veya Audio modu aktif olduğunda gece yönlendirmesi devre dışı kalır.
+input_boolean:
+  underbed_night_routing_active:
+    name: "Underbed Night Routing"
+    icon: mdi:bed
+    initial: on
+
+# -----------------------------------------------------------------------------
+# OTOMASYONLAR
+# -----------------------------------------------------------------------------
+automation:
+  # ===========================================================================
+  # SENARYO 1: Gece Yönlendirmesi — Ayak Algılandı → Işık Aç
+  # ===========================================================================
+  - id: underbed_night_routing_on
+    alias: "Underbed — Gece Yönlendirmesi (Işık Aç)"
+    description: >
+      Sadece gece (güneş batmış) veya oda ışıkları kapalıyken çalışır.
+      LD2410 "Ayak Algılayıcı" sensörü tetiklendiğinde (biri yataktan kalktı),
+      yatak altı COB LED'ini %15 parlaklıkta yumuşakça açar.
+
+      🎭 %15 parlaklık: Gece gözü almayan, yol gösteren minimum ışık.
+      transition: 3 saniye → ani açılma değil, "nefes alan" yumuşak geçiş.
+      Misafir gözünü açtığında ışık zaten "yavaşça yanıyor" — korkutucu değil.
+
+    trigger:
+      # -------------------------------------------------------------------------
+      # Tetikleyici: Ayak algılayıcı ON olduğunda
+      # -------------------------------------------------------------------------
+      # binary_sensor.bed_feet_presence: LD2410 Gate 0-2 filtreli sensör
+      # Sadece yatak yanında (0-2.25m) hareket algılandığında ON olur.
+      # Yatak içi (Gate 3+) hareket bu sensörü tetiklemez.
+      - platform: state
+        entity_id: binary_sensor.bed_feet_presence
+        to: "on"
+        id: feet_detected
+
+    condition:
+      # -------------------------------------------------------------------------
+      # Koşul 1: Sadece gece veya oda karanlıksa çalışır
+      # -------------------------------------------------------------------------
+      # Neden? Gündüz yatak altı ışık gereksiz ve göz alıcı.
+      # Gece yönlendirmesi = karanlıkta yol gösterme amacıyla.
+      - condition: or
+        conditions:
+          - condition: sun
+            after: sunset
+          - condition: state
+            entity_id: light.room_main_lights
+            state: "off"
+
+      # -------------------------------------------------------------------------
+      # Koşul 2: Gece yönlendirmesi aktif olmalı
+      # -------------------------------------------------------------------------
+      # Intimacy veya Audio modu aktif olduğunda bu bayrak OFF olur
+      # → gece yönlendirmesi devre dışı kalır → ışık sabit %30 amber kalır.
+      - condition: state
+        entity_id: input_boolean.underbed_night_routing_active
+        state: "on"
+
+      # -------------------------------------------------------------------------
+      # Koşul 3: Işık zaten açık değilse
+      # -------------------------------------------------------------------------
+      # Zaten açıksa tekrar açmaya gerek yok.
+      - condition: state
+        entity_id: light.underbed_cob_light
+        state: "off"
+
+    action:
+      # -------------------------------------------------------------------------
+      # AKSİYON: Yatak altı COB LED'i %15 parlaklıkta aç
+      # -------------------------------------------------------------------------
+      # %15 = 38/255 parlaklık — gece için ideal:
+      #   - Yolu gösterir (tuvalete gidiş, su içmeye kalkış)
+      #   - Gözü almaz (gece göz bebbeği büyüktür, ani ışık rahatsız eder)
+      #   - "Floating bed" illüzyonu verir (yatak havada, zemin aydınlık)
+      #
+      # transition: 3 → 3 saniyede yumuşakça açılır.
+      # Ani açılma = "korkutucu" (karanlıkta aniden ışık → şok).
+      # Yavaş açılma = "doğal" (göz yavaşça ışığa alışır → sakin).
+      - service: light.turn_on
+        target:
+          entity_id: light.underbed_cob_light
+        data:
+          brightness: 38 # %15 parlaklık (38/255)
+          transition: 3 # 3 saniyede yumuşak açılma
+
+  # ===========================================================================
+  # SENARYO 2: Kapanış — Hareket Bitti → Işık Kapat (Fade-out)
+  # ===========================================================================
+  - id: underbed_night_routing_off
+    alias: "Underbed — Kapanış (Işık Kapat)"
+    description: >
+      Sensörde hareket bittikten (kişi yatağa geri döndükten) 2 dakika sonra
+      ışığı yavaşça (fade-out) tamamen kapatır.
+
+      🎭 2 dakika bekleme: Kişi yatağa döndükten sonra hemen kapatma!
+      Çünkü kişi tekrar kalkabilir (su içmeye, tuvalete).
+      2 dakika "grace period" → kişi yatağa yerleştiğinden emin ol.
+
+      transition: 5 saniye → ani kapanma değil, "nefes alarak" sönüm.
+      Misafir yatağa döndüğünde ışık yavaşça söner → karanlık "çöker" değil,
+      "yavaşça yerleşir".
+
+    trigger:
+      # -------------------------------------------------------------------------
+      # Tetikleyici: Ayak algılayıcı OFF olduğunda + 2 dakika bekle
+      # -------------------------------------------------------------------------
+      # binary_sensor.bed_feet_presence OFF → kişi yatağa döndü
+      # 2 dakika (120 saniye) bekleme: "for" parametresi ile
+      - platform: state
+        entity_id: binary_sensor.bed_feet_presence
+        to: "off"
+        for:
+          minutes: 2
+        id: feet_gone
+
+    condition:
+      # Koşul 1: Işık açık olmalı (kapalıysa kapatmaya gerek yok)
+      - condition: state
+        entity_id: light.underbed_cob_light
+        state: "on"
+
+      # Koşul 2: Gece yönlendirmesi aktif olmalı
+      # (Intimacy/Audio modunda ışık sabit %30, kapatılmaz)
+      - condition: state
+        entity_id: input_boolean.underbed_night_routing_active
+        state: "on"
+
+    action:
+      # -------------------------------------------------------------------------
+      # AKSİYON: Yatak altı ışığı yavaşça kapat (fade-out)
+      # -------------------------------------------------------------------------
+      # transition: 5 → 5 saniyede yavaşça sön.
+      # Ani kapanma = "karanlık çöktü" hissi (rahatsız edici).
+      # Yavaş sönüm = "ışık yavaşça çekildi" hissi (doğal, sakin).
+      - service: light.turn_off
+        target:
+          entity_id: light.underbed_cob_light
+        data:
+          transition: 5 # 5 saniyede fade-out
+
+  # ===========================================================================
+  # SENARYO 3: Vibe/Date Mode — Floating Bed (Sabit Amber %30)
+  # ===========================================================================
+  - id: underbed_vibe_date_mode
+    alias: "Underbed — Vibe/Date Mode (Floating Bed)"
+    description: >
+      Modül 12 (intimacy_sync_mode) veya Modül 10 (audio_reactive_wled)
+      aktif olduğunda; gece yönlendirmesi mantığını devreden çıkarıp,
+      yatak altı ışığını sürekli %30 parlaklıkta (Derin Amber) sabit
+      bırakarak odaya "Floating Bed" (havada duran yatak) derinliği katar.
+
+      🎭 Derin Amber (#BF8000): Sıcak, lüks, "gece kulübü/otel" hissi.
+      %30 parlaklık: Yeterli "floating" etkisi, ama gözü almaz.
+      Sabit (Solid): Nabız/efekt yok — romantik/intim atmosferde sakinlik.
+
+    trigger:
+      # -------------------------------------------------------------------------
+      # Tetikleyici 1: Intimacy Sync Mode aktif olduğunda
+      # -------------------------------------------------------------------------
+      - platform: state
+        entity_id: input_boolean.intimacy_sync_active
+        to: "on"
+        id: intimacy_on
+
+      # -------------------------------------------------------------------------
+      # Tetikleyici 2: Audio WLED "Date Lounge" moduna geçtiğinde
+      # -------------------------------------------------------------------------
+      - platform: state
+        entity_id: input_select.audio_wled_mode
+        to: "date_lounge"
+        id: date_lounge_on
+
+    condition: []
+
+    action:
+      # -------------------------------------------------------------------------
+      # AKSİYON 1: Gece yönlendirmesini devre dışı bırak
+      # -------------------------------------------------------------------------
+      # Intimacy/Date modunda gece yönlendirmesi (senaryo 1-2) çalışmasın.
+      # Işık sabit %30 amber kalacak — radar tetiklemesiyle açıp kapanmayacak.
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.underbed_night_routing_active
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 2: Yatak altı ışığını %30 Derin Amber, sabit aç
+      # -------------------------------------------------------------------------
+      # Derin Amber (#BF8000): Sıcak, lüks, romantik.
+      # %30 parlaklık (76/255): "Floating bed" etkisi için yeterli,
+      # ama gözü almayan loş seviye.
+      #
+      # transition: 5 → 5 saniyede yumuşak geçiş.
+      # Eğer ışık zaten açıksa (gece yönlendirmesinden), rengi ve parlaklığı
+      # yumuşakça amber'a geçir.
+      - service: light.turn_on
+        target:
+          entity_id: light.underbed_cob_light
+        data:
+          brightness: 76 # %30 parlaklık (76/255)
+          # COB LED monochromatic olduğu için RGB değil, sadece parlaklık.
+          # Eğer WS2812B kullanılıyorsa, rgb_color eklenebilir:
+          # rgb_color: [191, 128, 0]  # #BF8000 Derin Amber
+          transition: 5 # 5 saniyede yumuşak geçiş
+
+  # ===========================================================================
+  # SENARYO 3b: Vibe/Date Mode Kapatma — Gece Yönlendirmesine Dön
+  # ===========================================================================
+  - id: underbed_vibe_date_mode_off
+    alias: "Underbed — Vibe/Date Mode Kapatma"
+    description: >
+      Intimacy ve Audio WLED modlarının ikisi de kapandığında, gece
+      yönlendirmesini tekrar aktif eder ve yatak altı ışığını kapatır
+      (veya radar tetiklemesine döner).
+
+    trigger:
+      # -------------------------------------------------------------------------
+      # Tetikleyici: Hem intimacy hem audio_wled kapandıysa
+      # -------------------------------------------------------------------------
+      - platform: template
+        value_template: >
+          {{ is_state('input_boolean.intimacy_sync_active', 'off') and
+             is_state('input_select.audio_wled_mode', 'off') }}
+        id: both_modes_off
+
+    condition:
+      # Gece yönlendirmesi şu an kapalı olmalı (vibe modundan dolayı)
+      - condition: state
+        entity_id: input_boolean.underbed_night_routing_active
+        state: "off"
+
+    action:
+      # -------------------------------------------------------------------------
+      # AKSİYON 1: Gece yönlendirmesini tekrar aktif et
+      # -------------------------------------------------------------------------
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.underbed_night_routing_active
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 2: Yatak altı ışığını kapat
+      # -------------------------------------------------------------------------
+      # Vibe modu bitti → ışık söner. Eğer kişi hâlâ yatak dışındaysa,
+      # radar birkaç saniye içinde tekrar tetikler ve gece yönlendirmesi
+      # ışığı %15'te tekrar açar.
+      - service: light.turn_off
+        target:
+          entity_id: light.underbed_cob_light
+        data:
+          transition: 5 # 5 saniyede fade-out

@@ -1,0 +1,403 @@
+# =============================================================================
+# intimacy_sync_mode — ESPHome Yatak Sensörü Yapılandırması
+# =============================================================================
+# Bu dosya ESP32'ye yüklenir. MPU6050 ivmeölçerden ham veri alır,
+# ESP32 içinde C++ (lambda) ile "Ritim Algılama Algoritması" çalıştırır
+# ve SADECE işlenmiş "Activity Level" (0-100) verisini Home Assistant'a gönderir.
+#
+# 🧠 Neden ham veri göndermiyoruz?
+#    MPU6050 saniyede 50 örnek üretir. Ham X/Y/Z verisini WiFi üzerinden
+#    HA'a göndermek ağı boğar, gecikme yaratır ve HA veritabanını şişirir.
+#    Bunun yerine ESP32 içinde filtreleme + ritim algılama yapıp
+#    sadece 2 saniyede bir özetlenmiş "Activity Level" gönderiyoruz.
+# =============================================================================
+
+esphome:
+  name: intimacy-bed-sensor
+  friendly_name: "Intimacy Bed Sensor"
+  platform: ESP32
+  board: esp32dev
+
+# -----------------------------------------------------------------------------
+# WiFi — GL-MT3000 yerel ağına bağlanır
+# -----------------------------------------------------------------------------
+wifi:
+  ssid: "GL-MT3000"
+  password: "YOUR_WIFI_PASSWORD"
+  # Bağlantı koparsa otomatik yeniden bağlan
+  reboot_timeout: 10min
+  # WiFi sinyali zayıfsa güç çıkışını artır (yatak metal iskeleti zayıflatabilir)
+  output_power: 20.5dB
+
+# -----------------------------------------------------------------------------
+# MQTT — GL-MT3000 üzerindeki broker'a bağlanır
+# HA doğrudan ESPHome API yerine MQTT kullanıyoruz çünkü bu sensör
+# sürekli veri üretir ve MQTT'nin pub/sub modeli daha verimli.
+# -----------------------------------------------------------------------------
+mqtt:
+  broker: "gl-mt3000.local"
+  port: 1883
+  username: "" # Gerekirse doldur
+  password: "" # Gerekirse doldur
+  # Bağlantı koparsa veri kaybı olmasın diye QoS 1
+  discovery: true
+  discovery_prefix: homeassistant
+
+# -----------------------------------------------------------------------------
+# I2C Bus — MPU6050 ile iletişim
+# SDA: GPIO 21 | SCL: GPIO 22 (ESP32 varsayılan I2C pin'leri)
+# frequency: 100kHz — MPU6050 için yeterli; yüksek frekans kablo gürültüsü artırır
+# -----------------------------------------------------------------------------
+i2c:
+  sda: GPIO21
+  scl: GPIO22
+  scan: true
+  frequency: 100kHz
+
+# -----------------------------------------------------------------------------
+# Global Değişkenler — Ritim Algılama Algoritması Durumu
+# -----------------------------------------------------------------------------
+# Bu değişkenler ESP32'nin RAM'inde tutulur ve her sensör okumasında güncellenir.
+# ESPHome'un globals bloğu ile C++ seviyesinde tanımlanır.
+globals:
+  # Son N örneğin karekök-ortalama-kare (RMS) değerini tutar
+  # RMS, sinyalin "etkili gücünü" ölçer; tek seferlik darbeleri filtreler
+  - id: rms_window
+    type: float
+    initial_value: "0.0"
+
+  # RMS penceresi için ham ivme kareleri toplamı (kayan pencere)
+  - id: rms_sum
+    type: float
+    initial_value: "0.0"
+
+  # Pencere içindeki örnek sayısı
+  - id: rms_count
+    type: int
+    initial_value: "0"
+
+  # Son hesaplanan Activity Level (0-100)
+  - id: activity_level
+    type: float
+    initial_value: "0.0"
+
+  # Ritmik hareket tespit sayacı — ardışık ritmik darbeleri sayar
+  # Tek seferlik hareket (dönme/oturma) bu sayacı artırmaz
+  - id: rhythm_streak
+    type: int
+    initial_value: "0"
+
+  # Son darbe zaman damgası (millis) — ritim aralığını ölçmek için
+  - id: last_beat_time
+    type: uint32_t
+    initial_value: "0"
+
+  # Son darbeler arası süre (ms) — BPM hesaplamak için
+  - id: beat_interval
+    type: uint32_t
+    initial_value: "0"
+
+  # Hareketin "ritmik" olup olmadığının bayrağı
+  - id: is_rhythmic
+    type: bool
+    initial_value: "false"
+
+  # Activity Level'in yumuşatılmış (smoothed) hali — ani sıçramaları engeller
+  - id: smoothed_activity
+    type: float
+    initial_value: "0.0"
+
+# -----------------------------------------------------------------------------
+# MPU6050 Sensörü — Ham İvme Verisi
+# -----------------------------------------------------------------------------
+# update_interval: 50ms → saniyede 20 örnek
+# Bu frekans, insan ritmik hareket aralığı (0.5Hz - 5Hz) için yeterli örnekleme
+# sağlar (Nyquist teoremi: 10Hz minimum, biz 20Hz ile güvenli taraftayız).
+sensor:
+  - platform: mpu6050
+    address: 0x68
+    i2c_id: bus_a
+    update_interval: 50ms
+
+    # X ekseni ivmesi (yatay — yatak boyunca)
+    accel_x:
+      name: "Bed Accel X"
+      id: accel_x_raw
+      # Ham veriyi HA'a GÖNDERMİYORUZ — internal: true
+      internal: true
+      filters:
+        # Yerçekimi offset'ini kalibre et — sensör düz iken X~0 olmalı
+        - offset: 0.0
+
+    # Y ekseni ivmesi (yatay — yatak enine)
+    accel_y:
+      name: "Bed Accel Y"
+      id: accel_y_raw
+      internal: true
+      filters:
+        - offset: 0.0
+
+    # Z ekseni ivmesi (dikey — yukarı/aşağı)
+    # Yatak ritmik hareketinde Z ekseni en güçlü sinyali verir
+    accel_z:
+      name: "Bed Accel Z"
+      id: accel_z_raw
+      internal: true
+      filters:
+        # Yerçekimi (~9.81 m/s²) offset'ini çıkar
+        # Sensör düz dururken Z = 9.81; bunu sıfırlayarak saf hareket ivmesini alırız
+        - offset: -9.81
+
+    # Sıcaklık — sensör kendini ısındığında kalibrasyon için referans
+    temperature:
+      name: "Bed Sensor Temperature"
+      internal: true
+
+    # -------------------------------------------------------------------------
+    # RİTİM ALGILAMA ALGORİTMASI — on_value lambda (C++)
+    # -------------------------------------------------------------------------
+    # Her 50ms'de bir (saniyede 20 kez) tüm eksenlerden veri geldiğinde çalışır.
+    # Algoritma 4 aşamadan oluşur:
+    #
+    #   1. BİRLEŞİK İVME HESAPLA: X² + Y² + Z² → tek bir skaler değer
+    #      (Vektör büyüklüğü — yön bağımsız hareket şiddeti)
+    #
+    #   2. RMS PENCERE FİLTRESİ: Son N örneğin RMS değerini hesapla
+    #      RMS = √(Σ(x²) / N)
+    #      Bu, tek seferlik darbeleri (oturma, dönme) filtreler çünkü
+    #      ritmik hareket sürekli RMS üretirken tek darbe anlık pik yapar.
+    #
+    #   3. RİTMİK Mİ TESPİT ET: RMS değeri eşiği aşarsa "darbe" kaydet.
+    #      Ardışık darbeler arası süre tutarlıysa (±%30) → ritmik = true
+    #      Tek darbe veya düzensiz aralıklar → ritmik = false
+    #
+    #   4. ACTIVITY LEVEL HESAPLA: Ritmikse RMS'yi 0-100 ölçeğine map'le
+    #      Ritmik değilse activity'yi kademeli olarak 0'a düşür (decay)
+    # -------------------------------------------------------------------------
+    on_value:
+      then:
+        - lambda: |-
+            // =====================================================================
+            // AŞAMA 1: BİRLEŞİK İVME (Vektör Büyüklüğü)
+            // =====================================================================
+            // Üç eksenin karekök-ortalama-karesini al → yön bağımsız şiddet
+            float ax = id(accel_x_raw).state;
+            float ay = id(accel_y_raw).state;
+            float az = id(accel_z_raw).state;
+            float magnitude = sqrt(ax * ax + ay * ay + az * az);
+
+            // =====================================================================
+            // AŞAMA 2: RMS PENCERE FİLTRESİ (Kayan Pencere)
+            // =====================================================================
+            // Pencere boyutu: 20 örnek (20 × 50ms = 1 saniyelik pencere)
+            // Bu pencere, insan ritmik hareketinin tipik periyodunu (0.5-2 Hz) kapsar
+            const int WINDOW_SIZE = 20;
+
+            // Yeni örneğin karesini pencere toplamına ekle
+            id(rms_sum) += magnitude * magnitude;
+            id(rms_count)++;
+
+            // Pencere dolduğunda RMS hesapla
+            if (id(rms_count) >= WINDOW_SIZE) {
+              float rms = sqrt(id(rms_sum) / id(rms_count));
+
+              // Pencereyi sıfırla (kayan pencere için)
+              id(rms_sum) = 0.0;
+              id(rms_count) = 0;
+
+              // =====================================================================
+              // AŞAMA 3: RİTMİK HAREKET TESPİTİ
+              // =====================================================================
+              // Eşik değeri: 1.5 m/s² RMS
+              // Bu eşik, "sadece oturma/dönme" (genelde <1.0) ile
+              // "ritmik hareket" (>1.5) arasındaki ayrımı sağlar
+              const float RHYTHM_THRESHOLD = 1.5;
+
+              // Darbeler arası süre toleransı: ±%30
+              // İnsan ritmi tam düzenli değildir; bu tolerans doğal varyasyonu kabul eder
+              const float INTERVAL_TOLERANCE = 0.30;
+
+              uint32_t now = millis();
+
+              if (rms > RHYTHM_THRESHOLD) {
+                // Bir darbe algılandı
+
+                if (id(last_beat_time) > 0) {
+                  // Önceki darbe ile arasındaki süreyi hesapla
+                  uint32_t interval = now - id(last_beat_time);
+
+                  // İlk darbe aralığını kaydet
+                  if (id(beat_interval) == 0) {
+                    id(beat_interval) = interval;
+                  }
+
+                  // Darbe aralığı önceki ile tutarlı mı? (±%30 içinde mi?)
+                  uint32_t expected = id(beat_interval);
+                  uint32_t min_interval = expected * (1.0 - INTERVAL_TOLERANCE);
+                  uint32_t max_interval = expected * (1.0 + INTERVAL_TOLERANCE);
+
+                  if (interval >= min_interval && interval <= max_interval) {
+                    // Ritmik! Streak sayacını artır
+                    id(rhythm_streak)++;
+                    // Darbe aralığını güncelle (kayan ortalama etkisi)
+                    id(beat_interval) = (id(beat_interval) + interval) / 2;
+                  } else {
+                    // Düzensiz aralık — ritim bozuldu
+                    id(rhythm_streak) = 0;
+                    id(beat_interval) = interval;
+                  }
+                }
+
+                id(last_beat_time) = now;
+
+                // En az 3 ardışık düzenli darbe → ritmik hareket onayla
+                // Bu, tek seferlik sarsıntıları (kapı çarpma vb.) eler
+                if (id(rhythm_streak) >= 3) {
+                  id(is_rhythmic) = true;
+                }
+              } else {
+                // Eşik altında — hareket yok veya çok zayıf
+
+                // 2 saniyeden uzun süredir darbe yoksa ritmi sıfırla
+                if (id(last_beat_time) > 0 && (now - id(last_beat_time)) > 2000) {
+                  id(is_rhythmic) = false;
+                  id(rhythm_streak) = 0;
+                  id(beat_interval) = 0;
+                }
+              }
+
+              // =====================================================================
+              // AŞAMA 4: ACTIVITY LEVEL HESAPLAMA (0-100)
+              // =====================================================================
+              float target_activity = 0.0;
+
+              if (id(is_rhythmic)) {
+                // Ritmik hareket var: RMS'yi 0-100 ölçeğine map'le
+                // RMS aralığı: 1.5 (eşik) → ~8.0 (yoğun hareket)
+                // Linear mapping: (rms - 1.5) / (8.0 - 1.5) * 100
+                target_activity = (rms - RHYTHM_THRESHOLD) / (8.0 - RHYTHM_THRESHOLD) * 100.0;
+
+                // 0-100 aralığına sıkıştır (clamp)
+                if (target_activity < 0.0) target_activity = 0.0;
+                if (target_activity > 100.0) target_activity = 100.0;
+              } else {
+                // Ritmik değil: Activity'yi kademeli düşür (decay)
+                // Hızlı düşüş değil, yumuşak iniş — ani karanlık hissini engeller
+                target_activity = 0.0;
+              }
+
+              // Yumuşatma (Exponential Moving Average)
+              // α = 0.15 → yeni değerin ağırlığı %15, eski değerin %85
+              // Bu, ani sıçramaları engeller ve geçişleri pürüzsüz yapar
+              const float ALPHA = 0.15;
+              id(smoothed_activity) = id(smoothed_activity) * (1.0 - ALPHA) + target_activity * ALPHA;
+
+              // Activity Level'i güncelle
+              id(activity_level) = id(smoothed_activity);
+
+              // =====================================================================
+              // BPM HESAPLAMA (Opsiyonel — HA'a bilgi amaçlı gönderilir)
+              // =====================================================================
+              // beat_interval (ms) → BPM = 60000 / beat_interval
+              float bpm = 0.0;
+              if (id(is_rhythmic) && id(beat_interval) > 0) {
+                bpm = 60000.0 / id(beat_interval);
+                // Makul BPM aralığı: 40-180 (dışındaysa gönderme)
+                if (bpm < 40.0 || bpm > 180.0) bpm = 0.0;
+              }
+            }
+
+  # -----------------------------------------------------------------------------
+  # HOME ASSISTANT'A GÖNDERİLEN SENSÖRLER
+  # -----------------------------------------------------------------------------
+  # Bu sensörler 2 saniyede bir güncellenir (update_interval: 2s).
+  # Ham veri 50ms'de bir işlenir ama HA'a sadece özet gönderilir → WiFi boğulmaz.
+  # -----------------------------------------------------------------------------
+  - platform: template
+    name: "Bed Activity Level"
+    id: bed_activity_level
+    unit_of_measurement: "%"
+    icon: mdi:heart-pulse
+    update_interval: 2s
+    # Activity Level 0-100 arası
+    # 0 = hareketsiz | 50 = orta ritim | 100 = yoğun ritim
+    lambda: |-
+      return id(activity_level);
+    # HA'da hassasiyet: 0.1 birim (ondalık)
+    accuracy_decimals: 1
+
+  - platform: template
+    name: "Bed Rhythm BPM"
+    id: bed_rhythm_bpm
+    unit_of_measurement: "BPM"
+    icon: mdi:speedometer
+    update_interval: 2s
+    lambda: |-
+      // BPM hesapla (beat_interval ms → BPM)
+      if (id(is_rhythmic) && id(beat_interval) > 0) {
+        float bpm = 60000.0 / id(beat_interval);
+        if (bpm >= 40.0 && bpm <= 180.0) {
+          return bpm;
+        }
+      }
+      return 0.0f;
+    accuracy_decimals: 0
+
+  - platform: template
+    name: "Bed Is Rhythmic"
+    id: bed_is_rhythmic
+    icon: mdi:waveform
+    update_interval: 2s
+    lambda: |-
+      return id(is_rhythmic);
+    # Bu bir binary sensör gibi davranır (0 veya 1)
+
+# -----------------------------------------------------------------------------
+# BINARY SENSOR — Modül aktif mi? (HA otomasyonu tarafından set edilir)
+# -----------------------------------------------------------------------------
+# HA otomasyonu, intimacy_sync_mode başlatıldığında bu switch'i ON yapar.
+# ESPHome sadece modül aktifken veri gönderir → gereksiz trafik yok.
+# -----------------------------------------------------------------------------
+binary_sensor:
+  - platform: mqtt
+    name: "Intimacy Mode Active"
+    state_topic: "jarvis/intimacy/active"
+    command_topic: "jarvis/intimacy/active/set"
+    payload_on: "ON"
+    payload_off: "OFF"
+    id: intimacy_mode_active
+    # Modül aktif değilken sensör verisi göndermeyi durdurmak için
+    # on_value lambda'da bu bayrak kontrol edilebilir
+
+# -----------------------------------------------------------------------------
+# SWITCH — Modülü MQTT üzerinden aç/kapa
+# -----------------------------------------------------------------------------
+switch:
+  - platform: mqtt
+    name: "Intimacy Sync Mode"
+    state_topic: "jarvis/intimacy/active"
+    command_topic: "jarvis/intimacy/active/set"
+    payload_on: "ON"
+    payload_off: "OFF"
+    optimistic: true
+    retain: true
+    id: intimacy_switch
+
+# -----------------------------------------------------------------------------
+# STATUS LED — Modül aktif olduğunda yanar (kurulum sırasında hata ayıklama)
+# -----------------------------------------------------------------------------
+# GPIO 2 — ESP32'nin yerleşik LED'i (çoğu board'da)
+status_led:
+  pin:
+    number: GPIO2
+    inverted: true
+
+# -----------------------------------------------------------------------------
+# LOGGER — Hata ayıklama için
+# -----------------------------------------------------------------------------
+logger:
+  level: DEBUG
+  # UART0 üzerinden log gönderir (USB bağlantısında görülür)
+  # WiFi üzerinden log gönderme — bant genişliği tüketir
+  baud_rate: 0 # 0 = UART log kapalı (WiFi log kapalı anlamına gelir)
+  # Kurulum sırasında DEBUG için baud_rate: 115200 yapın

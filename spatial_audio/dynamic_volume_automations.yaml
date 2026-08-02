@@ -1,0 +1,394 @@
+# =============================================================================
+# spatial_audio — Akıllı Ses Otomasyonları (Dynamic Volume)
+# =============================================================================
+# Bu dosya 3 senaryo için otomasyon tanımlar:
+#
+#   Senaryo 1 (Crossfade):     Müzik başlatma/durdurma — asla aniden kesilmez
+#   Senaryo 2 (Intimacy Sync): Activity Level'a göre dinamik ses dengeleme
+#   Senaryo 3 (Deep Sleep):    30 dakikada yavaşça kısarak uyku modu
+#
+# 🎭 "FADE" MANTIĞI — LÜKS HİSSİYATIN KORUNMASI:
+# =============================================================================
+# Müzik ASLA aniden (pat diye) başlamaz veya durmaz. Her zaman "fade"
+# (kademeli geçiş) kullanılır:
+#
+#   Fade-in:  Ses %0'dan yavaşça yükselir → "müzik doğal olarak geldi"
+#   Fade-out: Ses yavaşça azalır → %0'a ulaşınca durur → "müzik doğal olarak gitti"
+#
+# Neden bu kadar kritik?
+#   Aniden başlayan müzik = "alarm" → şok, dikkat dağıtma, "teknoloji" hissi
+#   Kademeli başlayan müzik = "atmosfer" → sakin, "doğal" hissi
+#
+# Lüks otel lobilerinde müzik asla aniden açılmaz; her zaman "zaten çalıyormuş
+# gibi" yavaşça yükselir. Bu, "premium" hissiyatın temelidir.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# SCRIPT: Audio Fade — Kademeli Ses Artırma/Azaltma
+# -----------------------------------------------------------------------------
+# Bu script, müzik sesini kademeli olarak artırır (fade-in) veya azaltır
+# (fade-out). Tüm otomasyonlar bu script'i kullanır → tutarlı fade davranışı.
+#
+# 🎭 FADE PARAMETRELERİ:
+#   - start_volume:  Başlangıç ses seviyesi (0.0 - 1.0)
+#   - target_volume: Hedef ses seviyesi (0.0 - 1.0)
+#   - duration:      Toplam fade süresi (saniye)
+#   - steps:         Kaç adımda geçilecek (daha çok adım = daha pürüzsüz)
+#
+# Her adımda ses (target - start) / steps kadar değişir.
+# 5 saniyelik fade, 10 adımda → her 0.5 saniyede bir adım.
+# Bu, insan kulağının "ses değişimini fark etmediği" eşik değerdir.
+# =============================================================================
+
+script:
+  # -------------------------------------------------------------------------
+  # Script: Audio Fade (Kademeli Ses Geçişi)
+  # -------------------------------------------------------------------------
+  audio_fade:
+    alias: "Audio Fade — Kademeli Ses Geçişi"
+    icon: mdi:volume-variant
+    description: >
+      Müzik sesini kademeli olarak artırır (fade-in) veya azaltır (fade-out).
+      Aniden başlama/durdurma yerine pürüzsüz geçiş sağlar.
+    fields:
+      start_volume:
+        description: "Başlangıç ses seviyesi (0.0 - 1.0)"
+        example: 0.0
+        default: 0.0
+      target_volume:
+        description: "Hedef ses seviyesi (0.0 - 1.0)"
+        example: 0.20
+        default: 0.20
+      duration:
+        description: "Toplam fade süresi (saniye)"
+        example: 5
+        default: 5
+      steps:
+        description: "Adım sayısı (daha çok = daha pürüzsüz)"
+        example: 10
+        default: 10
+    sequence:
+      # -------------------------------------------------------------------------
+      # Kademeli ses geçişi — repeat ile
+      # -------------------------------------------------------------------------
+      # Her adımda ses seviyesini (target - start) / steps kadar değiştir.
+      # Adımlar arası bekleme: duration / steps saniye.
+      #
+      # Örnek: start=0.0, target=0.20, duration=5, steps=10
+      #   Adım 1: 0.02 (0.5 sn bekle)
+      #   Adım 2: 0.04 (0.5 sn bekle)
+      #   ...
+      #   Adım 10: 0.20 (hedefe ulaşıldı)
+      #
+      # 🎭 0.5 saniyelik adımlar: İnsan kulağı bu kadar küçük değişimleri
+      # "fark etmez" — sadece "ses yavaşça değişiyor" hisseder.
+      # Bu, "fade" hissiyatının pürüzsüzlüğünü sağlar.
+      - repeat:
+          count: "{{ steps | int }}"
+          sequence:
+            - service: media_player.volume_set
+              target:
+                entity_id: media_player.room_spatial_audio
+              data:
+                volume_level: >
+                  {{ (start_volume | float + (target_volume | float - start_volume | float) * (repeat.index | float / steps | float)) | round(2) }}
+            - delay:
+                milliseconds: >
+                  {{ (duration | int * 1000 / steps | int) | int }}
+
+  # -------------------------------------------------------------------------
+  # Script: Audio Fade-Out + Stop (Kademeli Kıs + Durdur)
+  # -------------------------------------------------------------------------
+  audio_fade_out_stop:
+    alias: "Audio Fade-Out + Stop"
+    icon: mdi:stop
+    description: >
+      Müzik sesini kademeli olarak kısar ve tamamen durdurur.
+      Aniden kesme yerine pürüzsüz fade-out.
+    fields:
+      duration:
+        description: "Fade-out süresi (saniye)"
+        example: 5
+        default: 5
+    sequence:
+      # Mevcut ses seviyesini al
+      - variables:
+          current_volume: "{{ state_attr('media_player.room_spatial_audio', 'volume_level') | float(0.20) }}"
+          steps: 10
+
+      # Kademeli kısma — mevcut seviyeden %0'a
+      - repeat:
+          count: "{{ steps | int }}"
+          sequence:
+            - service: media_player.volume_set
+              target:
+                entity_id: media_player.room_spatial_audio
+              data:
+                volume_level: >
+                  {{ (current_volume | float * (1.0 - repeat.index | float / steps | float)) | round(2) }}
+            - delay:
+                milliseconds: >
+                  {{ (duration | int * 1000 / steps | int) | int }}
+
+      # Ses %0'a ulaştıktan sonra müziği durdur
+      - service: media_player.media_stop
+        target:
+          entity_id: media_player.room_spatial_audio
+
+# -----------------------------------------------------------------------------
+# OTOMASYONLAR
+# -----------------------------------------------------------------------------
+automation:
+  # ===========================================================================
+  # SENARYO 2: Intimacy & Date Sync — Dinamik Ses Dengeleme
+  # ===========================================================================
+  - id: spatial_intimacy_dynamic_volume
+    alias: "Spatial Audio — Intimacy Dynamic Volume"
+    description: >
+      Modül 12 (intimacy_sync_mode) aktifleştiğinde, Spotify'dan "Deep Flow/R&B"
+      çalma listesini açar ve sesi %25 seviyesine getirir. Eğer odadaki
+      hareket/ritim şiddetlenirse (ESP32'den gelen Activity Level artarsa),
+      müziğin sesini usulca %35'e çıkaran dinamik ses dengeleme yapar.
+
+      🎭 DİNAMİK SES MANTIĞI:
+      Activity Level arttıkça müzik sesi de artar → "müzik ritme ayak uydurur".
+      Ama asla %35'i geçmez → "gürültü" değil, "atmosfer" kalır.
+      Activity Level düştüğünde ses tekrar %25'e döner → "sakinleşme".
+
+    trigger:
+      # -------------------------------------------------------------------------
+      # Tetikleyici 1: Intimacy Sync Mode aktif olduğunda
+      # -------------------------------------------------------------------------
+      - platform: state
+        entity_id: input_boolean.intimacy_sync_active
+        to: "on"
+        id: intimacy_on
+
+      # -------------------------------------------------------------------------
+      # Tetikleyici 2: Activity Level değiştiğinde (dinamik ses ayarı)
+      # -------------------------------------------------------------------------
+      # ESP32'den gelen bed_activity_level sensörü her değiştiğinde tetiklenir.
+      # Bu, müziğin ritme göre dinamik olarak ayarlanmasını sağlar.
+      - platform: state
+        entity_id: sensor.bed_activity_level
+        id: activity_change
+
+    condition:
+      # Sadece intimacy modu aktifken çalışır
+      - condition: state
+        entity_id: input_boolean.intimacy_sync_active
+        state: "on"
+
+    action:
+      - choose:
+          # -------------------------------------------------------------------------
+          # DURUM A: Intimacy modu yeni açıldı → Müzik başlat
+          # -------------------------------------------------------------------------
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.id == 'intimacy_on' }}"
+            sequence:
+              # Mood'u "intimacy_flow" olarak ayarla
+              - service: input_select.select_option
+                target:
+                  entity_id: input_select.spatial_audio_mood
+                data:
+                  option: "intimacy_flow"
+
+              # Fade-in ile müzik başlat (%25 hedef)
+              # 🎭 Müzik %0'dan başlar, 5 saniyede %25'e yükselir.
+              # "Pat diye" değil, "yavaşça yükselerek" → premium hissi.
+              - service: script.spatial_play_mood
+                data:
+                  target_volume: 0.25
+
+              # -------------------------------------------------------------------------
+              # 🧠 SUBLIMINAL SES KATMANI — 432Hz/528Hz Binaural Beats
+              # -------------------------------------------------------------------------
+              # Spotify müziğine ek olarak, PARALEL olarak çok düşük ses seviyesinde
+              # (%5-8) arka planda 432Hz veya 528Hz Binaural Beats / Low Frequency Bass
+              # çalınır. Bu, ayrı bir medya oynatıcıda (media_player.binaural_beats)
+              # veya lokal sunucudan stream edilir.
+              #
+              # 🧬 BİLİMSEL AÇIKLAMA:
+              # Alt frekanslar ve Binaural Beats, insanın otonom sinir sistemini
+              # yatıştırır, kalp atışını yavaşlatır ve vücutta hafif bir rezonans
+              # yaratarak savunma mekanizmasını (savunma/kaygı durumunu) tamamen
+              # kapatır. Seksüel teslimiyet ve güven için biyolojik bir hacktir.
+              #
+              # 432Hz: "Doğanın frekansı" — kalp atışını yavaşlatır, stresi azaltır
+              # 528Hz: "Dönüşüm frekansı" — DNA onarımı iddiası, derin rahatlama
+              #
+              # Bu ses, müzikten AYRI olarak çalar — misafir "duymaz" ama "hisseder".
+              # Bilinçaltı bu frekansları algılar → savunma düşer → güven → yakınlık.
+              #
+              # PARALEL execution: Spotify + Binaural Beats aynı anda, farklı cihazlarda
+              - service: media_player.play_media
+                target:
+                  entity_id: media_player.binaural_beats
+                data:
+                  media_content_type: "music"
+                  media_content_id: "http://PI_IP:8080/binaural/432hz.mp3"
+              - service: media_player.volume_set
+                target:
+                  entity_id: media_player.binaural_beats
+                data:
+                  volume_level: 0.06
+              # %6 — neredeyse fısıltı. Müzikle karışmaz ama bilinçaltı algılar.
+              # "Duyulmaz ama hissedilir" → savunma mekanizması kapanır.
+
+          # -------------------------------------------------------------------------
+          # DURUM B: Activity Level değişti → Dinamik ses ayarı
+          # -------------------------------------------------------------------------
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.id == 'activity_change' }}"
+            sequence:
+              # Activity Level değerini al (0-100)
+              - variables:
+                  activity: "{{ states('sensor.bed_activity_level') | float(0) }}"
+                  # Activity 0-100 → volume 0.25-0.35 aralığına map'le
+                  # Düşük activity → %25 | Yüksek activity → %35
+                  target_vol: "{{ (0.25 + (activity | float / 100.0) * 0.10) | round(2) }}"
+
+              # Fade ile ses seviyesini ayarla
+              # 🎭 3 saniyelik fade → "ses aniden değişmedi, yavaşça ayarlandı" hissi.
+              # Activity arttıkça ses %25→%35 arası yükselir.
+              # Activity düştükçe ses %25'e geri döner.
+              - service: script.audio_fade
+                data:
+                  start_volume: "{{ state_attr('media_player.room_spatial_audio', 'volume_level') | float(0.25) }}"
+                  target_volume: "{{ target_vol }}"
+                  duration: 3
+                  steps: 6
+
+  # ===========================================================================
+  # SENARYO 3: Deep Sleep Auto-Off — Sleep Timer
+  # ===========================================================================
+  - id: spatial_deep_sleep_timer
+    alias: "Spatial Audio — Deep Sleep Auto-Off (Sleep Timer)"
+    description: >
+      Gece yatağa yatıldığında ve hareket bittiğinde, çalan müziği 30 dakika
+      içinde yavaş yavaş kısarak (uykuya dalmayı kolaylaştırmak için) tamamen
+      kapatan "Sleep Timer" otomasyonu.
+
+      🎭 SLEEP TIMER MANTIĞI:
+      Müzik aniden durmaz — 30 dakikada kademeli olarak kısılır.
+      Bu, uykuya dalmayı kolaylaştırır: müzik "yavaşça uzaklaşır" gibi.
+      30 dakika sonra müzik tamamen durur → sessizlik → derin uyku.
+
+      Neden 30 dakika? İnsan uykuya dalma süresi ortalama 10-20 dakikadır.
+      30 dakika, "uykuya dalmış" olma ihtimalinin yüksek olduğu süredir.
+
+    trigger:
+      # -------------------------------------------------------------------------
+      # Tetikleyici: Gece yatağa yatıldı (hareket bitti) + 5 dakika bekle
+      # -------------------------------------------------------------------------
+      # LD2410 bed_feet_presence OFF → kişi yatağa döndü
+      # 5 dakika bekleme: Kişi yatağa yerleştiğinden emin ol
+      # + Sadece gece çalışır (after sunset)
+      - platform: state
+        entity_id: binary_sensor.bed_feet_presence
+        to: "off"
+        for:
+          minutes: 5
+        id: bed_settled
+
+    condition:
+      # Koşul 1: Müzik çalıyorsa (çalmıyorsa timer gerekmez)
+      - condition: state
+        entity_id: media_player.room_spatial_audio
+        state: "playing"
+
+      # Koşul 2: Gece (güneş batmış)
+      - condition: sun
+        after: sunset
+
+      # Koşul 3: Intimacy modu kapalı (intimacy modunda sleep timer çalışmaz)
+      - condition: state
+        entity_id: input_boolean.intimacy_sync_active
+        state: "off"
+
+    action:
+      # -------------------------------------------------------------------------
+      # AKSİYON: 30 dakikalık kademeli kısma (Sleep Timer)
+      # -------------------------------------------------------------------------
+      # Müzik sesini 30 dakikada yavaşça %0'a indir.
+      #
+      # 🎭 30 dakikalık fade-out:
+      #   - Her 5 dakikada bir ses %17 azalır
+      #   - 30. dakikada ses %0 → müzik durur
+      #   - Misafir, müziğin "yavaşça uzaklaştığını" hisseder → uykuya dalar
+      #
+      # Aniden durma = "müzik kesildi" → uyanma
+      # Kademeli kısma = "müzik uzaklaşıyor" → uykuya dalma
+
+      # Mevcut ses seviyesini al
+      - variables:
+          start_vol: "{{ state_attr('media_player.room_spatial_audio', 'volume_level') | float(0.20) }}"
+          # 6 adım × 5 dakika = 30 dakika
+          step_volume: "{{ (start_vol | float / 6.0) | round(2) }}"
+
+      # Adım 1: 5. dakikada sesi 1/6 azalt
+      - delay:
+          minutes: 5
+      - service: script.audio_fade
+        data:
+          start_volume: "{{ start_vol }}"
+          target_volume: "{{ (start_vol | float - step_volume | float) | round(2) }}"
+          duration: 10
+          steps: 5
+
+      # Adım 2: 10. dakikada sesi 2/6 azalt
+      - delay:
+          minutes: 5
+      - service: script.audio_fade
+        data:
+          start_volume: "{{ (start_vol | float - step_volume | float) | round(2) }}"
+          target_volume: "{{ (start_vol | float - 2 * step_volume | float) | round(2) }}"
+          duration: 10
+          steps: 5
+
+      # Adım 3: 15. dakikada sesi 3/6 azalt
+      - delay:
+          minutes: 5
+      - service: script.audio_fade
+        data:
+          start_volume: "{{ (start_vol | float - 2 * step_volume | float) | round(2) }}"
+          target_volume: "{{ (start_vol | float - 3 * step_volume | float) | round(2) }}"
+          duration: 10
+          steps: 5
+
+      # Adım 4: 20. dakikada sesi 4/6 azalt
+      - delay:
+          minutes: 5
+      - service: script.audio_fade
+        data:
+          start_volume: "{{ (start_vol | float - 3 * step_volume | float) | round(2) }}"
+          target_volume: "{{ (start_vol | float - 4 * step_volume | float) | round(2) }}"
+          duration: 10
+          steps: 5
+
+      # Adım 5: 25. dakikada sesi 5/6 azalt
+      - delay:
+          minutes: 5
+      - service: script.audio_fade
+        data:
+          start_volume: "{{ (start_vol | float - 4 * step_volume | float) | round(2) }}"
+          target_volume: "{{ (start_vol | float - 5 * step_volume | float) | round(2) }}"
+          duration: 10
+          steps: 5
+
+      # Adım 6: 30. dakikada sesi %0'a indir ve durdur
+      - delay:
+          minutes: 5
+      - service: script.audio_fade_out_stop
+        data:
+          duration: 10
+
+      # Mood'u "off" olarak ayarla
+      - service: input_select.select_option
+        target:
+          entity_id: input_select.spatial_audio_mood
+        data:
+          option: "off"

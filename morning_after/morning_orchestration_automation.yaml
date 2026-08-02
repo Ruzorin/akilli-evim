@@ -1,0 +1,454 @@
+# =============================================================================
+# morning_after — Ana Orkestra Otomasyonu (T-Eksi Yaklaşımı)
+# =============================================================================
+# Bu otomasyon, premium uyanış sürecini orkestre eder.
+# "T-Eksi" yaklaşımı: Uyanma saati = T, tüm aksiyonlar T'den önce başlar.
+#
+# 🎯 T-EKSİ ZAMAN ÇİZELGESİ:
+# =============================================================================
+#
+#   [T - 10 dk]  IŞIK:  WLED yapay gündoğumu başlar (koyu kırmızı → sıcak beyaz)
+#                        Perde %20 aralık (güneş varsa doğal ışık sızar)
+#
+#   [T - 5 dk]   SES:    Spotify "Acoustic Morning" %5'ten başlar
+#                        5 dakikada %15'e kademeli artış (fade-in audio)
+#
+#   [T - 0 dk]   PERDE:  %100 açık (tam doğal ışık)
+#                        BARISTA MODE tetiklenir → espresso makinesi ısınır
+#                        Oda ışıkları %30 amber (cafe atmosferi)
+#
+#   [T + 2 dk]   JARVIS: Müziği hafifçe kısar, sakin İngiliz aksanıyla:
+#                        "Good morning. The weather outside is 24 degrees.
+#                         Your espresso machine is pre-heated and ready."
+#
+# 🎭 "KORKUTMAMA" PRENSİBİ — TÜM AŞAMALARDA ORTAK:
+# =============================================================================
+# Hiçbir aksiyon "aniden" olmaz. Her geçiş MİLİSANİYELER değil, DAKİKALAR
+# içinde gerçekleşir:
+#
+#   - Işık: 10 dakikada koyu kırmızı → sıcak beyaz (transition: 180-240sn)
+#   - Ses:  5 dakikada %5 → %15 (kademeli volume artışı)
+#   - Perde: Yavaş motor hızı (sessiz mod)
+#
+# Misafir, "uyandırıldığını" hissetmez; "doğal olarak uyandığını" hisseder.
+# Telefon alarmı = "Savaş ya da kaç" → stres
+# Premium uyanış = "Güneş doğdu, kuşlar ötüyor, kahve kokusu" → sakin başlangıç
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# INPUT DATETIME — Uyanış saati (Jarvis tarafından ayarlanır)
+# -----------------------------------------------------------------------------
+# Kullanıcı akşamdan "Sabah 9'da uyandır" dediğinde, Jarvis bu datetime'ı
+# ayarlar. Otomasyon bu saate göre T-Eksi hesaplaması yapar.
+input_datetime:
+  morning_wake_time:
+    name: "Morning Wake Time"
+    has_date: true
+    has_time: true
+    icon: mdi:alarm
+
+# -----------------------------------------------------------------------------
+# INPUT BOOLEAN — Uyanış modu aktif
+# -----------------------------------------------------------------------------
+input_boolean:
+  morning_wake_active:
+    name: "Morning Wake Active"
+    icon: mdi:weather-sunny
+    initial: off
+
+# -----------------------------------------------------------------------------
+# OTOMASYONLAR
+# -----------------------------------------------------------------------------
+automation:
+  # ===========================================================================
+  # OTOMASYON 1: Uyanış Sürecini Başlat (T-Eksi 10 dakika)
+  # ===========================================================================
+  - id: morning_orchestration_start
+    alias: "Morning Orchestration — Uyanış Başlat (T-10dk)"
+    description: >
+      Uyanma saatinden 10 dakika önce uyanış sürecini başlatır.
+      WLED yapay gündoğumu simülasyonu çalışır ve perdeler %20 aralanır.
+      Eğer güneş varsa doğal ışık sızar; yoksa WLED gündoğumu yeterli.
+
+    trigger:
+      # -------------------------------------------------------------------------
+      # Tetikleyici: Uyanış saatinden 10 dakika önce
+      # -------------------------------------------------------------------------
+      # input_datetime.morning_wake_time'dan 10 dakika çıkarılmış zaman
+      # HA Template trigger ile hesaplanır.
+      - platform: template
+        value_template: >
+          {{ now() == (states.input_datetime.morning_wake_time.last_changed | default(as_datetime(states.input_datetime.morning_wake_time)) - timedelta(minutes=10)) }}
+        id: t_minus_10
+
+      # Alternatif: Manuel tetikleme (Jarvis "sabah modunu başlat" derse)
+      - platform: conversation
+        command: "sabah modunu başlat"
+        id: manual_start
+
+    condition:
+      # Uyanış modu aktif olmalı (Jarvis tarafından set edilmiş)
+      - condition: state
+        entity_id: input_boolean.morning_wake_active
+        state: "on"
+
+    action:
+      # -------------------------------------------------------------------------
+      # [T - 10 DAKİKA] — IŞIK VE PERDE
+      # -------------------------------------------------------------------------
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 1: WLED Yapay Gündoğumu başlat
+      # -------------------------------------------------------------------------
+      # sunrise_simulation.yaml'daki script'i çağır.
+      # Bu script 10 dakika boyunca koyu kırmızı → turuncu → altın → sıcak beyaz
+      # geçişi yapar. Misafir uykudayken retina ışık değişimini algılar ve
+      # sirkadiyen ritme "güneş doğuyor" sinyali gönderir.
+      #
+      # 🎭 KRİTİK: Işık MİLİSANİYELER içinde değil, DAKİKALAR içinde değişir.
+      # transition: 180-240 saniye → misafir "uyandırıldığını" hissetmez,
+      # "güneş doğdu" hisseder. Ani ışık = alarm = stres; kademeli ışık = gündoğümü = sakin.
+      - service: script.sunrise_simulation
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 2: Perdeleri %20 arala (sessiz mod)
+      # -------------------------------------------------------------------------
+      # SwitchBot Curtain'i %20 pozisyonuna getir.
+      # %20: Az bir ışık sızar — eğer güneş varsa doğal ışık WLED'e katılır.
+      # Eğer gece/kapalıysa WLED tek başına yeterli.
+      #
+      # 🎭 Perde motoru SESSİZ modda çalışır (~40dB = fısıltı).
+      # Misafir uykudayken motor sesini duymaz — sadece hafif bir ışık
+      # değişimi hisseder. "Perde açıldı" değil, "sabah oluyor" hissi.
+      - service: cover.set_cover_position
+        target:
+          entity_id: cover.smart_curtain
+        data:
+          position: 20
+
+  # ===========================================================================
+  # OTOMASYON 2: Müzik Fade-In (T-Eksi 5 dakika)
+  # ===========================================================================
+  - id: morning_orchestration_music
+    alias: "Morning Orchestration — Müzik Fade-In (T-5dk)"
+    description: >
+      Uyanma saatinden 5 dakika önce Spotify'da "Acoustic Morning" çalma
+      listesini en düşük ses seviyesinde (%5) başlatır ve 5 dakika içinde
+      kademeli olarak %15 seviyesine çıkarır (fade-in audio).
+
+      🎭 Müzik %5'ten başlar — neredeyse fısıltı seviyesinde.
+      Misafir uykudayken bu sesi "rüya" gibi algılar. Yavaşça artan
+      müzik, misafiri "kademeli olarak" uyanma evresine taşır.
+      Aniden yüksek ses = "alarm" → korku; kademeli artış = "kuş sesleri" → sakin.
+
+    trigger:
+      - platform: template
+        value_template: >
+          {{ now() == (states.input_datetime.morning_wake_time.last_changed | default(as_datetime(states.input_datetime.morning_wake_time)) - timedelta(minutes=5)) }}
+        id: t_minus_5
+
+    condition:
+      - condition: state
+        entity_id: input_boolean.morning_wake_active
+        state: "on"
+
+    action:
+      # -------------------------------------------------------------------------
+      # AKSİYON 1: Spotify "Acoustic Morning" çalma listesini %5 sesle başlat
+      # -------------------------------------------------------------------------
+      # %5 = 0.05 volume level — neredeyle fısıltı
+      # Misafir uykudayken bu ses "uzaktan gelen müzik" gibi algılanır.
+      # "Acoustic Morning": Akustik gitar, hafif piyano — uyandırmak için
+      # ideal frekans aralığı (orta frekans, bas değil tiz değil).
+      - service: media_player.play_media
+        target:
+          entity_id: media_player.spotify
+        data:
+          media_content_type: "playlist"
+          # "Acoustic Morning" — Spotify çalma listesi ID'si
+          # Not: Gerçek Spotify playlist ID'si ile değiştirilmeli
+          media_content_id: "spotify:playlist:37i9dQZF1DX4PP3DA4J0N8"
+
+      # Ses seviyesini %5'e ayarla — fade-in başlangıcı
+      - service: media_player.volume_set
+        target:
+          entity_id: media_player.spotify
+        data:
+          volume_level: 0.05
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 2: 5 dakikada kademeli ses artışı (fade-in)
+      # -------------------------------------------------------------------------
+      # Her 1 dakikada sesi %2 artır → 5 dakikada %5'ten %15'e çıkar.
+      # Bu kademeli artış, misafirin "müzik duyduğunu" fark etmeden
+      # uyanma evresine geçmesini sağlar.
+      #
+      # 🎭 Neden %2'lik adımlar? Çünkü insan kulağı küçük ses değişimlerini
+      # "fark etmez" — sadece "müzik yavaşça yaklaşıyor" hisseder.
+      # Büyük adımlar = "ses açıldı" hissi; küçük adımlar = "doğal artış" hissi.
+
+      # 1. dakika: %5 → %7
+      - delay:
+          minutes: 1
+      - service: media_player.volume_set
+        target:
+          entity_id: media_player.spotify
+        data:
+          volume_level: 0.07
+
+      # 2. dakika: %7 → %9
+      - delay:
+          minutes: 1
+      - service: media_player.volume_set
+        target:
+          entity_id: media_player.spotify
+        data:
+          volume_level: 0.09
+
+      # 3. dakika: %9 → %11
+      - delay:
+          minutes: 1
+      - service: media_player.volume_set
+        target:
+          entity_id: media_player.spotify
+        data:
+          volume_level: 0.11
+
+      # 4. dakika: %11 → %13
+      - delay:
+          minutes: 1
+      - service: media_player.volume_set
+        target:
+          entity_id: media_player.spotify
+        data:
+          volume_level: 0.13
+
+      # 5. dakika: %13 → %15 (hedef seviye)
+      - delay:
+          minutes: 1
+      - service: media_player.volume_set
+        target:
+          entity_id: media_player.spotify
+        data:
+          volume_level: 0.15
+
+  # ===========================================================================
+  # OTOMASYON 3: Tam Uyanış — Perde %100 + Barista Mode (T-0)
+  # ===========================================================================
+  - id: morning_orchestration_wake
+    alias: "Morning Orchestration — Tam Uyanış (T-0)"
+    description: >
+      Uyanma saatinde (T-0): Perdeleri %100 açar, barista_mode'u otomatik
+      tetikler (espresso makinesi ısınmaya başlar) ve oda ışıklarını
+      %30 amber cafe atmosferine getirir.
+
+    trigger:
+      - platform: template
+        value_template: >
+          {{ now() == (states.input_datetime.morning_wake_time.last_changed | default(as_datetime(states.input_datetime.morning_wake_time))) }}
+        id: t_zero
+
+    condition:
+      - condition: state
+        entity_id: input_boolean.morning_wake_active
+        state: "on"
+
+    action:
+      # -------------------------------------------------------------------------
+      # [T - 0 DAKİKA] — PERDE %100 + BARISTA MODE
+      # -------------------------------------------------------------------------
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 1: Perdeleri %100 aç
+      # -------------------------------------------------------------------------
+      # Tam doğal ışık içeri girer. Eğer güneş varsa, oda tam aydınlanır.
+      # WLED gündoğumu zaten sıcak beyazda, doğal ışıkla birleşir.
+      - service: cover.set_cover_position
+        target:
+          entity_id: cover.smart_curtain
+        data:
+          position: 100
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 2: Barista Mode'u tetikle
+      # -------------------------------------------------------------------------
+      # Modül 11 (barista_mode) otomatik başlatılır:
+      #   - Espresso makinesi prizi açılır → ısınmaya başlar
+      #   - Oda ışıkları %30 amber (cafe atmosferi)
+      #   - WLED kahverengi/altın (cafe tonu)
+      #   - Lo-Fi müzik %15 (arka plan)
+      #   - Difüzör açılır (Amber esansı)
+      #
+      # Bu, morning_after ile barista_mode arasındaki kusursuz entegrasyondur.
+      # Misafir uyandığında kahve makinesi zaten ısınıyordur → 5 dakika sonra
+      # "Espresso ready" anonsu gelecektir.
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.barista_mode_active
+
+      # Barista mode prizini aç (espresso makinesi ısınmaya başlar)
+      - service: switch.turn_on
+        target:
+          entity_id: switch.coffee_machine_plug
+
+      # Oda ışıklarını %30 amber cafe atmosferine getir
+      - service: light.turn_on
+        target:
+          entity_id:
+            - light.ceiling_light
+            - light.room_main_lights
+        data:
+          brightness_pct: 30
+          color_temp: 370 # 370 mireds ≈ 2700K (sıcak amber)
+          transition: 10 # 10 saniyede yumuşak geçiş
+
+      # WLED'i cafe tonuna getir (kahverengi/altın)
+      - service: light.turn_on
+        target:
+          entity_id: light.wled_ambient
+        data:
+          rgb_color: [101, 67, 33] # Kahverengi/altın
+          brightness: 100
+          effect: "Breathe"
+          transition: 10
+
+      # Difüzörü aç (Amber esansı — sabah enerjisi)
+      - service: switch.turn_on
+        target:
+          entity_id: switch.smart_diffuser_power
+      # Difüzör RGB ışığını kapat (premium WLED tasarımını koru)
+      - delay:
+          milliseconds: 500
+      - service: light.turn_off
+        target:
+          entity_id: light.diffuser_led
+
+  # ===========================================================================
+  # OTOMASYON 4: Jarvis Sabah Anonsu (T + 2 dakika)
+  # ===========================================================================
+  - id: morning_orchestration_jarvis_announce
+    alias: "Morning Orchestration — Jarvis Anonsu (T+2dk)"
+    description: >
+      Uyanma saatinden 2 dakika sonra Jarvis, arka plandaki müziği hafifçe
+      kısarak sakin bir İngiliz aksanıyla/karizmatik bir sesle sabah anonsu yapar.
+
+      🎭 Müzik kısılır → Jarvis konuşur → müzik geri açılır.
+      Bu, "Jarvis'in müziğin üstünden konuşması" değil, "müziğin Jarvis'e
+      yer açması" hissi yaratır — premium asistan deneyimi.
+
+    trigger:
+      - platform: template
+        value_template: >
+          {{ now() == (states.input_datetime.morning_wake_time.last_changed | default(as_datetime(states.input_datetime.morning_wake_time)) + timedelta(minutes=2)) }}
+        id: t_plus_2
+
+    condition:
+      - condition: state
+        entity_id: input_boolean.morning_wake_active
+        state: "on"
+
+    action:
+      # -------------------------------------------------------------------------
+      # AKSİYON 1: Müziği hafifçe kıs (%15 → %8)
+      # -------------------------------------------------------------------------
+      # Müziği %8'e indir — Jarvis'in sesi net duyulsun, ama müzik tamamen
+      # durmasın (premium his — müzik arka planda çalmaya devam eder).
+      - service: media_player.volume_set
+        target:
+          entity_id: media_player.spotify
+        data:
+          volume_level: 0.08
+
+      # 1 saniye bekle — müziğin kısılması için
+      - delay:
+          seconds: 1
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 2: Jarvis sabah anonsu
+      # -------------------------------------------------------------------------
+      # Hava durumu bilgisini HA weather entity'sinden al ve anonsa göm.
+      # "Good morning. The weather outside is 24 degrees. Your espresso
+      #  machine is pre-heated and ready."
+      #
+      # 🎭 İngilizce ve karizmatik — "Jarvis" hissiyatı.
+      # Türkçe "Günaydın" yerine "Good morning" → premium/sinematik.
+      # Hava durumu: Misafir "pencereye bakmadan" dışarıyı bilir.
+      # Espresso hazır: Misafir "kahve makinesine bakmadan" bilir.
+      - service: tts.speak
+        target:
+          entity_id: tts.jarvis_voice
+        data:
+          message: >
+            Good morning. The weather outside is {{ states('weather.home.attributes.temperature') | default('24') }} degrees.
+            Your espresso machine is pre-heated and ready.
+
+      # Jarvis konuşurken bekle (TTS süresi ~10 saniye)
+      - delay:
+          seconds: 12
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 3: Müziği geri aç (%8 → %12)
+      # -------------------------------------------------------------------------
+      # Anons bitince müziği %12'ye çıkar — %15'e değil, çünkü barista_mode
+      # zaten Lo-Fi müzik %15 çalıyor. Spotify %12 + barista Lo-Fi = uyumlu.
+      - service: media_player.volume_set
+        target:
+          entity_id: media_player.spotify
+        data:
+          volume_level: 0.12
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 4: Uyanış modunu kapat
+      # -------------------------------------------------------------------------
+      # Süreç tamamlandı — morning_wake_active OFF.
+      # Bir sonraki gece Jarvis "sabah X'te uyandır" dediğinde tekrar ON olur.
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.morning_wake_active
+
+  # ===========================================================================
+  # OTOMASYON 5: Jarvis "Sabah X'te Uyandır" Komutu (Uyanış Saati Ayarlama)
+  # ===========================================================================
+  - id: morning_set_wake_time
+    alias: "Morning — Uyanış Saati Ayarla (Jarvis)"
+    description: >
+      Kullanıcı akşamdan "Sabah 9'da uyandır" dediğinde, Jarvis uyanış
+      saatini input_datetime.morning_wake_time'a ayarlar ve uyanış modunu
+      aktif eder.
+
+    trigger:
+      # "Sabah 9'da uyandır" → 09:00
+      - platform: conversation
+        command: "sabah [0-9]+ de uyandır"
+        id: wake_command_tr
+
+      # "Wake me at 9" → 09:00
+      - platform: conversation
+        command: "wake me at [0-9]+"
+        id: wake_command_en
+
+    action:
+      # Saati komuttan çıkar (regex ile)
+      - variables:
+          wake_hour: >
+            {{ trigger.command | regex_findall('[0-9]+') | first | int }}
+
+      # input_datetime.morning_wake_time'ı yarın + wake_hour:00 olarak ayarla
+      - service: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.morning_wake_time
+        data:
+          datetime: >
+            {{ (now() + timedelta(days=1)).strftime('%Y-%m-%d') }} {{ '%02d' | format(wake_hour) }}:00:00
+
+      # Uyanış modunu aktif et
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.morning_wake_active
+
+      # Jarvis onay
+      - service: tts.speak
+        target:
+          entity_id: tts.jarvis_voice
+        data:
+          message: "Acknowledged. I will wake you at {{ wake_hour }} o'clock tomorrow."

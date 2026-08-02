@@ -1,0 +1,546 @@
+# =============================================================================
+# jarvis_core 3.0 — Biometric Emotion Sync (Duygu Algılama)
+# =============================================================================
+# 2026 Sürümü — Radar tabanlı biyometrik duygu analizi + proaktif müdahale
+#
+# 🧠 "DUYGU ALGILAMA" MANTIĞI:
+# =============================================================================
+# 2026'da mmWave radar (LD2410/LD2450) sadece "varlık" algılamaz —
+# kalp atış hızı (BPM) ve nefes alışverişi (soluk/dk) ölçer.
+#
+# Bu veriler + kamera mikro-ifadeleri (micro-expressions) birleştirilip
+# Gemini 3.5'in devasa bağlam penceresine (2M token) gönderilir.
+#
+# Gemini 3.5, kullanıcının duygusal durumunu analiz eder:
+#   - Stresli mi? (yüksek kalp atışı + düzensiz nefes)
+#   - Rahatlamış mı? (düşük kalp atışı + düzenli nefes)
+#   - Üzgün mü? (yüz mikro-ifadeleri: kaş çatma, dudak bükme)
+#   - Heyecanlı mı? (yüksek nefes + geniş göz bebekleri)
+#
+# Jarvis, kullanıcının üzgün olduğunu anlarsa:
+#   - Işıkları sıcak amber tonuna alır (rahatlatıcı)
+#   - Kendi inisiyatifiyle rahatlatıcı müzik başlatır
+#   - Nazik bir sohbet başlatır ("Bir şey mi var, efendim?")
+#
+# Bu, "reaktif asistan" → "proaktif empatik zihin" dönüşümüdür.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# INPUT SELECT — Kullanıcı duygu durumu (Gemini 3.5 analizi sonucu)
+# -----------------------------------------------------------------------------
+input_select:
+  jarvis_user_emotion:
+    name: "User Emotion State"
+    options:
+      - "unknown"
+      - "relaxed"
+      - "happy"
+      - "excited"
+      - "neutral"
+      - "stressed"
+      - "sad"
+      - "tired"
+      - "angry"
+    initial: "unknown"
+    icon: mdi:emoticon-outline
+
+# -----------------------------------------------------------------------------
+# INPUT NUMBER — Biyometrik veriler (AKILLI SAAT — LD2450 kalp/nefes ÖLÇMEZ)
+# -----------------------------------------------------------------------------
+# ⚠️ ÖNEMLİ DÜZELTME:
+# LD2450/LD2410 mmWave radar sadece varlık/hareket algılar.
+# Kalp atışı ve nefes ölçümü YAPAMAZ. Bu veriler akıllı saatten gelir:
+#   - Apple Health / Google Fit → HA webhook → sensor.resting_hr
+#   - Apple Health / Google Fit → HA webhook → sensor.breath_rate
+# Radar (LD2410) sadece "odada biri var mı?" ve "aktivite seviyesi" için kullanılır.
+# -----------------------------------------------------------------------------
+input_number:
+  jarvis_heart_rate:
+    name: "User Heart Rate (BPM) — Akıllı Saat"
+    min: 30
+    max: 200
+    step: 1
+    initial: 0
+    unit_of_measurement: "BPM"
+    icon: mdi:heart-pulse
+
+  # Nefes ölçümü akıllı saatten (uyku analizi sırasında) gelir
+  # LD2450/LD2410 nefes ölçemez — sadece varlık/hareket
+  jarvis_breath_rate:
+    name: "User Breath Rate (per min) — Akıllı Saat"
+    min: 5
+    max: 40
+    step: 1
+    initial: 0
+    unit_of_measurement: "/min"
+    icon: mdi:lungs
+
+  jarvis_stress_level:
+    name: "User Stress Level"
+    min: 0
+    max: 10
+    step: 0.5
+    initial: 0
+    unit_of_measurement: "/10"
+    icon: mdi:gauge
+
+# -----------------------------------------------------------------------------
+# INPUT BOOLEAN — Duygu senkronizasyonu aktif
+# -----------------------------------------------------------------------------
+input_boolean:
+  jarvis_emotion_sync_active:
+    name: "Jarvis Emotion Sync"
+    icon: mdi:heart-brain
+    initial: on
+
+# -----------------------------------------------------------------------------
+# SENSOR — Biyometrik veriler (AKILLI SAAT — LD2450 kalp/nefes ÖLÇMEZ)
+# -----------------------------------------------------------------------------
+# ⚠️ DÜZELTME: LD2450/LD2410 mmWave radar sadece varlık/hareket algılar.
+# Kalp atışı ve nefes ölçümü YAPAMAZ. Bu veriler akıllı saatten gelir:
+#   - Apple Health / Google Fit → HA webhook → sensor.resting_hr (nabız)
+#   - Apple Health / Google Fit → HA webhook → sensor.breath_rate (nefes)
+#   - LD2410 radar → sadece varlık (binary_sensor.room_presence) ve aktivite
+# Stres skoru: akıllı saat nabız + aktivite seviyesi (LD2410) ile hesaplanır.
+# -----------------------------------------------------------------------------
+template:
+  - sensor:
+      # Kalp atış hızı (AKILLI SAAT — Apple Health / Google Fit → HA webhook)
+      - name: "User Heart Rate"
+        unique_id: "user_heart_rate"
+        unit_of_measurement: "BPM"
+        icon: mdi:heart-pulse
+        state: "{{ states('sensor.resting_hr') | float(0) | round(0) }}"
+
+      # Nefes alışverişi (AKILLI SAAT — uyku analizi sırasında)
+      - name: "User Breath Rate"
+        unique_id: "user_breath_rate"
+        unit_of_measurement: "/min"
+        icon: mdi:lungs
+        state: "{{ states('sensor.breath_rate') | float(0) | round(1) }}"
+
+      # Stres skoru (akıllı saat nabız + LD2410 aktivite → hesaplanmış)
+      - name: "Computed Stress Score"
+        unique_id: "computed_stress_score"
+        unit_of_measurement: "/10"
+        icon: mdi:gauge
+        # Stres skoru hesaplama:
+        # - Yüksek kalp atışı (>80) → yüksek stres
+        # - Düşük kalp atışı (<60) → düşük stres (rahat)
+        # - LD2410 aktivite seviyesi yüksek + nabız yüksek → çok stresli
+        state: >
+          {% set hr = states('sensor.resting_hr') | float(0) %}
+          {% set activity = states('sensor.bed_activity_level') | float(0) %}
+          {% if hr == 0 %}
+            0
+          {% else %}
+            {% set hr_stress = ([0, (hr - 60) / 10, 10] | sort)[1] %}
+            {% set activity_stress = ([0, activity / 10, 10] | sort)[1] %}
+            {{ ((hr_stress + activity_stress) / 2) | round(1) }}
+          {% endif %}
+
+# -----------------------------------------------------------------------------
+# OTOMASYONLAR
+# -----------------------------------------------------------------------------
+automation:
+  # ===========================================================================
+  # SENARYO 1: Biyometrik Veri Toplama — Akıllı Saat + Kamera → Gemini 3.6
+  # ===========================================================================
+  - id: jarvis_biometric_collect
+    alias: "Jarvis — Biyometrik Veri Toplama (Akıllı Saat + Kamera)"
+    description: >
+      Her 2 dakikada bir, akıllı saatten (Apple Health/Google Fit) kalp atışı
+      verisi ve kameradan mikro-ifadeler toplanır. Bu veriler Gemini 3.6'ya
+      gönderilir ve kullanıcının duygu durumu belirlenir.
+
+      ⚠️ DÜZELTME: LD2450/LD2410 radar kalp atışı ve nefes ÖLÇMEZ.
+      Sadece varlık/hareket algılar. Kalp atışı akıllı saatten gelir.
+      Radar (LD2410) sadece "odada biri var mı?" ve "aktivite seviyesi" için.
+
+    trigger:
+      # 2 dakikada bir biyometrik analiz
+      - platform: time_pattern
+        minutes: "/2"
+        id: biometric_interval
+
+    condition:
+      # Emotion sync aktif olmalı
+      - condition: state
+        entity_id: input_boolean.jarvis_emotion_sync_active
+        state: "on"
+
+      # Odada biri olmalı
+      - condition: state
+        entity_id: binary_sensor.room_presence
+        state: "on"
+
+    action:
+      # -------------------------------------------------------------------------
+      # AKSİYON 1: Akıllı saat biyometrik verisini al (radar DEĞİL)
+      # -------------------------------------------------------------------------
+      # ⚠️ Kalp atışı ve nefes akıllı saatten (Apple Health/Google Fit) gelir.
+      # LD2410 radar sadece varlık (binary_sensor.room_presence) ve
+      # aktivite (sensor.bed_activity_level) için kullanılır.
+      - variables:
+          heart_rate: "{{ states('sensor.resting_hr') | float(0) }}"
+          breath_rate: "{{ states('sensor.breath_rate') | float(0) }}"
+          stress_score: "{{ states('sensor.computed_stress_score') | float(0) }}"
+          activity_level: "{{ states('sensor.bed_activity_level') | float(0) }}"
+
+      # input_number'ları güncelle
+      - service: input_number.set_value
+        target:
+          entity_id: input_number.jarvis_heart_rate
+        data:
+          value: "{{ heart_rate }}"
+
+      - service: input_number.set_value
+        target:
+          entity_id: input_number.jarvis_breath_rate
+        data:
+          value: "{{ breath_rate }}"
+
+      - service: input_number.set_value
+        target:
+          entity_id: input_number.jarvis_stress_level
+        data:
+          value: "{{ stress_score }}"
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 2: Kameradan mikro-ifade analizi (GPT-5.6 Vision)
+      # -------------------------------------------------------------------------
+      # Kamera → GPT-5.6 Vision → yüz ifadesi analizi
+      # "Bu kişinin yüz ifadesi ne? Üzgün, mutlu, nötr, stresli?"
+      # Bu, radar verisiyle birleştirilir.
+      # (Gerçek implementasyonda REST command ile vision_frame_analyzer.py çağrılır)
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 3: Gemini 3.5'e biyometrik + ifade verisi gönder
+      # -------------------------------------------------------------------------
+      # Gemini 3.5'in 2M token bağlam penceresi tüm sensör verisini alır:
+      # - Kalp atışı: 75 BPM
+      # - Nefes: 14/dk
+      # - Stres skoru: 3.2/10
+      # - Yatak aktivitesi: 0/100 (hareketsiz)
+      # - Yüz ifadesi: "hafif kaş çatma, dudak bükme"
+      # → Gemini: "Kullanıcı üzgün/stresli. Rahatlatıcı ortam öner."
+      #
+      # Bu, multi_model_orchestrator.py üzerinden Gemini 3.5'e gönderilir.
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/biometric/analysis_request"
+          payload: >
+            {"heart_rate": {{ heart_rate }},
+             "breath_rate": {{ breath_rate }},
+             "stress_score": {{ stress_score }},
+             "activity_level": {{ activity_level }},
+             "timestamp": "{{ now().isoformat() }}"}
+          retain: false
+
+  # ===========================================================================
+  # SENARYO 2: Duygu Durumu Değişti → Proaktif Ortam Ayarı
+  # ===========================================================================
+  - id: jarvis_emotion_response
+    alias: "Jarvis — Duygu Yanıtı (Proaktif Ortam)"
+    description: >
+      Gemini 3.5 duygu analizi sonucunu (input_select.jarvis_user_emotion)
+      değiştirdiğinde, Jarvis ortamı proaktif olarak ayarlar.
+
+      🎭 PROAKTİF EMPATİ:
+      Jarvis, kullanıcının "üzgün" olduğunu anlarsa:
+        - Işıkları sıcak amber tonuna alır (rahatlatıcı)
+        - Rahatlatıcı müzik başlatır (kendi inisiyatifiyle)
+        - Nazik sohbet başlatır ("Bir şey mi var, efendim?")
+
+      "Stresli" ise:
+        - Klimayı serinleticiye ayarlar
+        - Difüzörü lavanta/sandalağacı açar
+        - Loş ışık + sakin müzik
+
+      "Mutlu/heyecanlı" ise:
+        - Işıkları biraz daha parlak ve sıcak
+        - Enerjik müzik
+
+    trigger:
+      # Duygu durumu değiştiğinde
+      - platform: state
+        entity_id: input_select.jarvis_user_emotion
+        id: emotion_change
+
+    condition:
+      # Emotion sync aktif
+      - condition: state
+        entity_id: input_boolean.jarvis_emotion_sync_active
+        state: "on"
+
+      # Yeni duygu "unknown" değil
+      - condition: template
+        value_template: "{{ trigger.to_state.state != 'unknown' }}"
+
+      # Duygu gerçekten değişti
+      - condition: template
+        value_template: "{{ trigger.from_state.state != trigger.to_state.state }}"
+
+    action:
+      - variables:
+          emotion: "{{ trigger.to_state.state }}"
+
+      - choose:
+          # -------------------------------------------------------------------------
+          # ÜZGÜN → Sıcak amber + rahatlatıcı müzik + nazik sohbet
+          # -------------------------------------------------------------------------
+          - conditions:
+              - condition: template
+                value_template: "{{ emotion == 'sad' }}"
+            sequence:
+              # Işıkları sıcak amber, loş
+              - service: light.turn_on
+                target:
+                  entity_id: light.wled_ambient
+                data:
+                  rgb_color: [191, 128, 0] # Sıcak amber
+                  brightness: 80 # Loş
+                  effect: "Breathe"
+                  transition: 10 # Yavaş geçiş — "sakinleş"
+
+              # Rahatlatıcı müzik (fade-in %15)
+              - service: input_select.select_option
+                target:
+                  entity_id: input_select.spatial_audio_mood
+                data:
+                  option: "sleep_ambient"
+              - service: script.spatial_play_mood
+                data:
+                  target_volume: 0.15
+
+              # Difüzör — sandalağacı (topraklayıcı, sakinleştirici)
+              - service: switch.turn_on
+                target:
+                  entity_id: switch.smart_diffuser_power
+              - delay:
+                  milliseconds: 500
+              - service: light.turn_off
+                target:
+                  entity_id: light.diffuser_led
+
+              # Jarvis nazik sohbet başlat (proaktif)
+              - delay:
+                  seconds: 5 # Ortamın oturması için bekle
+              - service: tts.speak
+                target:
+                  entity_id: tts.jarvis_voice
+                data:
+                  message: >
+                    {{ [
+                      "Efendim, biraz gergin görünüyorsunuz. Her şey yolunda mı?",
+                      "Sessizliğiniz farklı. Bir şey mi var?",
+                      "Oramı sakinleştiriyorum. Bazen en iyi ilaç sessizliktir."
+                    ] | random }}
+
+          # -------------------------------------------------------------------------
+          # STRESLİ → Serin klima + lavanta difüzör + loş ışık
+          # -------------------------------------------------------------------------
+          - conditions:
+              - condition: template
+                value_template: "{{ emotion == 'stressed' }}"
+            sequence:
+              # Klima serin (20°C)
+              - service: climate.set_temperature
+                target:
+                  entity_id: climate.room_ac
+                data:
+                  temperature: 20
+                  hvac_mode: cool
+              - service: climate.set_fan_mode
+                target:
+                  entity_id: climate.room_ac
+                data:
+                  fan_mode: quiet
+
+              # Işıklar loş amber
+              - service: light.turn_on
+                target:
+                  entity_id: light.wled_ambient
+                data:
+                  rgb_color: [191, 128, 0]
+                  brightness: 60
+                  effect: "Breathe"
+                  transition: 10
+
+              # Difüzör — lavanta (sakinleştirici)
+              - service: switch.turn_on
+                target:
+                  entity_id: switch.smart_diffuser_power
+              - delay:
+                  milliseconds: 500
+              - service: light.turn_off
+                target:
+                  entity_id: light.diffuser_led
+
+              # Sakinleştirici müzik
+              - service: input_select.select_option
+                target:
+                  entity_id: input_select.spatial_audio_mood
+                data:
+                  option: "sleep_ambient"
+              - service: script.spatial_play_mood
+                data:
+                  target_volume: 0.10
+
+              # Jarvis kısa, nazik
+              - delay:
+                  seconds: 3
+              - service: tts.speak
+                target:
+                  entity_id: tts.jarvis_voice
+                data:
+                  message: "Oramı sakinleştiriyorum, efendim. Derin bir nefes."
+
+          # -------------------------------------------------------------------------
+          # YORGUN → Sıcak ışık + sakin müzik + klima rahat
+          # -------------------------------------------------------------------------
+          - conditions:
+              - condition: template
+                value_template: "{{ emotion == 'tired' }}"
+            sequence:
+              - service: light.turn_on
+                target:
+                  entity_id: light.wled_ambient
+                data:
+                  rgb_color: [255, 170, 85] # Sıcak beyaz
+                  brightness: 100
+                  effect: "Breathe"
+                  transition: 10
+              - service: input_select.select_option
+                target:
+                  entity_id: input_select.spatial_audio_mood
+                data:
+                  option: "sleep_ambient"
+              - service: script.spatial_play_mood
+                data:
+                  target_volume: 0.10
+              - service: tts.speak
+                target:
+                  entity_id: tts.jarvis_voice
+                data:
+                  message: "Yorgun görünüyorsunuz, efendim. Dinlenin. Ben buradayım."
+
+          # -------------------------------------------------------------------------
+          # MUTLU/HEYECANLI → Biraz daha parlak + enerjik
+          # -------------------------------------------------------------------------
+          - conditions:
+              - condition: template
+                value_template: "{{ emotion in ['happy', 'excited'] }}"
+            sequence:
+              - service: light.turn_on
+                target:
+                  entity_id: light.wled_ambient
+                data:
+                  rgb_color: [255, 215, 0] # Altın sarısı
+                  brightness: 150
+                  effect: "Breathe"
+                  transition: 5
+              # Jarvis kısa espri (sadece happy ise)
+              - condition: template
+                value_template: "{{ emotion == 'happy' }}"
+              - service: tts.speak
+                target:
+                  entity_id: tts.jarvis_voice
+                data:
+                  message: >
+                    {{ [
+                      "İyi hissediyorsunuz. Belli oluyor, efendim.",
+                      "Bu enerji güzel. Neşe bulaşıcıdır.",
+                      "Gülümsemenizi görebiliyorum. Bugün güzel bir gün."
+                    ] | random }}
+
+        # -------------------------------------------------------------------------
+        # RAHATLAMIŞ / NÖTR → Müdahale etme (sessiz işleyiş)
+        # -------------------------------------------------------------------------
+        default:
+          # Kullanıcı rahat → hiçbir şey yapma
+          # "Sessiz işleyiş" — Jarvis gereksiz müdahale etmez
+          - delay:
+              milliseconds: 100
+
+  # ===========================================================================
+  # SENARYO 3: Yüksek Stres Alarmı → Acil Müdahale
+  # ===========================================================================
+  - id: jarvis_stress_alarm
+    alias: "Jarvis — Yüksek Stres Alarmı"
+    description: >
+      Stres skoru 8/10'un üzerine çıkarsa (panik atak, aşırı stres),
+      Jarvis acil müdahale eder: sakinleştirici ortam + nazik sohbet +
+      (opsiyonel) mobil bildirim.
+
+    trigger:
+      - platform: numeric_state
+        entity_id: input_number.jarvis_stress_level
+        above: 8
+        for:
+          minutes: 1
+        id: high_stress
+
+    condition:
+      - condition: state
+        entity_id: input_boolean.jarvis_emotion_sync_active
+        state: "on"
+
+    action:
+      # Acil sakinleştirme
+      - service: light.turn_on
+        target:
+          entity_id: light.wled_ambient
+        data:
+          rgb_color: [100, 50, 0] # Çok koyu, çok sıcak amber
+          brightness: 40 # Çok loş
+          effect: "Breathe"
+          transition: 15 # Çok yavaş geçiş
+
+      # Klima serin
+      - service: climate.set_temperature
+        target:
+          entity_id: climate.room_ac
+        data:
+          temperature: 19
+          hvac_mode: cool
+      - service: climate.set_fan_mode
+        target:
+          entity_id: climate.room_ac
+        data:
+          fan_mode: quiet
+
+      # Sakinleştirici müzik
+      - service: input_select.select_option
+        target:
+          entity_id: input_select.spatial_audio_mood
+        data:
+          option: "sleep_ambient"
+      - service: script.spatial_play_mood
+        data:
+          target_volume: 0.08 # Çok kısık
+
+      # Difüzör — lavanta
+      - service: switch.turn_on
+        target:
+          entity_id: switch.smart_diffuser_power
+      - delay:
+          milliseconds: 500
+      - service: light.turn_off
+        target:
+          entity_id: light.diffuser_led
+
+      # Jarvis sakinleştirici konuşma
+      - delay:
+          seconds: 3
+      - service: tts.speak
+        target:
+          entity_id: tts.jarvis_voice
+        data:
+          message: "Efendim, derin bir nefes alın. Yavaşça. Dört sayın, tutun, yedi sayın, bırakın. Ben buradayım."
+
+      # Mobil bildirim (opsiyonel)
+      - service: notify.mobile_app
+        data:
+          title: "🧘 Stres Algılandı"
+          message: "Yüksek stres tespit edildi. Sakinleştirici ortam aktif. Derin nefes alın."

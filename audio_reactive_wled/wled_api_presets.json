@@ -1,0 +1,239 @@
+{
+  "_meta": {
+    "_comment_1": "audio_reactive_wled — WLED Sound Reactive Preset Konfigürasyonu",
+    "_comment_2": "Bu dosya WLED'in Sound Reactive sürümüne HTTP API veya MQTT üzerinden yüklenir.",
+    "_comment_3": "3 premium efekt + 1 dinlenme preset tanımlar.",
+    "_comment_4": "NEDEN GOKKUSAGI DEGIL, AMBER/KIRMIZI/ALTIN?",
+    "_comment_5": "Gokkusagi (Rainbow) efektleri RGB'nin tum spektrumunu kullanir.",
+    "_comment_6": "Bu, 'oyuncu odasi' veya 'pavyon' hissi yaratir — premium lounge'da istenmeyen atmosfer.",
+    "_comment_7": "Premium lounge aydinlatmasi TEK renk ailesi kullanir:",
+    "_comment_8": "Amber (kehribar): Sicak, davetkar, 'aksam' hissi",
+    "_comment_9": "Yakut kirmizisi: Tutkulu, derin, sinematik",
+    "_comment_10": "Altin sarisi: Luks, zengin, 'premium' algisi",
+    "_comment_11": "Bu palet melatonin salinimini etkilemez, gozu yormaz, gece/rahatlama modunu destekler."
+  },
+  "presets": {
+    "1": {
+      "_comment": "PRESET 1: Date/Lounge Vibe — Sese Duyarli Amber/Kirmizi. Romantik aksam, misafir agirlama veya lounge atmosferi. Muzigin BAS frekanslarina duyarli — her bas vurusunda isik nazikce nabiz atar. Efekt: Gravimeter — bas odakli, yumusak dalgalanma. Neden Gravimeter? FFT'nin dusuk frekans (bas) bandina odaklanir, yuksek frekanslari (tiz) gormezden gelir. R&B ve Lo-Fi muziklerde bas vuruslarini yakalar ama vokalleri gormezden gelir → isik sadece 'kalp atisi' gibi bas ritmini takip eder.",
+      "n": "Date Lounge Vibe",
+      "on": true,
+      "bri": 120,
+      "transition": 7,
+      "seg": [
+        {
+          "id": 0,
+          "len": 60,
+          "grp": 1,
+          "spc": 0,
+          "of": 0,
+          "on": true,
+          "bri": 120,
+          "fx": 74,
+          "_fx_comment": "Gravimeter (Sound Reactive — bas odakli). Efekt ID ~74 (surume gore degisir)",
+          "sx": 128,
+          "_sx_comment": "Efekt hizi: 128 (orta) — cok hizli degil, zarif nabiz",
+          "ix": 180,
+          "_ix_comment": "Efekt siddeti: 180 — bas vurusuna guclu ama abartisiz tepki",
+          "col": [
+            [
+              255,
+              191,
+              0
+            ],
+            [
+              139,
+              0,
+              0
+            ],
+            [
+              255,
+              215,
+              0
+            ]
+          ],
+          "_col_comment": "1. renk: Amber #FFBF00 | 2. renk: Yakut Kirmizisi #8B0000 | 3. renk: Altin Sarisi #FFD700",
+          "pal": 1,
+          "_pal_comment": "Palet modu: 1 = Renk paleti kullan (Solid renk degil)",
+          "mi": 1,
+          "_mi_comment": "Ses reaktif mod: 1 = I2S mikrofon, bas bandi"
+        }
+      ],
+      "sound": {
+        "reactive": true,
+        "input": "i2s",
+        "mode": "bass",
+        "sensitivity": 180,
+        "smoothing": 100
+      }
+    },
+    "2": {
+      "_comment": "PRESET 2: Deep Focus — Statik Koyu Mavi/Beyaz Nefes. Calisma, odaklanma veya derin dusunme icin. Sese duyarli DEGIL — statik, yavas nefes alma efekti. Neden sese duyarli degil? Odaklanma sirasinda isigin muzige tepki vermesi dikkat dagitir. Statik nefes efekti gozu yormadan hafif ritim saglar — meditasyon nefesi gibi. Neden mavi? Derin mavi (navy) los parlaklikta sakinlestirici etki yapar. Beyaz vurgu 'netlik' hissi katar.",
+      "n": "Deep Focus",
+      "on": true,
+      "bri": 80,
+      "transition": 10,
+      "seg": [
+        {
+          "id": 0,
+          "len": 60,
+          "grp": 1,
+          "spc": 0,
+          "of": 0,
+          "on": true,
+          "bri": 80,
+          "fx": 2,
+          "_fx_comment": "Breathe (Nefes) — statik, sese duyarli degil. Efekt ID: 2 (WLED standart)",
+          "sx": 30,
+          "_sx_comment": "Hiz: 30 — cok yavas (3 saniyede bir nefes al/ver)",
+          "ix": 100,
+          "_ix_comment": "Siddet: 100 — orta parlaklik dalgalanmasi",
+          "col": [
+            [
+              0,
+              0,
+              139
+            ],
+            [
+              255,
+              255,
+              255
+            ],
+            [
+              135,
+              206,
+              235
+            ]
+          ],
+          "_col_comment": "1. renk: Koyu Mavi #00008B (Navy) | 2. renk: Beyaz #FFFFFF | 3. renk: Acik Mavi #87CEEB (Sky Blue)",
+          "pal": 1,
+          "mi": 0,
+          "_mi_comment": "Ses reaktif mod: 0 = Kapali (statik efekt)"
+        }
+      ],
+      "sound": {
+        "reactive": false
+      }
+    },
+    "3": {
+      "_comment": "PRESET 3: Party/Energy — Dinamik, BPM Senkronize. Enerjik ortam, parti veya misafir eglencesi icin. Muzigin BPM'ine senkronize, siddetli tepki. Neden yine gokkusagi degil? Parti modunda bile premium hissi koruyoruz. Gokkusagi = 'ucak pavyon'; sicak dinamik palet = 'premium kulup/lounge'. Magenta vurgu enerji katar ama soguk (yesil/mavi) tonlara kaymaz. Efekt: Freqwave — tum frekans bantlarina duyarli dalga. Bas, orta ve tiz bantlari ayri ayri LED segmentlere yansitir.",
+      "n": "Party Energy",
+      "on": true,
+      "bri": 255,
+      "transition": 2,
+      "seg": [
+        {
+          "id": 0,
+          "len": 60,
+          "grp": 1,
+          "spc": 0,
+          "of": 0,
+          "on": true,
+          "bri": 255,
+          "fx": 76,
+          "_fx_comment": "Freqwave (Sound Reactive — tum frekans bantlari). Efekt ID: ~76 (surume gore degisir)",
+          "sx": 200,
+          "_sx_comment": "Hiz: 200 — hizli tepki",
+          "ix": 255,
+          "_ix_comment": "Siddet: 255 — maksimum tepki",
+          "col": [
+            [
+              255,
+              69,
+              0
+            ],
+            [
+              255,
+              215,
+              0
+            ],
+            [
+              255,
+              0,
+              255
+            ]
+          ],
+          "_col_comment": "1. renk: Turuncu-Kirmizi #FF4500 | 2. renk: Altin Sarisi #FFD700 | 3. renk: Magenta #FF00FF (enerji vurgusu)",
+          "pal": 1,
+          "mi": 1,
+          "_mi_comment": "Ses reaktif mod: 1 = I2S mikrofon, tum bantlar"
+        }
+      ],
+      "sound": {
+        "reactive": true,
+        "input": "i2s",
+        "mode": "full",
+        "sensitivity": 255,
+        "smoothing": 50
+      }
+    },
+    "4": {
+      "_comment": "PRESET 4: Rest/Idle — Statik Los Amber (Dinlenme). Muzik durdugunda otomatik gecis. Sese duyarli degil, sabit los amber — karanlikta kalmamak icin. Bu preset audio_wled_automation.yaml'daki kapanis otomasyonu tarafindan cagrilir.",
+      "n": "Rest Idle Amber",
+      "on": true,
+      "bri": 60,
+      "transition": 10,
+      "seg": [
+        {
+          "id": 0,
+          "len": 60,
+          "grp": 1,
+          "spc": 0,
+          "of": 0,
+          "on": true,
+          "bri": 60,
+          "fx": 0,
+          "_fx_comment": "Solid (sabit) — Efekt ID: 0",
+          "sx": 0,
+          "ix": 0,
+          "col": [
+            [
+              191,
+              128,
+              0
+            ],
+            [
+              191,
+              128,
+              0
+            ],
+            [
+              191,
+              128,
+              0
+            ]
+          ],
+          "_col_comment": "Tek renk — Los Amber #BF8000",
+          "pal": 0,
+          "mi": 0
+        }
+      ],
+      "sound": {
+        "reactive": false
+      }
+    }
+  },
+  "mqtt_mapping": {
+    "_comment": "WLED MQTT uzerinden preset cagrilmasini destekler. HA otomasyonunda bu topic'e MQTT publish yapilarak preset degistirilir.",
+    "broker": "gl-mt3000.local",
+    "port": 1883,
+    "topic_prefix": "wled/ambient",
+    "preset_topic": "wled/ambient/api",
+    "examples": {
+      "date_lounge": "{\"ps\": 1}",
+      "deep_focus": "{\"ps\": 2}",
+      "party_energy": "{\"ps\": 3}",
+      "rest_idle": "{\"ps\": 4}"
+    }
+  },
+  "http_api": {
+    "_comment": "WLED HTTP API uzerinden preset cagirma. HA RESTful command ile cagrilabilir.",
+    "base_url": "http://wled-ambient.local",
+    "preset_endpoint": "/json",
+    "examples": {
+      "date_lounge": "GET /json?ps=1",
+      "deep_focus": "GET /json?ps=2",
+      "party_energy": "GET /json?ps=3",
+      "rest_idle": "GET /json?ps=4"
+    }
+  }
+}

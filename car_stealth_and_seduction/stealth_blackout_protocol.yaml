@@ -1,0 +1,193 @@
+# =============================================================================
+# car_stealth_and_seduction — Night Ops / Blackout Protocol
+# =============================================================================
+# Tek tuşla araç içi tüm ekranları ve ışıkları karartan "Gizli Suikastçı" modu.
+# Sadece yola odaklanmayı sağlayan minimalist HUD (Head-Up Display) aktif.
+#
+# 🌑 "BLACKOUT" MANTIĞI — GOD MODE:
+# =============================================================================
+# Sürücü "Jarvis, Blackout" der → 100ms içinde:
+# - Android Multimedya ekranı %0 parlaklık (tamamen karanlık)
+# - Tüm konsol/gösterge aydınlatmaları kapat
+# - Sadece minimalist HUD aktif (hız + navigasyon, çok loş)
+# - Jarvis: "Blackout aktif, efendim."
+#
+# "Tony Stark gece sürüşünde aracı bir savaş uçağına dönüştürür."
+# Ekranlar kararır, dikkat dağıtıcı her şey kaybolur, sadece yol kalır.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# INPUT BOOLEAN — Blackout modu aktif
+# -----------------------------------------------------------------------------
+input_boolean:
+  blackout_mode_active:
+    name: "Blackout Mode"
+    icon: mdi:weather-night
+    initial: off
+
+# -----------------------------------------------------------------------------
+# OTOMASYONLAR
+# -----------------------------------------------------------------------------
+automation:
+  # ===========================================================================
+  # SENARYO 1: Blackout Aktif — Ekranları Karart + HUD Modu
+  # ===========================================================================
+  - id: stealth_blackout_activate
+    alias: "Stealth — Blackout Aktif (Night Ops)"
+    description: >
+      Kullanıcı direksiyon gizli tuşuna bastığında VEYA "Jarvis, Blackout"
+      dediğinde: tüm ekranları karart, konsol ışıklarını kapat, minimalist HUD.
+
+      🌑 GOD MODE:
+      Ekranlar kararır → dikkat dağıtıcı her şey kaybolur → sadece yol.
+      "Savaş uçağı cockpit'i gibi — sadece gerekli bilgi, gerisi karanlık."
+
+    trigger:
+      # -------------------------------------------------------------------------
+      # Tetikleyici 1: Sesli komut
+      # -------------------------------------------------------------------------
+      - platform: conversation
+        command: "Blackout"
+        id: voice_blackout
+
+      - platform: conversation
+        command: "Night Ops"
+        id: voice_nightops
+
+      # -------------------------------------------------------------------------
+      # Tetikleyici 2: Direksiyon tuş kombinasyonu (HA Companion App)
+      # -------------------------------------------------------------------------
+      - platform: state
+        entity_id: sensor.steering_wheel_combo
+        to: "vol_up_down_hold"
+        id: steering_combo
+
+      # -------------------------------------------------------------------------
+      # Tetikleyici 3: Gizli Zigbee buton (direksiyon altı)
+      # -------------------------------------------------------------------------
+      - platform: state
+        entity_id: sensor.car_hidden_button_action
+        to: "hold"
+        id: hidden_button
+
+    condition:
+      - condition: state
+        entity_id: input_boolean.blackout_mode_active
+        state: "off"
+
+    action:
+      # -------------------------------------------------------------------------
+      # AKSİYON 0: Blackout modunu aktif et
+      # -------------------------------------------------------------------------
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.blackout_mode_active
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 1: Android Multimedya ekranı parlaklığını %0'a indir
+      # -------------------------------------------------------------------------
+      # HA Companion App → screen_brightness control
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/car/screen_brightness"
+          payload: "0"
+          retain: true
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 2: Tüm konsol/gösterge aydınlatmalarını kapat
+      # -------------------------------------------------------------------------
+      # Araç içi ambiyans ışıkları (WLED ayak/kapı) → kapat
+      - service: light.turn_off
+        target:
+          entity_id:
+            - light.car_wled_footwell
+            - light.car_wled_door
+        data:
+          transition: 1
+
+      # Konsol aydınlatması → minimum (MQTT → araç CAN Bus)
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/car/dashboard_brightness"
+          payload: "5"
+          retain: true
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 3: Minimalist HUD modu aktif
+      # -------------------------------------------------------------------------
+      # HA Lovelace → sadece hız + navigasyon göster, gerisi gizli
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/car/hud_mode"
+          payload: "ON"
+          retain: true
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 4: Jarvis sesli onay
+      # -------------------------------------------------------------------------
+      - delay:
+          milliseconds: 500
+
+      - service: tts.speak
+        target:
+          entity_id: tts.jarvis_voice
+        data:
+          message: "Blackout aktif, efendim. Sadece yol."
+
+  # ===========================================================================
+  # SENARYO 2: Blackout Kapat — Normale Dön
+  # ===========================================================================
+  - id: stealth_blackout_deactivate
+    alias: "Stealth — Blackout Kapat (Normale Dön)"
+    description: >
+      Blackout modundan çıkış: ekran parlaklığı normale, konsol ışıkları geri,
+      HUD modu kapat. "Savaş uçağından normal araca dönüş."
+
+    trigger:
+      - platform: conversation
+        command: "Blackout off"
+        id: voice_blackout_off
+
+      - platform: state
+        entity_id: sensor.steering_wheel_combo
+        to: "vol_up_down_hold"
+        id: steering_combo_off
+
+    condition:
+      - condition: state
+        entity_id: input_boolean.blackout_mode_active
+        state: "on"
+
+    action:
+      # Blackout modunu kapat
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.blackout_mode_active
+
+      # Ekran parlaklığını normale getir (%70)
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/car/screen_brightness"
+          payload: "70"
+          retain: true
+
+      # Konsol aydınlatması normale
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/car/dashboard_brightness"
+          payload: "80"
+          retain: true
+
+      # HUD modu kapat
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/car/hud_mode"
+          payload: "OFF"
+          retain: true
+
+      # Jarvis
+      - service: tts.speak
+        target:
+          entity_id: tts.jarvis_voice
+        data:
+          message: "Blackout kapatıldı. Normale döndü, efendim."

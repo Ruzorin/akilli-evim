@@ -1,0 +1,384 @@
+# =============================================================================
+# immersive_language_tutor — Çalışma Ortamı Otomasyonu (Fiziksel Odaklanma)
+# =============================================================================
+# Bu otomasyon, kullanıcı "Fransızca/İngilizce çalışmaya başlayalım" dediğinde
+# veya NFC "Study Book" okutulduğunda odayı fiziksel bir "dil kapsülü"ne çevirir.
+#
+# 🎯 "FİZİKSEL ÇALIŞMA KAPSÜLÜ" MANTIĞI:
+# =============================================================================
+# Bu modül EKSTRA DONANIM GEREKTİRMEZ. Mevcut altyapıyı kullanır:
+#   - WLED (Modül 10) → "Deep Focus" modu (soğuk beyaz, 5000K)
+#   - Klima (Modül 8) → serin, uyanık tutan sıcaklık
+#   - Difüzör (Modül 9) → odaklanma kokusu (biberiye/limon) veya kapat
+#   - Spatial Audio (Modül 5) → kelimesiz Lo-Fi/Binaural Beats %10
+#   - Magic Mirror (Modül 4) → kelime listesi göster
+#   - Jarvis Core (Modül 1) → Dil Eğitmeni kişiliğine geç
+#
+# Yazılımın gücüyle "fiziksel bir çalışma kapsülü" yaratır.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# INPUT SELECT — Hedef dil seçimi
+# -----------------------------------------------------------------------------
+input_select:
+  language_tutor_target:
+    name: "Language Tutor Target"
+    options:
+      - "off"
+      - "english"
+      - "french"
+    initial: "off"
+    icon: mdi:school
+
+# -----------------------------------------------------------------------------
+# INPUT BOOLEAN — Dil eğitmeni modu aktif
+# -----------------------------------------------------------------------------
+input_boolean:
+  language_tutor_active:
+    name: "Language Tutor Mode"
+    icon: mdi:book-open-variant
+    initial: off
+
+# -----------------------------------------------------------------------------
+# OTOMASYONLAR
+# -----------------------------------------------------------------------------
+automation:
+  # ===========================================================================
+  # SENARYO 1: Dil Çalışma Modu Başlat
+  # ===========================================================================
+  - id: language_tutor_start
+    alias: "Language Tutor — Çalışma Modu Başlat"
+    description: >
+      Kullanıcı "Jarvis, Fransızca/İngilizce çalışmaya başlayalım" dediğinde
+      VEYA masadaki NFC okuyucuya "Study Book" okutulduğunda odayı fiziksel
+      bir dil kapsülüne çevirir.
+
+      🎯 YAZILIM GÜCÜYLE FİZİKSEL KAPSÜL:
+      Ekstra donanım YOK. Mevcut WLED, klima, difüzör, spatial audio ve
+      magic mirror altyapısı yazılım ile "çalışma kapsülü" yaratır.
+
+    trigger:
+      # -------------------------------------------------------------------------
+      # Tetikleyici 1: Jarvis ses komutu — Fransızca
+      # -------------------------------------------------------------------------
+      - platform: conversation
+        command: "Fransızca çalışmaya başlayalım"
+        id: voice_french
+
+      # -------------------------------------------------------------------------
+      # Tetikleyici 2: Jarvis ses komutu — İngilizce
+      # -------------------------------------------------------------------------
+      - platform: conversation
+        command: "İngilizce çalışmaya başlayalım"
+        id: voice_english
+
+      # -------------------------------------------------------------------------
+      # Tetikleyici 3: NFC "Study Book" etiketi
+      # -------------------------------------------------------------------------
+      - platform: tag
+        id: "nfc_study_book"
+        # Masadaki NFC okuyucuya "Study Book" etiketi okutulduğunda
+
+    condition:
+      # Dil eğitmeni modu zaten aktif değilse
+      - condition: state
+        entity_id: input_boolean.language_tutor_active
+        state: "off"
+
+    action:
+      # -------------------------------------------------------------------------
+      # AKSİYON 0: Dil seç ve modu aktif et
+      # -------------------------------------------------------------------------
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.id == 'voice_french' }}"
+            sequence:
+              - service: input_select.select_option
+                target:
+                  entity_id: input_select.language_tutor_target
+                data:
+                  option: "french"
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.id == 'voice_english' }}"
+            sequence:
+              - service: input_select.select_option
+                target:
+                  entity_id: input_select.language_tutor_target
+                data:
+                  option: "english"
+        # NFC tetikleyici → varsayılan Fransızca (Kanada/Quebec hedefi)
+        default:
+          - service: input_select.select_option
+            target:
+              entity_id: input_select.language_tutor_target
+            data:
+              option: "french"
+
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.language_tutor_active
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 1: IŞIKLAR — WLED "Deep Focus" (Soğuk Beyaz / 5000K)
+      # -------------------------------------------------------------------------
+      # 🎨 Soğuk beyaz (5000K): Zihin açıcı, uyanıklık artırıcı.
+      # Sıcak amber (2700K) = rahatlama/gece → çalışma için YANLIŞ.
+      # Soğuk beyaz = ofis/okul aydınlatması → odaklanma için DOĞRU.
+      #
+      # WLED "Deep Focus" preset (Modül 10'daki Preset 2) kullanılır.
+      # Ama renk koyu mavi yerine SOĞUK BEYAZ olarak ayarlanır.
+      - service: light.turn_on
+        target:
+          entity_id: light.wled_ambient
+        data:
+          rgb_color: [200, 220, 255] # Soğuk beyaz (5000K hissi)
+          brightness: 180 # %70 — net, çalışma seviyesi
+          effect: "Solid" # Sabit — efekt yok, dikkat dağıtma
+          transition: 5
+
+      # Ana ışıkları da soğuk beyaz, %80 parlaklık
+      - service: light.turn_on
+        target:
+          entity_id:
+            - light.ceiling_light
+            - light.room_main_lights
+        data:
+          brightness_pct: 80
+          color_temp: 200 # 200 mireds ≈ 5000K (soğuk beyaz)
+          transition: 5
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 2: İKLİM & KOKU — Uyanık tut, odaklan
+      # -------------------------------------------------------------------------
+      # Klima: 21°C cool, fan "low" (sessiz ama serin)
+      # 21°C: Çalışma için ideal — çok soğuk değil, çok sıcak değil.
+      # Sıcak = uyku hissi; soğuk = uyanıklık.
+      - service: climate.set_temperature
+        target:
+          entity_id: climate.room_ac
+        data:
+          temperature: 21
+          hvac_mode: cool
+
+      - service: climate.set_fan_mode
+        target:
+          entity_id: climate.room_ac
+        data:
+          fan_mode: low # Sessiz fan — dikkat dağıtma
+
+      # Difüzör: Odaklanma kokusu (biberiye/limon) veya kapat
+      # 🎨 Biberiye = hafıç güçlendirici, limon = zihin açıcı
+      # Eğer odaklanma esansı yoksa → difüzörü kapat (koku dikkat dağıtmasın)
+      - choose:
+          - conditions:
+              # Eğer difüzörde odaklanma esansı varsa aç
+              - condition: template
+                value_template: "{{ is_state('select.diffuser_scene', 'focus') }}"
+            sequence:
+              - service: switch.turn_on
+                target:
+                  entity_id: switch.smart_diffuser_power
+              - delay:
+                  milliseconds: 500
+              - service: light.turn_off
+                target:
+                  entity_id: light.diffuser_led
+        # Odaklanma esansı yoksa → difüzörü kapat
+        default:
+          - service: switch.turn_off
+            target:
+              entity_id: switch.smart_diffuser_power
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 3: MEDYA — Dikkat dağıtan her şeyi kapat
+      # -------------------------------------------------------------------------
+      # Projeksiyonu kapat (görsel dikkat dağıtma)
+      - service: script.scene_projection_off
+
+      # TV'yi kapat (varsa)
+      - service: script.tv_power_toggle
+      # (TV zaten kapalıysa bu açar — kontrol için power_sensor kullan)
+
+      # Spatial Audio: Kelimesiz, odaklanma artırıcı "Binaural Beats" %10
+      # 🎵 Binaural Beats: Belirli frekanslarda stereo ses → beyin dalgalarını
+      # odaklanma frekansına (beta/gamma) çeker. Kelimesiz → dikkat dağıtma.
+      - service: input_select.select_option
+        target:
+          entity_id: input_select.spatial_audio_mood
+        data:
+          option: "lofi_focus"
+
+      - service: script.spatial_play_mood
+        data:
+          target_volume: 0.10 # %10 — çok kısık, arka plan
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 4: Jarvis Dil Eğitmeni kişiliğine geç
+      # -------------------------------------------------------------------------
+      # tutor_persona_prompt.yaml'deki system prompt'u Jarvis'e yükle
+      # (MQTT üzerinden jarvis_core Python'a gönder)
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/persona/switch"
+          payload: "language_tutor"
+          retain: true
+
+      # Duygu profili: "authoritative" (net, eğitmen tonu)
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/voice/emotion"
+          payload: "authoritative"
+
+      # Magic Mirror'a "Study Mode" mesajı gönder
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/mirror/message"
+          payload: '{"text": "Language Tutor Mode. Let us begin.", "duration": 5}'
+
+      # Magic Mirror'da kelime listesini aktif et
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/mirror/vocabulary"
+          payload: "ON"
+          retain: true
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 5: Jarvis açılış konuşması (hedef dilde)
+      # -------------------------------------------------------------------------
+      - delay:
+          seconds: 3 # Ortamın oturması için bekle
+
+      - choose:
+          # Fransızca açılış
+          - conditions:
+              - condition: state
+                entity_id: input_select.language_tutor_target
+                state: "french"
+            sequence:
+              - service: tts.speak
+                target:
+                  entity_id: tts.jarvis_voice
+                data:
+                  message: "Bienvenue. Aujourd'hui, nous parlons en français. Pas de turc. Prêt? Commence par te présenter."
+
+          # İngilizce açılış
+          - conditions:
+              - condition: state
+                entity_id: input_select.language_tutor_target
+                state: "english"
+            sequence:
+              - service: tts.speak
+                target:
+                  entity_id: tts.jarvis_voice
+                data:
+                  message: "Welcome. Today, we speak only English. No Turkish. Ready? Start by introducing yourself."
+
+  # ===========================================================================
+  # SENARYO 2: Dil Çalışma Modu Kapat
+  # ===========================================================================
+  - id: language_tutor_stop
+    alias: "Language Tutor — Çalışma Modu Kapat"
+    description: >
+      Dil çalışma modunu kapatır, odayı normale döndürür ve Jarvis'i
+      varsayılan kişiliğine geri çevirir.
+
+    trigger:
+      # -------------------------------------------------------------------------
+      # Tetikleyici 1: Jarvis ses komutu
+      # -------------------------------------------------------------------------
+      - platform: conversation
+        command: "çalışma modunu kapat"
+        id: voice_stop
+
+      # -------------------------------------------------------------------------
+      # Tetikleyici 2: 2 saat otomatik kapatma (uzun çalışma molası)
+      # -------------------------------------------------------------------------
+      - platform: state
+        entity_id: input_boolean.language_tutor_active
+        to: "on"
+        for:
+          hours: 2
+        id: auto_stop
+
+    condition:
+      - condition: state
+        entity_id: input_boolean.language_tutor_active
+        state: "on"
+
+    action:
+      # Modu kapat
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.language_tutor_active
+
+      # Hedef dili "off" yap
+      - service: input_select.select_option
+        target:
+          entity_id: input_select.language_tutor_target
+        data:
+          option: "off"
+
+      # Jarvis'i varsayılan kişiliğe döndür
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/persona/switch"
+          payload: "default"
+          retain: true
+
+      # Magic Mirror kelime listesini kapat
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/mirror/vocabulary"
+          payload: "OFF"
+          retain: true
+
+      # Müziği fade-out ile kapat
+      - service: script.audio_fade_out_stop
+        data:
+          duration: 5
+
+      # WLED'i kapat
+      - service: light.turn_off
+        target:
+          entity_id: light.wled_ambient
+        data:
+          transition: 5
+
+      # Işıkları normale döndür
+      - service: light.turn_on
+        target:
+          entity_id:
+            - light.ceiling_light
+            - light.room_main_lights
+        data:
+          brightness_pct: 100
+          color_temp: 250 # 4000K (nötr beyaz)
+          transition: 5
+
+      # Klima normal sıcaklığa
+      - service: climate.set_temperature
+        target:
+          entity_id: climate.room_ac
+        data:
+          temperature: 24
+          hvac_mode: cool
+
+      # Jarvis kapanış konuşması
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.id == 'auto_stop' }}"
+            sequence:
+              - service: tts.speak
+                target:
+                  entity_id: tts.jarvis_voice
+                data:
+                  message: "Good session. Two hours is enough. Rest your mind. We continue tomorrow."
+        default:
+          - service: tts.speak
+            target:
+              entity_id: tts.jarvis_voice
+            data:
+              message: "Session ended. Well done. Take a break."

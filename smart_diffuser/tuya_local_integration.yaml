@@ -1,0 +1,213 @@
+# =============================================================================
+# smart_diffuser — LocalTuya Entegrasyon Konfigürasyonu
+# =============================================================================
+# Bu dosya, Tuya difüzörün Home Assistant'a BULUT GECİKMESİ olmadan
+# (local network üzerinden) nasıl bağlanacağını gösterir.
+#
+# 🚨 NEDEN LOCALTUYA (BULUT DEĞİL)?
+# =============================================================================
+# Tuya'nın resmi bulut entegrasyonu, komutların Tuya sunucularına gidip
+# geri gelmesini gerektirir → 2-5 saniye gecikme. Misafir odaya girip
+# 5 saniye sonra koku gelmeye başlarsa, "sihir" bozulur.
+#
+# LocalTuya, difüzörle doğrudan yerel ağ üzerinden haberleşir → <100ms gecikme.
+# Komut anında çalışır, otomasyonlar akıcı olur.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# ADIM 1: Tuya IoT Platform'da API Anahtarı Alma
+# -----------------------------------------------------------------------------
+# LocalTuya, cihazları yerel ağda keşfetmek için Tuya Cloud API'sine
+# ihtiyaç duyar (cihazın local key'ini almak için).
+#
+# 1. https://iot.tuya.com adresine git ve kayıt ol
+# 2. Cloud → Projects → "Create Project" tıkla
+# 3. Proje adı: "Home Assistant"
+# 4. Data Center: "Western Europe" (veya size en yakın bölge)
+# 5. Proje oluşturulduktan sonra:
+#    - Access ID → "client_id" (aşağıya yaz)
+#    - Access Secret → "client_secret" (aşağıya yaz)
+# 6. "Devices" sekmesinde difüzörünüzün "Device ID"sini not et
+# 7. "Linked Devices" → Tuya Smart app'inizdeki hesabı bağla
+#
+# Bu bilgileri HA'ya iki şekilde verebilirsiniz:
+#   A) LocalTuya UI entegrasyonu (Settings → Devices → Add → LocalTuya)
+#   B) Aşağıdaki YAML konfigürasyonu (configuration.yaml'a import edilir)
+
+# -----------------------------------------------------------------------------
+# ADIM 2: LocalTuya YAML Konfigürasyonu
+# -----------------------------------------------------------------------------
+# Bu blok configuration.yaml'a "tuya_local: !include smart_diffuser/tuya_local_integration.yaml"
+# şeklinde import edilir VEYA doğrudan configuration.yaml'a kopyalanır.
+#
+# ⚠️ ÖNEMLİ: client_id, client_secret ve device_id değerlerini
+#    kendi Tuya IoT Platform bilgilerinizle değiştirin.
+# -----------------------------------------------------------------------------
+
+tuya_local:
+  # Tuya Cloud API kimlik bilgileri (local key almak için)
+  # Bu bilgiler Tuya IoT Platform'dan alınır
+  cloud:
+    region: "eu" # eu, us, cn, in (size en yakın bölge)
+    client_id: "YOUR_TUYA_CLIENT_ID"
+    client_secret: "YOUR_TUYA_CLIENT_SECRET"
+
+  # Difüzör cihaz tanımı
+  devices:
+    - host: 192.168.1.105 # Difüzörün yerel IP adresi (GL-MT3000 ağından)
+      device_id: "YOUR_TUYA_DEVICE_ID" # Tuya IoT Platform'dan alınan Device ID
+      local_key: "YOUR_LOCAL_KEY" # LocalTuya tarafından otomatik alınır
+      protocol_version: "3.4" # Tuya protokol sürümü (çoğu cihaz 3.3 veya 3.4)
+      friendly_name: "Smart Diffuser"
+      friendly_name_local: "Akıllı Difüzör"
+
+      # -------------------------------------------------------------------------
+      # ENTITY EŞLEME — Difüzör fonksiyonlarını HA entity'lerine bağla
+      # -------------------------------------------------------------------------
+      # Tuya cihazları "DP (Data Point)" adı verilen numaralandırılmış
+      # fonksiyonlara sahiptir. Her DP bir özelliği kontrol eder.
+      # Difüzör için tipik DP'ler:
+      #   DP 1  → Aç/Kapa (switch)
+      #   DP 2  → Buhar hızı (enum: low, medium, high, continuous)
+      #   DP 4  → RGB ışık (string: "rrggbb0sss" formatında)
+      #   DP 5  → Işık aç/kapa (bool)
+      #   DP 6  → Zamanlayıcı (enum: 1h, 2h, 3h, 4h)
+      #   DP 7  → Su seviyesi (enum: low, medium, high)
+      # -------------------------------------------------------------------------
+
+      entities:
+        # =====================================================================
+        # ENTITY 1: AÇ/KAPA — Difüzör buharını aç/kapa
+        # =====================================================================
+        # DP 1: Ana güç (buhar püskürtme)
+        # HA entity: switch.smart_diffuser
+        # Otomasyonlarda difüzörü açmak için bu switch kullanılır.
+        - platform: "switch"
+          friendly_name: "Smart Diffuser Power"
+          unique_id: "smart_diffuser_power"
+          dp_id: 1
+          icon: "mdi:scent"
+          # Bu switch ON olduğunda difüzör buhar püskürtmeye başlar
+          # OFF olduğunda durur
+
+        # =====================================================================
+        # ENTITY 2: BUHAR HIZI — Düşük / Orta / Yüksek / Sürekli
+        # =====================================================================
+        # DP 2: Buhar hızı (enum tipinde)
+        # HA entity: select.diffuser_mist_level
+        # Otomasyonlarda "Pre-Arrival" için "high", "Intimacy" için "low" kullanılır.
+        - platform: "select"
+          friendly_name: "Diffuser Mist Level"
+          unique_id: "diffuser_mist_level"
+          dp_id: 2
+          icon: "mdi:tune"
+          # Tuya enum değerleri (cihazdan cihaza değişebilir — Tuya app'inde kontrol et)
+          options:
+            - "low" # Düşük buhar — intim, gece
+            - "medium" # Orta buhar — lounge, barista
+            - "high" # Yüksek buhar — misafir karşılaması (pre-arrival)
+            - "continuous" # Sürekli buhar — maksimum koku
+
+        # =====================================================================
+        # ENTITY 3: RGB IŞIK — Difüzörün kendi LED'i
+        # =====================================================================
+        # DP 4: RGB ışık (string format: "rrggbb0sss")
+        # HA entity: light.diffuser_led
+        #
+        # 🚨 KRİTİK: Bu ışık SÜREKLİ KAPALI TUTULMALIDIR!
+        # =============================================================================
+        # Difüzörün kendi RGB LED'i ucuz, göze batıcı ve genellikle gökkuşağı
+        # döngüsü yapar. Bu, özenle tasarlanmış WLED ambiyans sistemiyle
+        # ÇAKIŞIR ve premium lounge atmosferini BOZAR.
+        #
+        # Odanın TEK ışık kaynağı WLED olmalıdır. Difüzör sadece koku yayar,
+        # ışık VERMEZ. Bu entity'yi tanımlıyoruz çünkü:
+        #   1) Otomasyonlarda difüzör açıldığında ışığı KAPATMAK için
+        #   2) Yanlışlıkla açılırsa kapatmak için
+        #
+        # Tüm otomasyonlarda difüzör açıldıktan hemen sonra:
+        #   - service: light.turn_off
+        #     target: light.diffuser_led
+        # çağrılır.
+        # =============================================================================
+        - platform: "light"
+          friendly_name: "Diffuser LED"
+          unique_id: "diffuser_led"
+          dp_id: 4
+          icon: "mdi:led-off"
+          # Bu ışık her zaman OFF olmalı — otomasyonlar bunu garanti eder
+
+        # =====================================================================
+        # ENTITY 4: IŞIK AÇ/KAPA — RGB ışığın güç anahtarı
+        # =====================================================================
+        # DP 5: Işık aç/kapa (bool)
+        # HA entity: switch.diffuser_light_power
+        # Bazı difüzörlerde RGB'yi tamamen kapatmak için bu switch kullanılır.
+        - platform: "switch"
+          friendly_name: "Diffuser Light Power"
+          unique_id: "diffuser_light_power"
+          dp_id: 5
+          icon: "mdi:lightbulb-off"
+          # Bu switch her zaman OFF olmalı — difüzör ışığı kapalı
+
+        # =====================================================================
+        # ENTITY 5: ZAMANLAYICI — Otomatik kapanma süresi
+        # =====================================================================
+        # DP 6: Zamanlayıcı (enum)
+        # HA entity: select.diffuser_timer
+        # Güvenlik için: difüzör unutulursa otomatik kapanır.
+        - platform: "select"
+          friendly_name: "Diffuser Timer"
+          unique_id: "diffuser_timer"
+          dp_id: 6
+          icon: "mdi:timer"
+          options:
+            - "cancel" # Zamanlayıcı iptal
+            - "1h" # 1 saat sonra kapat
+            - "2h" # 2 saat sonra kapat
+            - "3h" # 3 saat sonra kapat
+            - "4h" # 4 saat sonra kapat
+
+        # =====================================================================
+        # ENTITY 6: SU SEVİYESİ — Düşük su uyarısı
+        # =====================================================================
+        # DP 7: Su seviyesi (enum)
+        # HA entity: sensor.diffuser_water_level
+        # Su azaldığında uyarı verir.
+        - platform: "sensor"
+          friendly_name: "Diffuser Water Level"
+          unique_id: "diffuser_water_level"
+          dp_id: 7
+          icon: "mdi:water"
+          # Değerler: "low", "medium", "high"
+
+# -----------------------------------------------------------------------------
+# ADIM 3: HA Otomasyonlarında Kullanılacak Entity Özeti
+# -----------------------------------------------------------------------------
+# Bu entity'ler LocalTuya kurulduktan sonra HA'da görünür:
+#
+#   switch.smart_diffuser_power    → Difüzör aç/kapa (buhar)
+#   select.diffuser_mist_level      → Buhar hızı (low/medium/high/continuous)
+#   light.diffuser_led             → RGB ışık (HER ZAMAN KAPALI!)
+#   switch.diffuser_light_power    → Işık güç anahtarı (HER ZAMAN KAPALI!)
+#   select.diffuser_timer          → Otomatik kapanma zamanlayıcı
+#   sensor.diffuser_water_level    → Su seviyesi sensörü
+#
+# diffuser_automations.yaml dosyasındaki otomasyonlar bu entity'leri kullanır.
+# -----------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------
+# ALTERNATIF: "DUMB" DİFÜZÖR + AKILLI PRİZ
+# -----------------------------------------------------------------------------
+# Eğer Tuya uyumlu difüzör bulunamazsa, basit bir difüzör + akıllı priz
+# kullanılabilir. Bu durumda LocalTuya gerekmez; Shelly/Tapo priz HA'a
+# doğrudan entegre edilir.
+#
+# Bu senaryoda kullanılabilir entity'ler:
+#   switch.coffee_machine_plug → Difüzör prizi (aç/kapa — buhar hızı yok)
+#
+# Dezavantajlar:
+#   - Buhar hızı ayarı yok (sabit hız)
+#   - RGB ışık kapatılamaz (fiziksel bant ile kapatılmalı)
+#   - Zamanlayıcı yok (HA otomasyonu ile çözülür)
+# -----------------------------------------------------------------------------

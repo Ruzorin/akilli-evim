@@ -1,0 +1,274 @@
+# =============================================================================
+# space_projection — Celestial Otomasyonları (Senaryolar)
+# =============================================================================
+# Bu dosya 3 senaryo için otomasyon tanımlar:
+#
+#   Senaryo 1 (Deep Conversation): Intimacy/Audio modunda projeksiyon aç
+#   Senaryo 2 (Film Modu):         Netflix modunda koyu lacivert sinema
+#   Senaryo 3 (Sleep Fade-Out):    45 dk hareketsizlik → projeksiyon kapat
+#
+# 🎨 "SİNEMATİK LÜKS" MANTIĞI — TÜM OTOMASYONLARDA ORTAK:
+# =============================================================================
+# Tavan projeksiyonu bir "görsel şov" değil, bir "atmosfer aracı"dır.
+# Tüm ayarlar "sinematik lüks" hissini korumak için tasarlanmıştır:
+#
+#   1. SESSİZ AÇILIŞ: Projeksiyon asla "pat diye" açılmaz.
+#      Ana ışıklar kapanır → 3 saniye bekle → projeksiyon açılır.
+#      Bu 3 saniyelik bekleme, "ışıklar sönüyor → yıldızlar beliriyor"
+#      sinematik geçişini yaratır.
+#
+#   2. ÇOK YAVAŞ DÖNÜŞ: Motor hızı her zaman %10 (slow).
+#      Hızlı dönüş = "disko" → göz yorucu, dikkat dağıtıcı.
+#      Yavaş dönüş = "hipnotik" → rahatlatıcı, meditatif.
+#      "Interstellar" filmindeki uzay sahneleri gibi — yavaş, derin, gizemli.
+#
+#   3. KOYU TONLAR: Renkler her zaman koyu (derin mavi, mor, koyu pembe).
+#      Parlak renkler = "çocuk odası" → göz alıcı.
+#      Koyu tonlar = "sinematik" → derinlik hissi.
+#
+#   4. LAZER KAPALI: Yeşil lazer (yıldız) ASLA açılmaz.
+#      Lazer = "oyuncak" → "çocuk odası" hissi.
+#      Sadece nebula = "sinematik" → "Interstellar / Inception" hissi.
+#
+# 🚨 GÖRSEL ŞOVUN NEDEN ÇOK YAVAŞ OLMASI GEREKTİĞİ:
+# =============================================================================
+# İnsan gözü yavaş hareketi "doğal" algılar (bulutlar, dalgalar).
+# Hızlı hareket = "tehlike/uyarı" → kalp atışı artar, stres.
+# Yavaş hareket = "güvenlik/rahatlama" → kalp atışı düşer, sakinlik.
+#
+# Eğer projeksiyon hızlı dönerse → "disko" → göz yorucu, baş dönmesi,
+# dikkat dağıtıcı, "oyuncak" hissi. Misafir "wow" der ama 5 dakika sonra
+# sıkılır ve kapatır.
+#
+# Yavaş dönerse → "hipnotik" → gözü yormaz, derin rahatlama, meditatif.
+# Misafir "wow" der ve saatlerce izler → "premium" deneyim.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# OTOMASYONLAR
+# -----------------------------------------------------------------------------
+automation:
+  # ===========================================================================
+  # SENARYO 1: Deep Conversation / Vibe Transition
+  # ===========================================================================
+  - id: celestial_deep_conversation
+    alias: "Celestial — Deep Conversation (Intimacy/Audio Vibe)"
+    description: >
+      Modül 12 (intimacy_mode) veya Modül 10 (audio_reactive) aktifleştiğinde:
+      Ana ışıklar kapandıktan 3 saniye sonra projeksiyonu SESSİZCE açar.
+      Rengini müziğin ve WLED'lerin tonuna uydurur (kırmızı ortam → koyu mor/pembe).
+      Motor hızını en yavaş seviyeye alarak hipnotik bir etki yaratır.
+
+      🎭 SESSİZ AÇILIŞ: 3 saniye bekleme → "ışıklar sönüyor → yıldızlar beliriyor"
+      sinematik geçişi. "Pat diye" değil, "yavaşça beliriyor" hissi.
+
+    trigger:
+      # -------------------------------------------------------------------------
+      # Tetikleyici 1: Intimacy Sync Mode aktif olduğunda
+      # -------------------------------------------------------------------------
+      - platform: state
+        entity_id: input_boolean.intimacy_sync_active
+        to: "on"
+        id: intimacy_on
+
+      # -------------------------------------------------------------------------
+      # Tetikleyici 2: Audio WLED "Date Lounge" moduna geçtiğinde
+      # -------------------------------------------------------------------------
+      - platform: state
+        entity_id: input_select.audio_wled_mode
+        to: "date_lounge"
+        id: date_lounge_on
+
+    condition:
+      # Projeksiyon şu an kapalıysa (zaten açıksa sadece rengi ayarla)
+      - condition: state
+        entity_id: switch.galaxy_projector_power
+        state: "off"
+
+    action:
+      # -------------------------------------------------------------------------
+      # AKSİYON 1: Ana ışıkların kapanması için 3 saniye bekle
+      # -------------------------------------------------------------------------
+      # 🎭 3 saniye bekleme: Intimacy/Date modu tetiklendiğinde ana ışıklar
+      # kapanır (diğer modüller tarafından). Bu 3 saniyelik bekleme, ışıkların
+      # tamamen sönmesini sağlar → sonra projeksiyon "karanlıkta belirir".
+      # "Işıklar sönüyor → yıldızlar beliriyor" → sinematik geçiş.
+      - delay:
+          seconds: 3
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 2: Sahne seç — ortamın tonuna göre
+      # -------------------------------------------------------------------------
+      # Intimacy modu → "Romantic Nebula" (koyu pembe/mor)
+      # Date Lounge modu → "Romantic Nebula" (mor)
+      #
+      # 🎨 Renk seçimi: Ortam kırmızı tonlardaysa (WLED amber/kırmızı),
+      # projeksiyon koyu mor/pembe seçilir → renk uyumu.
+      # Eğer ortam mavi tonlardaysa, projeksiyon derin mavi seçilir.
+      - choose:
+          # Intimacy modu → Koyu pembe (tutkulu, romantik)
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.id == 'intimacy_on' }}"
+            sequence:
+              - service: script.scene_romantic_nebula
+              # Motor hızını en yavaş seviyeye al (%10 — hipnotik)
+              # scene_romantic_nebula zaten "slow" ayarlıyor ama teyit:
+              - service: select.select_option
+                target:
+                  entity_id: select.galaxy_projector_speed
+                data:
+                  option: "slow"
+
+          # Date Lounge modu → Mor (gizem, romantik)
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.id == 'date_lounge_on' }}"
+            sequence:
+              - service: script.scene_romantic_nebula
+              # Rengi mor olarak ayarla (date lounge için mor daha uygun)
+              - service: select.select_option
+                target:
+                  entity_id: select.galaxy_projector_color
+                data:
+                  option: "purple"
+              - service: select.select_option
+                target:
+                  entity_id: select.galaxy_projector_speed
+                data:
+                  option: "slow"
+
+      # -------------------------------------------------------------------------
+      # 🚨 Yeşil lazeri KAPAT (sinematik lüksü koru)
+      # -------------------------------------------------------------------------
+      # Her durumda lazer kapalı kalmalı. Otomasyon teyit eder.
+      - service: switch.turn_off
+        target:
+          entity_id: switch.galaxy_projector_laser
+
+  # ===========================================================================
+  # SENARYO 2: Film Modu Entegrasyonu — Cinema Night
+  # ===========================================================================
+  - id: celestial_cinema_night
+    alias: "Celestial — Cinema Night (Film Modu)"
+    description: >
+      Modül 8'deki "Netflix" modu tetiklendiğinde, tavan projeksiyonunu
+      "Koyu Lacivert" rengine alarak sinema salonu/açık hava sineması
+      ambiyansı yaratır.
+
+      🎭 Koyu lacivert + çok loş (%20): Sinema salonu tavanı gibi —
+      karanlık, ama tamamen siyah değil. "Açık hava sineması" hissi:
+      yıldızlar tavanda, film ekranda.
+
+    trigger:
+      # -------------------------------------------------------------------------
+      # Tetikleyici: Film Modu (invisible_remote modülü) aktif olduğunda
+      # -------------------------------------------------------------------------
+      - platform: state
+        entity_id: input_boolean.movie_mode_active
+        to: "on"
+        id: movie_mode_on
+
+    condition:
+      # Projeksiyon kapalıysa aç, açıksa rengi ayarla
+      - condition: template
+        value_template: "{{ true }}"
+
+    action:
+      # -------------------------------------------------------------------------
+      # AKSİYON: "Cinema Night" sahnesini çağır
+      # -------------------------------------------------------------------------
+      # Koyu lacivert nebula, çok yavaş dönüş, %20 parlaklık, lazer kapalı.
+      # Sinema salonu tavanı = karanlık ama "derin" → film ekranda ön planda,
+      # tavan arka planda "uzay" hissi yaratır.
+      - service: script.scene_cinema_night
+
+      # 🚨 Lazeri teyit kapat
+      - service: switch.turn_off
+        target:
+          entity_id: switch.galaxy_projector_laser
+
+  # ===========================================================================
+  # SENARYO 3: Sleep Fade-Out — 45 Dakika Hareketsizlik → Kapat
+  # ===========================================================================
+  - id: celestial_sleep_fade_out
+    alias: "Celestial — Sleep Fade-Out (45dk Hareketsizlik)"
+    description: >
+      Odadaki hareket sensörü (radar) yatakta 45 dakika boyunca sabit
+      kalındığını (uykuya dalındığını) algılarsa, tavan projeksiyonunu
+      otomatik kapatır.
+
+      🎭 45 dakika: İnsan uykuya dalma süresi ortalama 10-20 dakikadır.
+      45 dakika, "derin uykuya geçildi" ihtimalinin yüksek olduğu süredir.
+      Projeksiyon kapanır → karanlık → melatonin salınımı desteklenir →
+      derin uyku.
+
+      🚨 Neden fade-out değil, direkt kapatma?
+      Projeksiyon cihazının "fade-out" özelliği yoktur (sadece aç/kapa).
+      Ama 45 dakikalık bekleme, kişinin zaten uykuda olduğunu garanti eder →
+      ani kapanma hissedilmez. Kişi uykudadır → projeksiyon kapanır →
+      karanlık → kişi fark etmeden derin uyku.
+
+    trigger:
+      # -------------------------------------------------------------------------
+      # Tetikleyici: Yatakta 45 dakika boyunca "hareketli varlık" sabit
+      # -------------------------------------------------------------------------
+      # LD2410 radarın "still_distance" sensörü, yatakta duran bir varlık
+      # (kişi uyuyor) algıladığında "on" durumunda kalır.
+      # Eğer 45 dakika boyunca "moving" hareket yoksa (sadece "still" varlık)
+      # → kişi uykuya dalmış demektir.
+      #
+      # bed_feet_presence OFF (ayak yere değmiyor) + 45 dk
+      # → kişi yatakta, uyuyor
+      - platform: state
+        entity_id: binary_sensor.bed_feet_presence
+        to: "off"
+        for:
+          minutes: 45
+        id: sleep_detected
+
+    condition:
+      # Koşul 1: Projeksiyon açık olmalı (kapalıysa kapatmaya gerek yok)
+      - condition: state
+        entity_id: switch.galaxy_projector_power
+        state: "on"
+
+      # Koşul 2: Gece (güneş batmış)
+      - condition: sun
+        after: sunset
+
+      # Koşul 3: Intimacy modu kapalı (intimacy modunda kapatma)
+      - condition: state
+        entity_id: input_boolean.intimacy_sync_active
+        state: "off"
+
+      # Koşul 4: Film modu kapalı (film modunda kapatma)
+      - condition: state
+        entity_id: input_boolean.movie_mode_active
+        state: "off"
+
+    action:
+      # -------------------------------------------------------------------------
+      # AKSİYON: Projeksiyonu kapat
+      # -------------------------------------------------------------------------
+      # 45 dakikalık bekleme, kişinin uykuda olduğunu garanti eder.
+      # Projeksiyon kapanır → karanlık → melatonin → derin uyku.
+      #
+      # 🎭 Kişi uykudadır, projeksiyon kapanışını "fark etmez".
+      # Sadece sabah uyandığında "projeksiyon kapalıydı" → "otomatik kapanmış"
+      # → "sistem beni düşündü" → premium his.
+      - service: script.scene_projection_off
+
+      # Opsiyonel: WLED'i de kapat (tam karanlık için)
+      - service: light.turn_off
+        target:
+          entity_id: light.wled_ambient
+        data:
+          transition: 10 # 10 saniyede yavaşça sön → ani karanlık değil
+
+      # Opsiyonel: Yatak altı ışığı kapat
+      - service: light.turn_off
+        target:
+          entity_id: light.underbed_cob_light
+        data:
+          transition: 10

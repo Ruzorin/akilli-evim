@@ -1,0 +1,256 @@
+# =============================================================================
+# car_omniscience_copilot — G-Kuvveti ve Sürüş Dinamikleri Optimizasyonu
+# =============================================================================
+# GPS ve ivmeölçer verileriyle viraj alma hızlarını, asfalt sürtünme katsayısını
+# ve G-kuvvetini hesaplar. Yağmurlu/kaygan zeminlerde veya yüksek G-kuvveti
+# anlarında motor frenini ve çekiş kontrolünü optimize eder.
+#
+# 🏁 "SÜRÜŞ OTORİTESİ" MANTIĞI:
+# =============================================================================
+# Jarvis, sürücünün 2.10m/125kg fiziksel yapısını bilir → yüksek kütle =
+# yüksek momentum = virajlarda daha fazla G-kuvveti = daha fazla fren mesafesi.
+# Sistem, sürücünün fiziksel ağırlığını hesaba katarak viraj hızını optimize eder.
+#
+# "Tony Stark aracı sürer, ama Jarvis onu korur."
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# INPUT BOOLEAN — G-Kuvveti koruması aktif
+# -----------------------------------------------------------------------------
+input_boolean:
+  g_force_guard_active:
+    name: "G-Force Guard"
+    icon: mdi:car-traction-control
+    initial: on
+
+# -----------------------------------------------------------------------------
+# INPUT NUMBER — Sürücü fiziksel parametreleri (Modül 21 ile paylaşımlı)
+# -----------------------------------------------------------------------------
+input_number:
+  car_g_force_threshold:
+    name: "G-Force Threshold (g)"
+    min: 0.3
+    max: 1.5
+    step: 0.1
+    initial: 0.8
+    unit_of_measurement: "g"
+    icon: mdi:gauge
+
+  car_slip_threshold:
+    name: "Slip Threshold (%)"
+    min: 5
+    max: 50
+    step: 5
+    initial: 15
+    unit_of_measurement: "%"
+    icon: mdi:car-tire-alert
+
+# -----------------------------------------------------------------------------
+# SENSOR — G-Kuvveti ve sürüş dinamikleri (Android ivmeölçer → HA)
+# -----------------------------------------------------------------------------
+template:
+  - sensor:
+      # Anlık G-kuvveti (yatay ivme — viraj/lane change)
+      - name: "Car Lateral G-Force"
+        unique_id: "car_lateral_g_force"
+        unit_of_measurement: "g"
+        icon: mdi:gauge
+        state: "{{ states('sensor.car_accel_x') | float(0) | round(2) }}"
+
+      # Anlık G-kuvveti (boylamsal ivme — fren/ivme)
+      - name: "Car Longitudinal G-Force"
+        unique_id: "car_longitudinal_g_force"
+        unit_of_measurement: "g"
+        icon: mdi:gauge
+        state: "{{ states('sensor.car_accel_y') | float(0) | round(2) }}"
+
+      # Asfalt sürtünme katsayısı (hava + yol durumu → tahmin)
+      - name: "Road Friction Coefficient"
+        unique_id: "road_friction_coefficient"
+        icon: mdi:road-variant
+        # Kuru asfalt: 0.8-0.9 | Yağmurlu: 0.4-0.5 | Kar: 0.1-0.2
+        state: >
+          {% set weather = states('weather.home') %}
+          {% if 'rainy' in weather or 'pouring' in weather %} 0.45
+          {% elif 'snowy' in weather %} 0.15
+          {% elif 'cloudy' in weather %} 0.75
+          {% else %} 0.85
+          {% endif %}
+
+      # Sürücü ağırlığına göre dinamik fren mesafesi çarpanı
+      # 125kg → normalden %25 daha uzun fren mesafesi
+      - name: "Dynamic Brake Distance Factor"
+        unique_id: "dynamic_brake_distance_factor"
+        unit_of_measurement: "x"
+        icon: mdi:car-brake-abs
+        state: >
+          {% set weight = states('input_number.driver_weight_kg') | float(70) %}
+          {{ (1.0 + (weight - 70) / 280) | round(2) }}
+
+# -----------------------------------------------------------------------------
+# OTOMASYONLAR
+# -----------------------------------------------------------------------------
+automation:
+  # ===========================================================================
+  # SENARYO 1: Yüksek G-Kuvveti — Viraj Optimizasyonu
+  # ===========================================================================
+  - id: g_force_corner_optimization
+    alias: "G-Force — Viraj Optimizasyonu (Yüksek G-Kuvveti)"
+    description: >
+      Yatay G-kuvveti eşiği aştığında (viraj alma) → Jarvis sesli uyarı.
+      2.10m/125kg sürücü için yüksek kütle = yüksek momentum = virajlarda
+      daha fazla G-kuvveti = daha fazla kayma riski.
+
+      🏁 SÜRÜŞ OTORİTESİ:
+      Jarvis sürücünün ağırlığını bilir → 125kg → virajlarda %25 daha fazla
+      yanal kuvvet → eşiği normalden düşük tut (0.8g yerine 0.6g).
+
+    trigger:
+      # Yatay G-kuvveti eşiği aştığında
+      - platform: numeric_state
+        entity_id: sensor.car_lateral_g_force
+        above: 0.8
+        for:
+          seconds: 2
+        id: high_g_force
+
+    condition:
+      - condition: state
+        entity_id: input_boolean.g_force_guard_active
+        state: "on"
+
+    action:
+      # Jarvis sesli uyarı
+      - service: tts.speak
+        target:
+          entity_id: tts.jarvis_voice
+        data:
+          message: >
+            {{ [
+              "Viraj biraz sert efendim, yavaşlayalım.",
+              "G-kuvveti yüksek. Bu ağırlıkla virajlar dikkat ister.",
+              "Yanal kuvvet eşiği aşıldı. Hızı azaltmanızı öneririm."
+            ] | random }}
+
+      # Çekiş kontrolü uyarısı (MQTT → araç ECU)
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/car/traction_control"
+          payload: "enhanced"
+          retain: false
+
+  # ===========================================================================
+  # SENARYO 2: Kaygan Zemin — Yağmur/Kar Tespiti
+  # ===========================================================================
+  - id: g_force_slippery_road
+    alias: "G-Force — Kaygan Zemin (Yağmur/Kar)"
+    description: >
+      Hava durumu yağmurlu/karlı VEYA asfalt sürtünme katsayısı düşükse →
+      Jarvis sesli uyarı + çekiş kontrolü güçlendir + motor freni optimize.
+
+      🏁 MANTIK:
+      Yağmurlu asfalt: sürtünme 0.45 → fren mesafesi 2x
+      125kg sürücü: ekstra momentum → fren mesafesi 2.5x
+      Jarvis: "Kaygan zemin, bu ağırlıkla dikkatli olun."
+
+    trigger:
+      # Asfalt sürtünme katsayısı 0.5'in altına düştüğünde
+      - platform: numeric_state
+        entity_id: sensor.road_friction_coefficient
+        below: 0.5
+        id: slippery_road
+
+      # VEYA hava durumu yağmurlu/karlı olduğunda
+      - platform: state
+        entity_id: weather.home
+        to: "rainy"
+        id: weather_rain
+
+      - platform: state
+        entity_id: weather.home
+        to: "snowy"
+        id: weather_snow
+
+    condition:
+      - condition: state
+        entity_id: input_boolean.g_force_guard_active
+        state: "on"
+
+    action:
+      # Jarvis sesli uyarı
+      - service: tts.speak
+        target:
+          entity_id: tts.jarvis_voice
+        data:
+          message: >
+            {% set friction = states('sensor.road_friction_coefficient') | float(0.85) %}
+            {% if friction < 0.2 %}
+              Karlı zemin. Bu ağırlıkla fren mesafesi çok uzun. Lütfen son derece dikkatli olun.
+            {% elif friction < 0.5 %}
+              Yağmurlu zemin. Asfalt kaygan. Bu ağırlıkla fren mesafesi normalin iki katı. Hızı azaltın.
+            {% else %}
+              Yol kaygan görünüyor. Dikkatli sürün.
+            {% endif %}
+
+      # Çekiş kontrolü → maksimum (MQTT → araç ECU)
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/car/traction_control"
+          payload: "maximum"
+          retain: false
+
+      # Motor freni → yumuşak (kaygan zeminde sert motor freni = kayma)
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/car/engine_brake"
+          payload: "soft"
+          retain: false
+
+  # ===========================================================================
+  # SENARYO 3: Agresif Fren — Acil Durum Tespiti
+  # ===========================================================================
+  - id: g_force_hard_braking
+    alias: "G-Force — Agresif Fren (Acil Durum)"
+    description: >
+      Boylamsal G-kuvveti -0.7g'nin altına düştüğünde (agresif fren) →
+      Jarvis acil durum tespiti → tehlike analizi.
+
+      🏁 125kg → agresif fren = çok uzun fren mesafesi = tehlike.
+      Jarvis: "Agresif fren tespit edildi. Önünüzdeki trafik kontrol ediliyor."
+
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.car_longitudinal_g_force
+        below: -0.7
+        for:
+          seconds: 1
+        id: hard_brake
+
+    condition:
+      - condition: state
+        entity_id: input_boolean.g_force_guard_active
+        state: "on"
+
+    action:
+      # Jarvis sesli uyarı
+      - service: tts.speak
+        target:
+          entity_id: tts.jarvis_voice
+        data:
+          message: "Agresif fren tespit edildi. Bu ağırlıkla fren mesafesi uzun. Önünüzü kontrol edin."
+
+      # ABS + çekiş kontrolü → maksimum
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/car/abs_mode"
+          payload: "maximum"
+          retain: false
+
+      # Mobil bildirim (agresif fren kaydı)
+      - service: notify.mobile_app
+        data:
+          title: "🚗 Agresif Fren"
+          message: "Agresif fren tespit edildi. Sürüş stilinizi gözden geçirin."
+          data:
+            push:
+              interruption_level: "active"

@@ -1,0 +1,17 @@
+# audio_reactive_wled - Sese Duyarlı Ambiyans Aydınlatması
+# WLED + I2S mikrofon tabanlı ses reaktif LED kontrolü
+
+wled:
+  ip: "192.168.1.104"
+  segment_count: 2
+
+audio:
+  input_type: "i2s_mic"
+  sample_rate: 44100
+  fft_bins: 16
+
+effects:
+  - "sound_reactive_rainbow"
+  - "bass_pulse"
+  - "frequency_bands"
+  - "calm_ambient"

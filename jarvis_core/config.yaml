@@ -1,0 +1,26 @@
+# jarvis_core - Sistemin Beyni
+# OpenAI API, STT/TTS ve ana orkestrasyon mantığı konfigürasyonu
+
+openai:
+  api_key: "YOUR_OPENAI_API_KEY"
+  model: "gpt-4o"
+  temperature: 0.7
+
+stt:
+  engine: "whisper"
+  model: "base"
+  language: "tr"
+
+tts:
+  engine: "openai"
+  voice: "alloy"
+  speed: 1.0
+
+home_assistant:
+  url: "http://homeassistant.local:8123"
+  token: "YOUR_HA_LONG_LIVED_TOKEN"
+
+mqtt:
+  broker: "mqtt://gl-mt3000.local"
+  port: 1883
+  topic_prefix: "jarvis"

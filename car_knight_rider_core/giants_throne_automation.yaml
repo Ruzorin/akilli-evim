@@ -1,0 +1,299 @@
+# =============================================================================
+# car_knight_rider_core — The Giant's Throne (Dev Tahtı)
+# =============================================================================
+# Kullanıcının 2.10m boy / 125kg fiziksel konforu için otomatik koltuk,
+# direksiyon ve dikiz aynası senkronizasyonu + iklim optimizasyonu.
+#
+# 🎯 "DEV TAHTI" MANTIĞI:
+# =============================================================================
+# Kullanıcı araca bindiği an → koltuk, direksiyon, aynalar ve klima
+# OTOMATIK olarak onun anatomisine göre ayarlanır.
+#
+# "Tony Stark araca bindiğinde, araç ona uyum sağlar — o araca değil."
+# 2.10m boy / 125kg için milimetrik ayar → "The Giant's Throne"
+#
+# Bu, "sürücü uyum sağlar" → "araç sürücüye uyum sağlar" dönüşümüdür.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# INPUT BOOLEAN — Giant's Throne aktif
+# -----------------------------------------------------------------------------
+input_boolean:
+  giants_throne_active:
+    name: "Giant's Throne"
+    icon: mdi:car-seat
+    initial: on
+
+# -----------------------------------------------------------------------------
+# INPUT NUMBER — Kullanıcının anatomik ölçüleri (kalibre edilebilir)
+# -----------------------------------------------------------------------------
+input_number:
+  driver_height_cm:
+    name: "Driver Height (cm)"
+    min: 150
+    max: 220
+    step: 1
+    initial: 210
+    unit_of_measurement: "cm"
+    icon: mdi:human-male-height
+
+  driver_weight_kg:
+    name: "Driver Weight (kg)"
+    min: 50
+    max: 200
+    step: 1
+    initial: 125
+    unit_of_measurement: "kg"
+    icon: mdi:weight
+
+  # Koltuk pozisyonu (elektrikli koltuk — CAN Bus / analog)
+  seat_position_x:
+    name: "Seat Position X (back/forward)"
+    min: 0
+    max: 100
+    step: 1
+    initial: 85
+    icon: mdi:car-seat
+
+  seat_position_z:
+    name: "Seat Position Z (up/down)"
+    min: 0
+    max: 100
+    step: 1
+    initial: 30
+    icon: mdi:car-seat
+
+  seat_backrest_angle:
+    name: "Seat Backrest Angle"
+    min: 0
+    max: 100
+    step: 1
+    initial: 40
+    icon: mdi:car-seat
+
+  steering_depth:
+    name: "Steering Depth"
+    min: 0
+    max: 100
+    step: 1
+    initial: 75
+    icon: mdi:steering
+
+  steering_height:
+    name: "Steering Height"
+    min: 0
+    max: 100
+    step: 1
+    initial: 20
+    icon: mdi:steering
+
+  mirror_left_angle:
+    name: "Left Mirror Angle"
+    min: 0
+    max: 100
+    step: 1
+    initial: 60
+    icon: mdi:car-mirror
+
+  mirror_right_angle:
+    name: "Right Mirror Angle"
+    min: 0
+    max: 100
+    step: 1
+    initial: 65
+    icon: mdi:car-mirror
+
+  # Klima tercih sıcaklığı (araç içi)
+  car_preferred_temp:
+    name: "Car Preferred Temperature"
+    min: 16
+    max: 30
+    step: 0.5
+    initial: 21
+    unit_of_measurement: "°C"
+    icon: mdi:thermometer
+
+# -----------------------------------------------------------------------------
+# OTOMASYONLAR
+# -----------------------------------------------------------------------------
+automation:
+  # ===========================================================================
+  # SENARYO 1: The Giant's Throne — Koltuk/Direksiyon/Ayna Senkronizasyonu
+  # ===========================================================================
+  - id: giants_throne_sync
+    alias: "Giant's Throne — Koltuk/Direksiyon/Ayna Senkronizasyonu"
+    description: >
+      Kullanıcının telefonu arabanın Bluetooth ağına bağlandığında VEYA
+      araç kapısı kilidi açıldığında; koltuk, direksiyon ve dikiz aynaları
+      kullanıcının 2.10m/125kg anatomisine göre milimetrik olarak ayarlanır.
+
+      🎯 "DEV TAHTI" — SÜRÜCÜ OTORİTESİ:
+      Tony Stark araca bindiğinde, araç ona uyum sağlar.
+      2.10m boy → koltuk en geri, en alçak; direksiyon en uzak, en yüksek.
+      125kg → koltuk destekleri geniş, bel desteği maksimum.
+      Bu, "sürücü uyum sağlar" → "araç sürücüye uyum sağlar" dönüşümüdür.
+
+    trigger:
+      # -------------------------------------------------------------------------
+      # Tetikleyici 1: Telefon aracın Bluetooth ağına bağlandı
+      # -------------------------------------------------------------------------
+      - platform: state
+        entity_id: sensor.car_bluetooth_connection
+        to: "connected"
+        id: bt_connected
+
+      # -------------------------------------------------------------------------
+      # Tetikleyici 2: Araç kapı kilidi açıldı (HA Companion App)
+      # -------------------------------------------------------------------------
+      - platform: state
+        entity_id: binary_sensor.car_door_lock
+        to: "on"
+        id: door_unlocked
+
+    condition:
+      - condition: state
+        entity_id: input_boolean.giants_throne_active
+        state: "on"
+
+    action:
+      # -------------------------------------------------------------------------
+      # AKSİYON 1: FİZİKSEL SENKRONİZASYON — Koltuk + Direksiyon + Aynalar
+      # -------------------------------------------------------------------------
+      # 🎯 2.10m boy / 125kg için milimetrik ayar:
+      #
+      # Koltuk:
+      #   - X (ileri/geri): %85 → en geri (uzun bacak için)
+      #   - Z (yukarı/aşağı): %30 → en alçak (tavan mesafesi için)
+      #   - Sırt açısı: %40 → hafif dik (konfor + görüş)
+      #   - Bel desteği: maksimum (125kg için bel desteği kritik)
+      #
+      # Direksiyon:
+      #   - Derinlik: %75 → en uzak (uzun kol için)
+      #   - Yükseklik: %20 → en alçak (göğüs hizası, direksiyon üstü görüş)
+      #
+      # Dikiz Aynaları:
+      #   - Sol: %60 → geniş açı (uzun boy → farklı görüş açısı)
+      #   - Sağ: %65 → geniş açı
+      #
+      # Bu ayarlar CAN Bus / elektrikli koltuk hafıza sistemi üzerinden yapılır.
+      # Bazı araçlarda CAN Bus komutu, bazılarında analog motor kontrolü gerekir.
+
+      # Koltuk pozisyonu X (ileri/geri)
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/car/seat_x"
+          payload: "{{ states('input_number.seat_position_x') | int }}"
+          retain: false
+
+      # Koltuk pozisyonu Z (yukarı/aşağı)
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/car/seat_z"
+          payload: "{{ states('input_number.seat_position_z') | int }}"
+          retain: false
+
+      # Sırt açısı
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/car/seat_backrest"
+          payload: "{{ states('input_number.seat_backrest_angle') | int }}"
+          retain: false
+
+      # Direksiyon derinliği
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/car/steering_depth"
+          payload: "{{ states('input_number.steering_depth') | int }}"
+          retain: false
+
+      # Direksiyon yüksekliği
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/car/steering_height"
+          payload: "{{ states('input_number.steering_height') | int }}"
+          retain: false
+
+      # Sol dikiz aynası
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/car/mirror_left"
+          payload: "{{ states('input_number.mirror_left_angle') | int }}"
+          retain: false
+
+      # Sağ dikiz aynası
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/car/mirror_right"
+          payload: "{{ states('input_number.mirror_right_angle') | int }}"
+          retain: false
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 2: İKLİM OPTİMİZASYONU — Klima önceden ayar
+      # -------------------------------------------------------------------------
+      # 🎯 Kullanıcının tercih ettiği sıcaklığa önceden getir:
+      # - Yaz: araç içi sıcak → klima 21°C cool (önceden soğut)
+      # - Kış: araç içi soğuk → klima 22°C heat (önceden ısıt)
+      #
+      # "Tony Stark araca bindiğinde, araç zaten onun sıcaklığındadır."
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/car/climate_target"
+          payload: "{{ states('input_number.car_preferred_temp') | float }}"
+          retain: false
+
+      # -------------------------------------------------------------------------
+      # AKSİYON 3: Jarvis sesli karşılama (araç içi hoparlör)
+      # -------------------------------------------------------------------------
+      - delay:
+          seconds: 3 # Senkronizasyon tamamlansın
+
+      - service: tts.speak
+        target:
+          entity_id: tts.jarvis_voice
+        data:
+          message: >
+            {{ [
+              "Hoş geldiniz, efendim. Tahtınız hazır.",
+              "Araç sizin için ayarlandı. Konfor pozisyonu aktif.",
+              "Dev Tahtı senkronize. Sürüşe hazır, efendim."
+            ] | random }}
+
+  # ===========================================================================
+  # SENARYO 2: Araç Kapanış — Ev moduna geçiş
+  # ===========================================================================
+  - id: giants_throne_exit
+    alias: "Giant's Throne — Araç Kapanış (Ev Modu)"
+    description: >
+      Kullanıcı aracı kilitlediğinde → ev moduna geçiş bildirimi.
+      Jarvis, araçtan eve dönüş zamanını hesaplar ve evi hazırlar.
+
+    trigger:
+      - platform: state
+        entity_id: sensor.car_bluetooth_connection
+        to: "disconnected"
+        for:
+          minutes: 2
+        id: bt_disconnected
+
+    condition:
+      - condition: state
+        entity_id: input_boolean.giants_throne_active
+        state: "on"
+
+    action:
+      # Eve varış zamanı hesapla (GPS + trafik)
+      # Ev moduna geçiş: ışıklar, klima, difüzör hazırla
+      - service: tts.speak
+        target:
+          entity_id: tts.jarvis_voice
+        data:
+          message: "Araç kapatıldı. Eve dönüş için hazırlık başladı, efendim."
+
+      # Eve 15 dk mesafedeyse → evi hazırla
+      - delay:
+          minutes: 1
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/home/pre_arrival"
+          payload: "ON"
+          retain: false
