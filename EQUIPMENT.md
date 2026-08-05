@@ -27,13 +27,12 @@
 | 2 | Dijital Mikrofon | INMP441 I2S | 1 | ~$5 | Komodin içinde gizli, 24-bit |
 | 3 | IP Kamera (Yüz Tanıma) | TP-Link Tapo C200 | 1 | ~$25 | RTSP, oturma alanı için |
 | 4 | Akıllı Hoparlör | Echo Dot 5. Gen (veya Nest Mini) | 2 | ~$50/çift | Stereo pair (spatial audio) |
-| 5 | OpenAI API | **GPT-5.6-Realtime** + GPT-5.6 Vision | — | ~$15/ay | Doğal dil işleme + görüntü analizi (2026) |
-| 6 | OpenAI Realtime API | **GPT-5.6-Realtime** (WebRTC) | — | ~$0.08/dk | Sıfır gecikme sesli konuşma (2026) |
-| 7 | Anthropic API | **Claude 5 Opus** + **Claude 5 Mythos** + **Claude 5 Fable** | — | ~$12/ay | Felsefe, yaratıcı rol yapma, dil eğitimi (2026) |
-| 8 | Google AI API | **Gemini 3.6 Pro** (2M+ token bağlam) | — | ~$8/ay | Biyometrik analiz, devasa bağlam (2026) |
-| 9 | ElevenLabs TTS | Voice Design 2026 API | — | ~$5/ay | Karizmatik ses ("Adam" voice, duygusal tonlama) |
-| 10 | Whisper STT | OpenAI Whisper 2026 | — | ~$0.004/dk | Ses → metin |
-| 11 | LangGraph 2026 | Agentic Framework | — | $0 | Açık kaynak agent graph (pip install langgraph) |
+| 5 | MiniMax API | **Speech 2.8 Turbo** (sesten-sese, voice cloning) | — | ~$10/ay | Sesten-sese <300ms, voice cloning, duygu kontrol |
+| 6 | DeepSeek API | **DeepSeek V4-Pro** (ağır zeka, kod, özet) | — | ~$1-2/ay | Günlük özet, kod yazma, analiz — çok ucuz |
+| 7 | Qwen-VL API | **Qwen-VL Max** (görüntü analizi) | — | ~$2/ay | Kamera/vision analizi — ucuz |
+| 8 | (Yazılım) | Voice Cloning referans ses (10 sn WAV) | — | $0 | Tek seferlik klonlama, sonra sınırsız |
+| 9 | (Yazılım) | Prompt Caching (hafıza) | — | $0 | DeepSeek özet → MiniMax prompt cache → bedava hafıza |
+| 10 | LangGraph 2026 | Agentic Framework | — | $0 | Açık kaynak agent graph (pip install langgraph) |
 | 9 | Python Sunucu | Raspberry Pi 4 (4GB) | 1 | ~$55 | jarvis_core Python + ChromaDB çalıştırır |
 | 10 | Kondansatör | 100nF | 1 | ~$0.1 | INMP441 VDD filtresi |
 

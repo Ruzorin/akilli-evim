@@ -2,7 +2,7 @@
 
 > **"Sinematik atmosfer, duyusal optimizasyon ve otonom yapay zeka ile yaşam ve mobil alanları tek bir akıllı ekosistemde birleştiren premium otomasyon platformu."**
 
-Bu proje, bir yaşam alanını ve aracı; sesli komutlarla yönetilebilen, sensörlerle çevresel farkındalığa sahip, görsel-işitsel-duyusal olarak sinematik bir atmosfer sunan ve çok-modelli yapay zeka ile proaktif karar veren **premium bir otomasyon ekosistemine** dönüştürür. Sistem, merkezi bir AGI beyni (`jarvis_core` 3.0) etrafında **25 modülden** oluşan tek bir kod tabanı (Single Codebase) mimarisiyle inşa edilmiştir.
+Bu proje, bir yaşam alanını ve aracı; sesli komutlarla yönetilebilen, sensörlerle çevresel farkındalığa sahip, görsel-işitsel-duyusal olarak sinematik bir atmosfer sunan ve çok-modelli yapay zeka ile proaktif karar veren **premium bir otomasyon ekosistemine** dönüştürür. Sistem, merkezi bir hibrit zeka beyni (`jarvis_core` — MiniMax + DeepSeek) etrafında **26 modülden** oluşan tek bir kod tabanı (Single Codebase) mimarisiyle inşa edilmiştir.
 
 ---
 
@@ -13,12 +13,20 @@ Bu proje, bir yaşam alanını ve aracı; sesli komutlarla yönetilebilen, sens�
 - **Tailscale VPN:** VPS ↔ GL-MT3000 (Beryl AX) arasında şifreli mesh tünel (<50ms gecikme)
 - **Edge-to-Cloud:** Tüm yerel cihazlar (ESP32, WLED, Jetson Nano) bu tünel üzerinden VPS tarafından milisaniyelik hızda kontrol edilir
 
-### Yapay Zeka Beyni (Multi-Model Orchestration)
-- **GPT-5.6-Realtime:** Cihaz kontrolü, vision, hızlı eylemler, espri/wingman
-- **Claude 5 Opus:** Derin felsefi/psikolojik sohbet, yaratıcı rol yapma
-- **Claude 5 Fable:** Dil eğitimi (IELTS/TEF/TCF), pedagoji
-- **Gemini 3.6 Pro:** Biyometrik duygu analizi (2M+ token bağlam)
-- **Agentic Framework:** LangGraph 2026 — statik intent'ler YOK, AI dinamik karar verir
+### Yapay Zeka Beyni (Hybrid Brain — Maliyet Optimize)
+- **MiniMax Speech 2.8 Turbo:** Sesten-sese (Speech-to-Speech) End-to-End Multimodal. STT/TTS ara katmanları YOK. <300ms gecikme. Voice Cloning (10 sn referans → Jarvis tonu). Duygu kontrol (charming/sarcastic/intimate/authoritative). ~$10/ay
+- **DeepSeek V4-Pro:** Ağır zeka (kod yazma, analiz, günlük özet). Çok ucuz (~$1-2/ay). MiniMax → DeepSeek → sonuç → MiniMax seslendirir
+- **Qwen-VL Max:** Görüntü analizi (kamera, vision). Ucuz (~$2/ay). "Kameradan mutfağa bak" → Qwen-VL → analiz → MiniMax seslendirir
+- **Günlük Hafıza:** Konuşma → DeepSeek özet → ertesi gün MiniMax System Prompt'a yükle (Prompt Caching). Ses token maliyetine girmeden geçmişi hatırla
+- **Agentic Framework:** Statik intent'ler YOK — AI dinamik karar verir, HA REST API'yi doğrudan manipüle eder
+
+### Maliyet Karşılaştırması
+| Eski (OpenAI) | Yeni (MiniMax + DeepSeek) |
+|---|---|
+| OpenAI Realtime API ~$50-100/ay | MiniMax Speech 2.8 Turbo ~$10/ay |
+| ElevenLabs TTS ~$5/ay | Voice Cloning dahil (ekstra $0) |
+| GPT-4o Vision ~$10/ay | Qwen-VL ~$2/ay |
+| Toplam: ~$65-115/ay | **Toplam: ~$12-15/ay** |
 
 ### Donanım Katmanı
 - **Mikrodenetleyiciler:** ESP32/ESP32-S3, ESPHome 2026
@@ -415,11 +423,13 @@ jarvis/#
 akilli-evim/
 ├── README.md                          ← Bu dosya (Proje Anayasası)
 ├── EQUIPMENT.md                       ← Tüm teçhizat listesi
-├── jarvis_core/                       ← Modül 1: Sistemin Beyni (7 dosya)
+├── jarvis_core/                       ← Modül 1: Sistemin Beyni (9 dosya)
 │   ├── architecture_and_ai_persona.md
 │   ├── openai_conversation_agent.yaml
 │   ├── master_orchestration_intents.yaml
 │   ├── zero_latency_voice_pipeline.py
+│   ├── minimax_realtime_orchestrator.py
+│   ├── hybrid_brain_and_memory_manager.py
 │   ├── facial_memory_and_vector_db.py
 │   ├── advanced_system_prompt_v2.md
 │   └── autonomous_conversation_trigger.yaml
@@ -537,32 +547,36 @@ akilli-evim/
 ## 🚀 Geliştirme Yol Haritası
 
 1. **Faz 1 — İskelet:** Klasör yapısı + yapılandırma dosyaları ✅
-2. **Faz 2 — Modül 12-9:** Intimacy → Barista → WLED → Diffuser ✅
+2. **Faz 2 — Modül 12-9:** Ambient Rhythm → Barista → WLED → Diffuser ✅
 3. **Faz 3 — Modül 8-6:** Invisible Remote → Morning → Underbed ✅
 4. **Faz 4 — Modül 5-3:** Spatial Audio → Magic Mirror → Space Projection ✅
 5. **Faz 5 — Modül 2-1:** Hidden Triggers → Jarvis Core ✅
 6. **Faz 6 — Core 2.0:** Zero-Latency + Face ID + Memory + Proactive ✅
-7. **Faz 7 — Modül 13:** Vision Chef Assistant ✅
-8. **Faz 8 — Modül 14:** Wingman Guest Protocol (Planlanan)
-9. **Faz 9 — Entegrasyon:** Tüm modüllerin Jarvis ile orkestrasyonu
+7. **Faz 7 — Modül 13-20:** Vision Chef → Dil Eğitmeni → Life OS → Hyperion → SuperApp → Stil Koçu ✅
+8. **Faz 8 — Modül 21-25:** Araç modülleri (Knight Rider → Omniscience → Stealth → Edge-AI → Sentry) ✅
+9. **Faz 9 — Modül 26:** Medikal Kalkan (VSS + Postür + Tansiyon) ✅
+10. **Faz 10 — Maliyet Devrimi:** MiniMax Speech 2.8 Turbo + DeepSeek Hybrid Brain + Voice Cloning ✅
+11. **Faz 11 — Entegrasyon:** Tüm modüllerin Jarvis ile orkestrasyonu
 
 ---
 
 ## ⚙️ Teknoloji Yığını
 
-| Katman | Teknoloji (2026 — 2 Ağustos) |
+| Katman | Teknoloji (2026 — Ağustos) |
 |---|---|
-| Yapay Zeka | **GPT-5.6-Realtime** (cihaz kontrolü, vision, espri), **Claude 5 Opus** (felsefe, empati), **Claude 5 Mythos** (yaratıcı rol yapma), **Claude 5 Fable** (dil eğitimi), **Gemini 3.6 Pro** (biyometrik analiz, 2M+ token bağlam), OpenAI Realtime API (WebRTC streaming) |
-| Ses | ElevenLabs TTS (Voice Design 2026, duygusal tonlama, "Adam" voice) |
-| Orkestrasyon | **LangGraph 2026** (Agentic Framework), Home Assistant (Docker), Python 3.13, MQTT 5.0 |
+| Yapay Zeka | **MiniMax Speech 2.8 Turbo** (sesten-sese, voice cloning, <300ms), **DeepSeek V4-Pro** (ağır zeka, kod, özet), **Qwen-VL Max** (görüntü analizi) |
+| Ses | MiniMax Voice Cloning (10 sn referans → Jarvis tonu), duygu kontrol (charming/sarcastic/intimate/authoritative) |
+| Hafıza | DeepSeek günlük özet → Prompt Caching → MiniMax System Prompt (bedava hafıza) |
+| Orkestrasyon | Home Assistant (Docker), Python 3.13, MQTT 5.0, Agentic HA REST API |
 | Ağ | Tailscale VPN, GL-MT3000 (Beryl AX), WiFi 6 |
 | Mikrodenetleyici | ESP32/ESP32-S3, ESPHome 2026 |
 | Sensör | LD2410/LD2450 (mmWave radar — varlık/hareket), MPU6050 (ivmeölçer), TTP223 (kapasitif), INMP441 (I2S mic). ⚠️ Kalp atışı/nefes için akıllı saat (Apple Health/Google Fit) veya HLK-LD6002 (60GHz Vital Signs Radar) gerekir. LD2410/LD2450/LD2420/LD6001 kalp/nefes ÖLÇMEZ |
 | Kablosuz | Zigbee (Zigbee2MQTT), WiFi 6, IR (Broadlink) |
-| Görüntü | OpenCV 2026, face_recognition, ChromaDB (vektör DB), Hyperion.ng (ekran senk) |
+| Görüntü | OpenCV 2026, MediaPipe Pose (postür analizi), face_recognition, ChromaDB (vektör DB), Hyperion.ng (ekran senk) |
 | Medya | Spotify Web API, WLED (Sound Reactive), Tuya, Hyperion (Ambilight) |
-| Gömülü | Raspberry Pi Zero 2 W (Magic Mirror), Raspberry Pi 4 (Jarvis Core + Hyperion) |
-| Sağlık | Apple Health / Google Fit (akıllı saat), CalDAV/Google Calendar, PyPDF2 (kan tahlili) |
+| Gömülü | Raspberry Pi Zero 2 W (Magic Mirror), Raspberry Pi 4 (Jarvis Core + Hyperion), Nvidia Jetson Nano 4GB (Edge-AI ADAS) |
+| Sağlık | Apple Health / Google Fit (akıllı saat), CalDAV/Google Calendar, PyPDF2 (kan tahlili), Omron BLE (tansiyon), FL-41 Rose Tint (VSS aydınlatma) |
+| Maliyet | **~$12-15/ay** (MiniMax ~$10 + DeepSeek ~$2 + Qwen-VL ~$2) |
 
 ---
 

@@ -168,22 +168,25 @@
 2. Pi 4'ü başlat, SSH ile bağlan
 3. Python 3.13+ kurulu kontrol et: python3 --version (2026 standartı)
 4. Gerekli kütüphaneleri kur (2026):
-   pip install langgraph langchain-openai langchain-anthropic langchain-google-genai
-   pip install openai elevenlabs asyncio websockets httpx
-   pip install opencv-python face-recognition chromadb numpy pillow pypdf2
+   pip install websockets asyncio httpx
+   pip install opencv-python face-recognition chromadb numpy pillow pypdf2 mediapipe
 5. jarvis_core dosyalarını Pi'ye kopyala:
    scp -r jarvis_core/ pi@PI_IP:~/
 6. API anahtarlarını config'e gir:
-   - OpenAI (GPT-5.6-Realtime)
-   - Anthropic (Claude 5 Opus, Claude 5 Mythos, Claude 5 Fable)
-   - Google AI (Gemini 3.6 Pro)
-   - ElevenLabs (Voice Design 2026)
-7. System prompt'u yükle (agi_system_prompt_2026.md — 2026 anayasası)
-8. multi_model_orchestrator.py'yi başlat (Core 3.0):
+   - MiniMax (Speech 2.8 Turbo — sesten-sese, voice cloning)
+   - DeepSeek (V4-Pro — ağır zeka, özet)
+   - Qwen-VL (Max — görüntü analizi)
+7. Voice Cloning referans ses dosyası hazırla:
+   - 10 sn WAV/MP3 (Jarvis tonu — Paul Bettany veya Türkçe dublaj)
+   - assets/jarvis_voice_reference.wav olarak kaydet
+8. System prompt'u yükle (advanced_system_prompt_v2.md — karakter anayasası)
+9. minimax_realtime_orchestrator.py'yi başlat (Core — sesten-sese):
    cd ~/jarvis_core
-   python3 multi_model_orchestrator.py
-9. facial_memory_and_vector_db.py'yi başlat (ayrı terminal):
-   python3 facial_memory_and_vector_db.py
+   python3 minimax_realtime_orchestrator.py
+10. hybrid_brain_and_memory_manager.py'yi başlat (ayrı terminal — hafıza):
+    python3 hybrid_brain_and_memory_manager.py
+11. facial_memory_and_vector_db.py'yi başlat (ayrı terminal — yüz tanıma):
+    python3 facial_memory_and_vector_db.py
 10. systemd service oluştur (otomatik başlatma):
     sudo nano /etc/systemd/system/jarvis-core.service
     [Unit]

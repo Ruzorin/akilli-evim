@@ -4,6 +4,34 @@
 
 ---
 
+## 🧠 Yapay Zeka ve Ses (Maliyet Devrimi — Ağustos 2026)
+
+### Sesten-Sese (Speech-to-Speech) API
+
+| | Önerilen | Alternatif 1 | Alternatif 2 |
+|---|---|---|---|
+| **Model** | MiniMax Speech 2.8 Turbo | OpenAI Realtime API (GPT-4o) | ElevenLabs + Whisper (STT/TTS ayrı) |
+| **Fiyat** | ~$10/ay | ~$50-100/ay | ~$15/ay (STT + TTS ayrı) |
+| **Neden önerilen?** | Sesten-sese TEK katman (<300ms), Voice Cloning dahil (ekstra $0), duygu kontrol, WebSocket streaming. En düşük maliyet + en düşük gecikme | İyi ama ASTRONOMİK fatura. STT/TTS ara katmanları var (2-3sn gecikme). Voice Cloning yok | STT + TTS ayrı → 3 ara katman → 2-3sn gecikme. Voice Cloning var ama ekstra $5/ay. MiniMax'ten pahalı ve yavaş |
+
+### Ağır Zeka (Kod, Analiz, Özet)
+
+| | Önerilen | Alternatif 1 | Alternatif 2 |
+|---|---|---|---|
+| **Model** | DeepSeek V4-Pro | GPT-4o | Claude 3.5 Sonnet |
+| **Fiyat** | ~$1-2/ay | ~$10-15/ay | ~$10/ay |
+| **Neden önerilen?** | Çok ucuz (~$0.01/istek), kod yazma ve özet için yeterli. MiniMax ses token maliyetine girmeden düşünme işini ucuz beyne devret | İyi ama pahalı. Kod/özet için gereksiz güç → gereksiz maliyet | İyi ama DeepSeek'ten pahalı. Kod yazmada DeepSeek daha iyi |
+
+### Görüntü Analizi (Vision)
+
+| | Önerilen | Alternatif 1 | Alternatif 2 |
+|---|---|---|---|
+| **Model** | Qwen-VL Max | GPT-4o Vision | Gemini 1.5 Pro Vision |
+| **Fiyat** | ~$2/ay | ~$10/ay | ~$8/ay |
+| **Neden önerilen?** | Ucuz (~$0.02/görüntü), Çince/İngilizce görsel analizi güçlü, mutfak/stil analizi için yeterli | İyi ama pahalı. Vision token maliyeti yüksek | İyi ama Qwen-VL'den pahalı. Bazı görüntü tiplerinde zayıf |
+
+---
+
 ## 🌐 Genel Altyapı
 
 ### Yönlendirici
