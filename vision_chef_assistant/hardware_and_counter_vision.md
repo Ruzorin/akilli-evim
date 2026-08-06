@@ -1,4 +1,4 @@
-# vision_chef_assistant — Donanım ve Tezgah Görüşü Rehberi
+﻿# vision_chef_assistant — Donanım ve Tezgah Görüşü Rehberi
 
 > **Modül 13: Vision Chef Assistant (Multimodal Aşçı ve Mutfak Gözü)**
 > Mutfak tezgahını tepeden gören IP kamera ile OpenAI Vision kullanarak anlık tarif, teknik uyarılar ve iğneleyici şef eleştirileri.
@@ -90,7 +90,7 @@ Kamera **odanın tamamını değil, SADECE tezgahı** görür. Bu, hem teknik he
 | **Görüş açısı sınırlama** | Kamera lensi sadece tezgaha odaklı (geniş açı lens değil) |
 | **On-Demand analiz** | Kamera sürekli analiz etmez — sadece komut geldiğinde veya tetiklendiğinde |
 | **Görüntü saklama** | Görüntüler diske YAZILMAZ — RAM'de işlenir, silinir |
-| **Buluta görüntü** | Görüntü OpenAI Vision API'ye gönderilir ama saklanmaz (API'de tutulmaz) |
+| **Buluta görüntü** | Görüntü Qwen-VL API'ye gönderilir ama saklanmaz (API'de tutulmaz) |
 | **RTSP şifre** | Kamera RTSP yayını şifreli (kullanıcı adı + şifre) |
 
 ---
@@ -113,6 +113,6 @@ Kamera **odanın tamamını değil, SADECE tezgahı** görür. Bu, hem teknik he
 - [ ] Kamera SADECE tezgahı görüyor (oda/duvar görünmüyor) — kontrol edildi
 - [ ] RTSP URL test edildi (VLC player ile)
 - [ ] `vision_frame_analyzer.py` çalıştırıldı ve görüntü alınıyor
-- [ ] OpenAI GPT-4o-mini Vision API anahtarı ayarlandı
+- [ ] OpenAI Qwen-VL Max API anahtarı ayarlandı
 - [ ] `chef_persona_system_prompt.yaml` HA'a yüklendi
 - [ ] `kitchen_automations.yaml` HA'a yüklendi

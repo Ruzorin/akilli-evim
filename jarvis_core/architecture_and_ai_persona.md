@@ -1,7 +1,7 @@
-# jarvis_core — Mimari ve AI Persona Rehberi
+﻿# jarvis_core — Mimari ve AI Persona Rehberi
 
 > **Modül 1: Jarvis Core (OpenAI Destekli Ana Beyin)**
-> Standart sıkıcı asistanları devreden çıkarıp; OpenAI GPT-4o mantığıyla düşünen, bağlamı anlayan ve ElevenLabs üzerinden karizmatik gerçekçi sesle konuşan "Premium Yapay Zeka Uşak" yaratmak.
+> Standart sıkıcı asistanları devreden çıkarıp; OpenAI DeepSeek V4-Pro mantığıyla düşünen, bağlamı anlayan ve MiniMax Voice Cloning üzerinden karizmatik gerçekçi sesle konuşan "Premium Yapay Zeka Uşak" yaratmak.
 
 ---
 
@@ -31,8 +31,8 @@
   │  │              HOME ASSISTANT (Docker)                      │    │
   │  │                                                          │    │
   │  │  ┌─────────────┐  ┌──────────────┐  ┌─────────────────┐  │    │
-  │  │  │ Whisper STT │  │  OpenAI API  │  │  ElevenLabs TTS │  │    │
-  │  │  │ (Ses→Metin)  │  │  (GPT-4o)    │  │  (Metin→Ses)    │  │    │
+  │  │  │ MiniMax Sesten-Sese │  │  MiniMax API  │  │  MiniMax Voice Cloning │  │    │
+  │  │  │ (Ses→Metin)  │  │  (DeepSeek V4-Pro)    │  │  (Metin→Ses)    │  │    │
   │  │  └──────┬──────┘  └──────┬───────┘  └────────┬────────┘  │    │
   │  │         │                │                   │            │    │
   │  │         ▼                ▼                   ▼            │    │
@@ -56,16 +56,16 @@
 | **GL-MT3000** | Yerel ağ + MQTT broker + Tailscale client | Oda |
 | **Tailscale VPN** | Oda ↔ VPS şifreli tünel | Oda ↔ VPS |
 | **Home Assistant** | Orkestra şefi, otomasyon motoru | VPS (Docker) |
-| **Whisper STT** | Ses → metin (OpenAI Whisper API) | VPS (HA üzerinden) |
-| **OpenAI GPT-4o** | Doğal dil işleme, karar verme | Bulut (OpenAI API) |
-| **ElevenLabs TTS** | Metin → ses (karizmatik, gerçekçi) | Bulut (ElevenLabs API) |
+| **MiniMax Sesten-Sese** | Ses → metin (OpenAI MiniMax Sesten-Sese API) | VPS (HA üzerinden) |
+| **OpenAI DeepSeek V4-Pro** | Doğal dil işleme, karar verme | Bulut (MiniMax API) |
+| **MiniMax Voice Cloning** | Metin → ses (karizmatik, gerçekçi) | Bulut (MiniMax Voice Cloning API) |
 
 ### Sesli Komut Akışı (Latency)
 
 ```
   Kullanıcı konuşur → Mikrofon → ESP32-S3 → MQTT → HA (GL-MT3000 → VPS)
-  → Whisper STT (~500ms) → GPT-4o (~1-2sn) → Intent işleme (~100ms)
-  → Modül tetikleme (~100ms) → ElevenLabs TTS (~500ms) → MQTT → ESP32-S3 → Hoparlör
+  → MiniMax Sesten-Sese (~500ms) → DeepSeek V4-Pro (~1-2sn) → Intent işleme (~100ms)
+  → Modül tetikleme (~100ms) → MiniMax Voice Cloning (~500ms) → MQTT → ESP32-S3 → Hoparlör
 
   Toplam gecikme: ~2-3 saniye (kabul edilebilir — "düşünüp cevap veren" hissi)
 ```
@@ -74,11 +74,11 @@
 
 ---
 
-## 🎙️ Neden ElevenLabs? (TTS Seçimi)
+## 🎙️ Neden MiniMax Voice Cloning? (TTS Seçimi)
 
-### Robotik Ses vs ElevenLabs
+### Robotik Ses vs MiniMax Voice Cloning
 
-| Faktör | HA TTS (Google/AWS) | ElevenLabs |
+| Faktör | HA TTS (Google/AWS) | MiniMax Voice Cloning |
 |---|---|---|
 | **Ses Kalitesi** | Robotik, sentetik | İnsan gibi, doğal |
 | **Duygu** | Düz, monoton | Tonlama, vurgu, duygu |
@@ -94,23 +94,23 @@
   "Barista mode activated. Pre-heating the espresso machine."
   → Düz, monoton, "asistan" hissi → "teknoloji"
 
-  ✅ ELEVENLABS (Karizmatik)
+  ✅ MiniMax Voice Cloning (Karizmatik)
   "Barista mode activated. Pre-heating the espresso machine."
   → İngiliz aksanı, zarif tonlama, hafif gülümseme → "uşak" hissi → "premium"
 ```
 
-> **Misafir Algısı:** Misafir, robotik bir ses duyduğunda "teknoloji" düşünür. ElevenLabs'in insansı sesini duyduğunda "bir kişiyle konuşuyorum" hisseder → "premium" algı. Tony Stark'ın Jarvis'i gibi — robotik değil, karizmatik.
+> **Misafir Algısı:** Misafir, robotik bir ses duyduğunda "teknoloji" düşünür. MiniMax Voice Cloning'in insansı sesini duyduğunda "bir kişiyle konuşuyorum" hisseder → "premium" algı. Tony Stark'ın Jarvis'i gibi — robotik değil, karizmatik.
 
-### ElevenLabs Kurulum
+### MiniMax Voice Cloning Kurulum
 
-1. **ElevenLabs hesabı:** elevenlabs.io → kayıt ol → API key al
-2. **HA entegrasyonu:** HACS → ElevenLabs TTS custom component
+1. **MiniMax Voice Cloning hesabı:** MiniMax Voice Cloning.io → kayıt ol → API key al
+2. **HA entegrasyonu:** HACS → MiniMax Voice Cloning custom component
 3. **Ses seçimi:** "Adam" (derin, erkek, İngiliz aksan) veya "Antoni" (zarif, sıcak)
 4. **HA configuration:**
    ```yaml
    tts:
-     - platform: elevenlabs
-       api_key: "YOUR_ELEVENLABS_API_KEY"
+     - platform: MiniMax Voice Cloning
+       api_key: "YOUR_MiniMax Voice Cloning_API_KEY"
        voice: "Adam"
    ```
 
@@ -187,9 +187,9 @@ Mikrofon, **asla görünür olmamalıdır**. Misafir, "dinlenildiğini" hissetme
 | 1 | Audio Hub | ESP32-S3 | 1 | Mikrofon + hoparlör yönetimi |
 | 2 | Mikrofon | INMP441 I2S | 1 | Komodin içinde gizli |
 | 3 | Hoparlör | 2x Echo Dot (stereo pair) | 1 set | Spatial audio (Modül 5) |
-| 4 | API | OpenAI GPT-4o | 1 | Doğal dil işleme |
-| 5 | API | ElevenLabs TTS | 1 | Karizmatik ses |
-| 6 | API | OpenAI Whisper | 1 | STT (ses→metin) |
+| 4 | API | OpenAI DeepSeek V4-Pro | 1 | Doğal dil işleme |
+| 5 | API | MiniMax Voice Cloning | 1 | Karizmatik ses |
+| 6 | API | OpenAI MiniMax Sesten-Sese | 1 | STT (ses→metin) |
 
 ---
 
@@ -197,13 +197,13 @@ Mikrofon, **asla görünür olmamalıdır**. Misafir, "dinlenildiğini" hissetme
 
 - [ ] ESP32-S3 + INMP441 mikrofon komodin içine gizlendi
 - [ ] ESP32-S3 MQTT üzerinden HA'a ses verisi gönderiyor
-- [ ] HA'a Whisper STT entegrasyonu eklendi
+- [ ] HA'a MiniMax Sesten-Sese entegrasyonu eklendi
 - [ ] HA'a Extended OpenAI Conversation entegrasyonu eklendi
-- [ ] OpenAI GPT-4o API anahtarı HA'a girildi
-- [ ] HA'a ElevenLabs TTS entegrasyonu eklendi
-- [ ] ElevenLabs sesi "Adam" (veya tercih edilen) olarak ayarlandı
+- [ ] OpenAI DeepSeek V4-Pro API anahtarı HA'a girildi
+- [ ] HA'a MiniMax Voice Cloning entegrasyonu eklendi
+- [ ] MiniMax Voice Cloning sesi "Adam" (veya tercih edilen) olarak ayarlandı
 - [ ] `openai_conversation_agent.yaml` HA'a yüklendi (system prompt ile)
 - [ ] `master_orchestration_intents.yaml` HA'a yüklendi
-- [ ] Test: "Jarvis" de → "Anlaşıldı efendim" cevabı (ElevenLabs sesiyle)
+- [ ] Test: "Jarvis" de → "Anlaşıldı efendim" cevabı (MiniMax Voice Cloning sesiyle)
 - [ ] Test: "Misafirimizi ağırlayalım" → barista + diffuser tetiklenir
 - [ ] Test: "Modumuzu değiştir" → audio reactive + spatial audio tetiklenir

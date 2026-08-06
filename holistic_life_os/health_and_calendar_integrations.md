@@ -1,4 +1,4 @@
-# holistic_life_os — Sağlık, Takvim ve Biyometrik Entegrasyonlar
+﻿# holistic_life_os — Sağlık, Takvim ve Biyometrik Entegrasyonlar
 
 > **Modül 16: Holistic Life OS (Yaşam İşletim Sistemi)**
 > Kullanıcının akıllı saati, takvimi ve yatak altı radarı ile entegre çalışarak; kan değerleri, kalori, uyku ve günlük rutinleri takip eden proaktif bir yaşam koçu.
@@ -55,7 +55,7 @@
 Takvim → HA sensor → MQTT → jarvis_core Python
   sensor.calendar_personal_event_1 → "Team Meeting 10:00-11:00"
   → MQTT: jarvis/context/calendar → {"event": "Team Meeting", "start": "10:00", "end": "11:00"}
-  → Gemini 3.5 bağlamına eklenir → Jarvis "10:00'da toplantınız var" bilir
+  → DeepSeek V4-Pro bağlamına eklenir → Jarvis "10:00'da toplantınız var" bilir
 ```
 
 ---
@@ -71,7 +71,7 @@ iOS Shortcuts / Android Automation
     ↓ (HTTP POST webhook)
 Home Assistant Webhook
     ↓ (sensor olarak)
-Jarvis Core 3.0 (Gemini 3.5 bağlam)
+Jarvis Core 3.0 (DeepSeek V4-Pro bağlam)
 ```
 
 ### Apple Health → HA Webhook
@@ -121,7 +121,7 @@ Jarvis Core 3.0 (Gemini 3.5 bağlam)
 ```
 Akıllı Saat → Health API → Webhook → HA Sensor → MQTT → Jarvis
   ↓                                    ↓
-  Uyku: 6.5 saat (kötü)          Gemini 3.5 bağlam:
+  Uyku: 6.5 saat (kötü)          DeepSeek V4-Pro bağlam:
   Derin uyku: 0.8 saat           "Kullanıcı dün gece 6.5 saat uyudu,
   Adım: 4200                      derin uyku sadece 0.8 saat.
   Nabız: 72 BPM                  Bugün yorgun olabilir."
@@ -130,7 +130,7 @@ Akıllı Saat → Health API → Webhook → HA Sensor → MQTT → Jarvis
 
 ---
 
-## 🩸 Kan Tahlili PDF Analizi (Gemini 3.5)
+## 🩸 Kan Tahlili PDF Analizi (DeepSeek V4-Pro)
 
 ### Mantık
 
@@ -139,7 +139,7 @@ Kullanıcı kan tahlili PDF'ini yükler
   ↓
 HA webhook → PDF → Python (PyPDF2) → metin çıkar
   ↓
-Metin → Gemini 3.5 (2M token bağlam) → analiz
+Metin → DeepSeek V4-Pro (2M token bağlam) → analiz
   ↓
 Jarvis: "Demir değeriniz düşük (32 μg/dL, referans 50-170).
          B12 seviyesi normal ama alt sınırda.
@@ -154,14 +154,14 @@ Jarvis: "Demir değeriniz düşük (32 μg/dL, referans 50-170).
 2. PDF → /config/uploads/blood_test.pdf
 3. Python script (Raspberry Pi 4):
    - PyPDF2 ile PDF'ten metin çıkar
-   - Metni Gemini 3.5'e gönder (system prompt: "Kan tahlili analiz et")
-   - Gemini 3.5: değerleri referans aralıklarıyla karşılaştır
+   - Metni DeepSeek V4-Pro'e gönder (system prompt: "Kan tahlili analiz et")
+   - DeepSeek V4-Pro: değerleri referans aralıklarıyla karşılaştır
    - Sonucu MQTT'ye publish: jarvis/health/blood_analysis
 4. HA, MQTT'yi dinler → Jarvis TTS ile sonucu okur
 5. Sonuç ChromaDB'ye kaydedilir (geçmiş takip için)
 ```
 
-### Gemini 3.5 Analiz Prompt'u
+### DeepSeek V4-Pro Analiz Prompt'u
 
 ```
 Sen bir tıbbi analiz asistanısın (doktor değilsin).
@@ -183,7 +183,7 @@ Format:
 ```
 🚨 Kan tahlili verileri son derece hassastır:
 - PDF LOKAL işlenir (Raspberry Pi 4'te)
-- Metin Gemini 3.5'e gönderilir ama SAKLANMAZ (API'de tutulmaz)
+- Metin DeepSeek V4-Pro'e gönderilir ama SAKLANMAZ (API'de tutulmaz)
 - Sonuç ChromaDB'ye LOKAL kaydedilir
 - Hiçbir sağlık verisi buluta kalıcı olarak gönderilmez
 - Jarvis "doktor" değildir — tavsiyeler bilgilendirme amaçlıdır
@@ -210,7 +210,7 @@ Format:
 - [ ] Akıllı saat → HA webhook → sensor'lar oluşturuldu
 - [ ] Uyku, adım, nabız, kalori verileri HA'a geliyor
 - [ ] Kan tahlili PDF analizi Python script'i kuruldu
-- [ ] Gemini 3.5 API anahtarı ayarlandı
+- [ ] DeepSeek V4-Pro API anahtarı ayarlandı
 - [ ] biometric_fusion_engine.py Raspberry Pi 4'te çalışıyor
 - [ ] routine_and_medical_tracker.yaml HA'a yüklendi
 - [ ] life_coach_prompt_extension.md Jarvis system prompt'a eklendi

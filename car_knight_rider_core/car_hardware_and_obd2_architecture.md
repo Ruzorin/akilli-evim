@@ -1,4 +1,4 @@
-# car_knight_rider_core — Araç Donanımı ve OBD2 Mimarisi
+﻿# car_knight_rider_core — Araç Donanımı ve OBD2 Mimarisi
 
 > **Modül 21: Car Knight Rider Core (Mobil Komuta Merkezi)**
 > 2005+ bir araca Android Multimedya Ekranı entegre etmek, Home Assistant ile aracı tek bir ekosistem yapmak, OBD2 portu üzerinden arabanın beynine bağlanmak.
@@ -50,7 +50,7 @@
   │  │  Home Assistant (Docker) + jarvis_core 3.0            │  │
   │  │  - Araç sensörleri (OBD2 → MQTT → HA)                 │  │
   │  │  - Ev durumu (oda sıcaklığı, kilitler)                │  │
-  │  │  - Jarvis AGI (GPT-5.6 + Claude 5)                    │  │
+  │  │  - Jarvis AGI (MiniMax Speech 2.8 Turbo + DeepSeek V4-Pro)                    │  │
   │  └──────────────────────────────────────────────────────┘  │
   └─────────────────────────────────────────────────────────────┘
 ```
@@ -70,7 +70,7 @@
    - sensor.phone_charging (şarj durumu)
    - sensor.bluetooth_connection (aracın BT ağına bağlandı mı)
 7. Jarvis sesli komut:
-   - Android mikrofon → HA Conversation → GPT-5.6
+   - Android mikrofon → HA Conversation → MiniMax Speech 2.8 Turbo
    - "Jarvis, evdeki ışıkları kapat" → araçtan evi kontrol
 ```
 

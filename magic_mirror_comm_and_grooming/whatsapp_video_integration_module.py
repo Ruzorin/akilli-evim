@@ -1,4 +1,4 @@
-"""
+﻿"""
  =============================================================================
  magic_mirror_comm_and_grooming — WhatsApp/Video Görüşme Entegrasyonu
  =============================================================================
@@ -235,7 +235,7 @@ class MirrorVideoCallModule:
         print("[MirrorComm] ✅ Çağrı sonlandırıldı")
 
     # =========================================================================
-    # SNAPSHOT AL — Stil Koçu için (GPT-5.6 Vision)
+    # SNAPSHOT AL — Stil Koçu için (Qwen-VL Max)
     # =========================================================================
     async def capture_snapshot(self) -> Optional[bytes]:
         """
@@ -244,11 +244,11 @@ class MirrorVideoCallModule:
         Bu fonksiyon, "Jarvis, kombin nasıl?" komutunda çağrılır:
         1. USB kameradan kare yakala
         2. JPEG formatına çevir
-        3. GPT-5.6 Vision'a gönder → stil analizi
+        3. Qwen-VL Max'a gönder → stil analizi
 
         🎨 UX:
         Kullanıcı aynanın karşısına geçer → "Jarvis, kombin nasıl?" der →
-        kamera sessizce bir kare alır → GPT-5.6 Vision analiz eder →
+        kamera sessizce bir kare alır → Qwen-VL Max analiz eder →
         Jarvis ayna hoparlöründen "Kombin harika ama o ayakkabılar..." der.
         """
         cap = cv2.VideoCapture(self.config.CAMERA_DEVICE)
@@ -288,7 +288,7 @@ async def main():
     # Test: Snapshot al (stil koçu için)
     snapshot = await module.capture_snapshot()
     if snapshot:
-        print(f"Snapshot: {len(snapshot)} bytes (GPT-5.6 Vision'a gönderilecek)")
+        print(f"Snapshot: {len(snapshot)} bytes (Qwen-VL Max'a gönderilecek)")
 
     # Test: Çağrıyı aynadan aç
     # await module.answer_call_from_mirror()

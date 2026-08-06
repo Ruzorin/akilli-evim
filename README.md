@@ -1,4 +1,4 @@
-# 🏨 Jarvis Premium Automation Suite — Executive Edition (2026)
+﻿# 🏨 Jarvis Premium Automation Suite — Executive Edition (2026)
 
 > **"Sinematik atmosfer, duyusal optimizasyon ve otonom yapay zeka ile yaşam ve mobil alanları tek bir akıllı ekosistemde birleştiren premium otomasyon platformu."**
 
@@ -23,9 +23,9 @@ Bu proje, bir yaşam alanını ve aracı; sesli komutlarla yönetilebilen, sens�
 ### Maliyet Karşılaştırması
 | Eski (OpenAI) | Yeni (MiniMax + DeepSeek) |
 |---|---|
-| OpenAI Realtime API ~$50-100/ay | MiniMax Speech 2.8 Turbo ~$10/ay |
-| ElevenLabs TTS ~$5/ay | Voice Cloning dahil (ekstra $0) |
-| GPT-4o Vision ~$10/ay | Qwen-VL ~$2/ay |
+| MiniMax Realtime API ~$50-100/ay | MiniMax Speech 2.8 Turbo ~$10/ay |
+| MiniMax Voice Cloning ~$5/ay | Voice Cloning dahil (ekstra $0) |
+| Qwen-VL Max ~$10/ay | Qwen-VL ~$2/ay |
 | Toplam: ~$65-115/ay | **Toplam: ~$12-15/ay** |
 
 ### Donanım Katmanı
@@ -46,7 +46,7 @@ Bu projede modüller, fonksiyonel amaçlarını net bir şekilde yansıtan tekni
 - **Premium Otel Konforu:** Akıllı koku difüzörü, yatak altı rehber aydınlatma, otomatik perde, kahve makinesi otomasyonu
 - **Görünmez Kontrol:** Flic butonları, gizli dokunmatik yüzeyler, NFC etiketleri, kapasitif ahşap dokunma
 - **Duyusal Senkronizasyon:** Fiziksel ritmi algılayan ivmeölçer ile ışık nabzı, ses, iklim ve koku senkronizasyonu
-- **Yapay Zeka Orkestrasyonu:** OpenAI GPT-5.6 Sol + ElevenLabs TTS + Yüz Tanıma + Hafıza + Proaktif konuşma
+- **Yapay Zeka Orkestrasyonu:** OpenAI MiniMax Speech 2.8 Turbo Sol + MiniMax Voice Cloning + Yüz Tanıma + Hafıza + Proaktif konuşma
 - **Mutfak Şefi:** OpenAI Vision ile tezgah analizi, tarif önerisi, güvenlik uyarısı, Gordon Ramsay kişiliği
 
 ---
@@ -156,23 +156,23 @@ Bu proje, fiziksel bir Raspberry Pi / PC sunucusu gerektirmez. Sistem **ucuz bir
 ### 1. `jarvis_core` — Sistemin Beyni 🧠 (Core 3.0 — 2026 AGI)
 
 **Sürüm 1 (HA Orkestrasyonu):**
-- OpenAI GPT-4o + Extended OpenAI Conversation entegrasyonu (eski nesil — artık v3.0 kullanılıyor)
-- Whisper STT (ses→metin) + ElevenLabs TTS (metin→ses, "Adam" sesi)
+- OpenAI DeepSeek V4-Pro + Extended OpenAI Conversation entegrasyonu (eski nesil — artık v3.0 kullanılıyor)
+- MiniMax Sesten-Sese (ses→metin) + MiniMax Voice Cloning (metin→ses, "Adam" sesi)
 - System Prompt: Karizmatik uşak kişiliği (kısa cevap, zarif dil, gizemli, sessiz işleyiş)
 - 10 function calling: ışık, difüzör, klima, medya, perde, projeksiyon, modül tetikleme
 - NLP Intent Script'leri: "Misafirimizi ağırlayalım" → barista + diffuser, "Modumuzu değiştir" → audio + spatial
 
 **Sürüm 2.0 (Bilinç Kazandı):**
-- **Zero-Latency Voice Pipeline:** OpenAI Realtime API (WebRTC streaming) → <500ms gecikme
+- **Zero-Latency Voice Pipeline:** MiniMax Realtime API (WebRTC streaming) → <500ms gecikme
 - **Duygusal Tonlama (Voice Design):** 5 duygu profili — charming, sarcastic, neutral, intimate, authoritative
 - **Yüz Tanıma + Hafıza:** IP kamera → OpenCV face_recognition → ChromaDB (yerel vektör DB). Tüm veriler LOKAL
 - **Karakter Anayasası (v2):** 10 kural — Iron Man Jarvis kişiliği, hafif alaycı, wingman, proaktif
 - **Proaktif Sohbet (Autonomous):** 15dk sessizlik → sohbet başlat. Bilinen misafir → ismiyle karşıla
 
 **Sürüm 3.0 (2026 AGI — Agentic Orchestrator):**
-- **Mixture of Experts (Uzmanlık Dağılımı):** GPT-5.6-Realtime (cihaz kontrolü, vision, espri), Claude 5 Opus (felsefe, empati), Claude 5 Mythos (yaratıcı rol yapma), Claude 5 Fable (dil eğitimi), Gemini 3.6 Pro (biyometrik analiz, 2M+ token bağlam)
-- **Agentic HA API:** Statik intent script'leri SİLİNDİ. GPT-5.6, HA REST API'yi doğrudan manipüle eder. "Bize cyberpunk ortamı yap" → AI KENDİSİ WLED JSON + Spotify + klima ÜRETİR → HA'a gönderir
-- **Biyometrik Duygu Sync:** LD2450 radar (kalp atışı + nefes) + kamera mikro-ifadeleri → Gemini 3.6 → duygu analizi → proaktif ortam ayarı (üzgün → sıcak amber + rahatlatıcı müzik)
+- **Mixture of Experts (Uzmanlık Dağılımı):** MiniMax Speech 2.8 Turbo (cihaz kontrolü, vision, espri), DeepSeek V4-Pro (felsefe, empati), DeepSeek V4-Pro (yaratıcı rol yapma), DeepSeek V4-Pro (dil eğitimi), DeepSeek V4-Pro (biyometrik analiz, 2M+ token bağlam)
+- **Agentic HA API:** Statik intent script'leri SİLİNDİ. MiniMax Speech 2.8 Turbo, HA REST API'yi doğrudan manipüle eder. "Bize cyberpunk ortamı yap" → AI KENDİSİ WLED JSON + Spotify + klima ÜRETİR → HA'a gönderir
+- **Biyometrik Duygu Sync:** LD2450 radar (kalp atışı + nefes) + kamera mikro-ifadeleri → DeepSeek V4-Pro → duygu analizi → proaktif ortam ayarı (üzgün → sıcak amber + rahatlatıcı müzik)
 - **AGI System Prompt 2026:** 6 kural — Agentic zihin, dinamik dil eğitimi, proaktif empati, karakter, agentic HA, duygu verisi okuma
 - **LangGraph 2026:** Asenkron agent graph — statik intent'ler YOK, her şey dinamik
 
@@ -265,7 +265,7 @@ Bu proje, fiziksel bir Raspberry Pi / PC sunucusu gerektirmez. Sistem **ucuz bir
 ### 13. `vision_chef_assistant` — Multimodal Aşçı 🧑‍🍳
 
 - **IP Kamera (RTSP):** TP-Link Tapo, mutfak dolabı altına gizli, SADECE tezgahı görür (privacy)
-- **OpenAI GPT-4o-mini Vision:** Kameradan kare → base64 → Vision API → tarif/uyarı/eleştiri
+- **OpenAI Qwen-VL Max:** Kameradan kare → base64 → Vision API → tarif/uyarı/eleştiri
 - **On-Demand Analiz:** Sürekli analiz YOK — sadece istek geldiğinde (CPU + API tasarrufu). Güvenlik modunda 0.5 FPS
 - **Gordon Ramsay + Tony Stark kişiliği:** Hafif kibirli, zekice dalga geçen, yardımcı şef. Wingman taktiği (misafir varsa patronu ezerek misafiri yücelt)
 - **3 senaryo:** "Bunlardan ne çıkar?" → tarif öner, Duman/yanma → proaktif uyarı + mobil critical bildirim, Çift tık → komik durum güncellemesi
@@ -287,7 +287,7 @@ Bu proje, fiziksel bir Raspberry Pi / PC sunucusu gerektirmez. Sistem **ucuz bir
 - **Ekstra donanım GEREKMEZ:** Mevcut akıllı saat (Apple Watch/Wear OS), yatak radarı (LD2450), kamera ve HA altyapısını kullanır
 - **Sensor Fusion:** Yatak radarı (kalp atışı + nefes + uyku evreleri) + akıllı saat (uyku süresi + adım + nabız) birleştirilir → en doğru uyku analizi
 - **Agentic Takvim Esnetme:** Kötü uyku + esnetilebilir etkinlik → "10:00 toplantısını 11:00'e kaydırmamı ister misin?" → kullanıcı "evet" → Google Calendar API → etkinlik taşınır
-- **Kan Tahlili Analizi:** PDF → PyPDF2 → metin → Gemini 3.5 (2M token) → değerleri referans aralıklarıyla karşılaştır → "D vitamini düşük, demir eksik" + beslenme önerileri
+- **Kan Tahlili Analizi:** PDF → PyPDF2 → metin → DeepSeek V4-Pro (2M token) → değerleri referans aralıklarıyla karşılaştır → "D vitamini düşük, demir eksik" + beslenme önerileri
 - **Sabah Brifingi:** Magic Mirror'da takvim + ilaç/takviye checklist'i (D vitamini, B12, saç spreyi)
 - **Takvim Çatışması:** Gece 02:00 + ışıklar açık + sabah sınav → "Verimliliğiniz için uyku moduna geçiyorum" → sistem kapat + alarm erken ayarla
 - **Kalori Takibi:** "Bu yemeği kalori takibime ekle" → Vision API → kalori + makro → günlük hedefe ekle
@@ -298,7 +298,7 @@ Bu proje, fiziksel bir Raspberry Pi / PC sunucusu gerektirmez. Sistem **ucuz bir
 - **Hyperion.ng:** Ekran kenar piksellerini anlık olarak WLED'e UDP ile yansıtır (<16ms = 1 frame). "Ekranın sınırları kaybolur" → imersif deneyim. UDP seçimi KRİTİK (TCP çok yavaş)
 - **HDMI Grabber:** UCV007/MS2109 USB grabber + HDMI splitter → kaynak → TV + grabber → Hyperion
 - **Stadyum Modu:** "Jarvis, maç başlıyor" → Hyperion ON + takım renkleri (GS Sarı-Kırmızı, FB Sarı-Lacivert, BJK Siyah-Beyaz) + difüzör narenciye/mentol + klima 20°C. 2 saat sonra otomatik Rest Idle
-- **Agentic Media Orchestrator:** GPT-5.6 Vision ekranı analiz eder → içerik tipi (cyberpunk, nature, horror, romance, action, sports, anime, sci_fi) → AI KENDİSİ WLED/difüzör/klima/Spotify JSON üretir → HA REST API. "Blade Runner" → neon pembe + synthwave; doğa belgeseli → yeşil + ambient
+- **Agentic Media Orchestrator:** Qwen-VL Max ekranı analiz eder → içerik tipi (cyberpunk, nature, horror, romance, action, sports, anime, sci_fi) → AI KENDİSİ WLED/difüzör/klima/Spotify JSON üretir → HA REST API. "Blade Runner" → neon pembe + synthwave; doğa belgeseli → yeşil + ambient
 - **Medya Yoldaşı Kişiliği:** Maç izlerken fanatik ama zeki spor yorumcusu (nadiren, tam yerinde). Film izlerken sinema eleştirmeni (trivia + tavsiye, sadece başlangıç/bitiş). "Sessizlik, en iyi yoldaşlıktır"
 
 ### 18. `life_os_superapp` — PWA SuperApp ve Çağrı Yönlendirme 📱
@@ -307,7 +307,7 @@ Bu proje, fiziksel bir Raspberry Pi / PC sunucusu gerektirmez. Sistem **ucuz bir
 - **PWA (Progressive Web App):** HA'ı telefona tam ekran native uygulama olarak ekle (adres çubuğu yok, kendi ikonu, app drawer'da)
 - **Mushroom + Bubble Card:** Apple/Tesla tarzı minimalist UI — yuvarlak kartlar, boşluklu tasarım, swipeable sekmeler. "Kontrol paneli" değil "yaşam alanı" hissi
 - **SuperApp Dashboard:** Üst (karşılama + takvim), Orta (swipeable: Ev kontrolü + Sağlık), Alt (Spotify/Hyperion medya), Sağ alt (floating AGI chat)
-- **AGI Chat (Floating):** Sağ alt köşede sürekli duran chat butonu → GPT-5.6/Claude 5'a yazılı komut → "Bize cyberpunk ortamı yap" → oda değişir. Fotoğraf at → "Bunu kalori takibime ekle" → Vision API
+- **AGI Chat (Floating):** Sağ alt köşede sürekli duran chat butonu → MiniMax Speech 2.8 Turbo/DeepSeek V4-Pro'a yazılı komut → "Bize cyberpunk ortamı yap" → oda değişir. Fotoğraf at → "Bunu kalori takibime ekle" → Vision API
 - **Bluetooth Proxy Çağrı Yönlendirme:** Telefon çağrısı → müzik duraklat + WLED mavi yanıp sönme → çağrı cevapla → ESP32-S3 BT Proxy → ses odaya aktar (hands-free) → çağrı bitince atmosfer geri döner
 
 ### 19. `call_routing_and_ceo_mode` — Gelişmiş Çağrı Yönlendirme ve CEO Modu 📞
@@ -323,7 +323,7 @@ Bu proje, fiziksel bir Raspberry Pi / PC sunucusu gerektirmez. Sistem **ucuz bir
 
 - **Ekstra donanım:** USB web kamera (Logitech C270, ~$25), USB mikrofon (~$10), mini hoparlör (~$5), USB hub (~$5) — Pi Zero 2 W (Modül 4) üzerine monte
 - **Görüntülü Arama (WebRTC):** Ayna kamerası + mikrofon + hoparlör → WebRTC peer connection → WhatsApp/Telegram görüntülü arama. "Jarvis, aramayı aynadan aç" → kamera/mikrofon otomatik görüşmeye yönlendirilir
-- **Dijital Stil Koçu (GPT-5.6 Vision):** "Jarvis, kombin nasıl?" → ayna kamerasından snapshot → GPT-5.6 Vision → kıyafet/saç/tarz analizi → ElevenLabs TTS (charming) → "Kombin harika ama o ayakkabılar bu ceketle gitmemiş patron"
+- **Dijital Stil Koçu (Qwen-VL Max):** "Jarvis, kombin nasıl?" → ayna kamerasından snapshot → Qwen-VL Max → kıyafet/saç/tarz analizi → MiniMax Voice Cloning (charming) → "Kombin harika ama o ayakkabılar bu ceketle gitmemiş patron"
 - **İmaj Danışmanı (Life OS Entegre):** Takvim (etkinlik tipi: formal/business/casual/date) + hava durumu + Vision analizi → "Bugün CEO görüşmesi var ama tişört casual kalmış, lacivert ceket giymelisin. Saçında yatışmazlık var, acele et"
 - **Grooming Checklist UI:** MagicMirror² sağ alt köşede minimalist checklist (diş ipi, saç spreyi, D vitamini, B12) + kombin puanı (75/100) + öneri. Telefondan onayladıkça maddeler silinir
 
@@ -412,8 +412,8 @@ jarvis/#
 - **MQTT:** Olay tabanlı, düşük gecikme (<100ms). ESP32 ↔ HA, modüller arası
 - **HA REST/WebSocket API:** Cihaz kontrolü, durum sorgulama
 - **Webhook:** Harici tetikleyiciler (jarvis_core Python → HA)
-- **OpenAI Realtime API (WebRTC):** Sıfır gecikme sesli konuşma
-- **OpenAI Vision API:** Görüntü analizi (mutfak şefi)
+- **MiniMax Realtime API (WebRTC):** Sıfır gecikme sesli konuşma
+- **Qwen-VL API:** Görüntü analizi (mutfak şefi)
 
 ---
 

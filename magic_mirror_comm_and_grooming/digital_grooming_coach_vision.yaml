@@ -1,10 +1,10 @@
-# =============================================================================
-# magic_mirror_comm_and_grooming — Dijital Stil Koçu (GPT-5.6 Vision)
+﻿# =============================================================================
+# magic_mirror_comm_and_grooming — Dijital Stil Koçu (Qwen-VL Max)
 # =============================================================================
 # Kullanıcı aynanın karşısına geçip "Jarvis, kombin nasıl?" dediğinde:
 # 1. Ayna kamerasından anlık fotoğraf karesi al
-# 2. GPT-5.6 Vision'a gönder → kıyafet/saç/tarz analizi
-# 3. Jarvis sesli olarak (ElevenLabs TTS) stil tavsiyesi ver
+# 2. Qwen-VL Max'a gönder → kıyafet/saç/tarz analizi
+# 3. Jarvis sesli olarak (MiniMax Voice Cloning) stil tavsiyesi ver
 #
 # 🎨 "MODA DANIŞMANI" MANTIĞI:
 # =============================================================================
@@ -27,7 +27,7 @@ input_boolean:
     initial: on
 
 # -----------------------------------------------------------------------------
-# OTOMASYON: "Jarvis, kombin nasıl?" → Snapshot → GPT-5.6 Vision → TTS
+# OTOMASYON: "Jarvis, kombin nasıl?" → Snapshot → Qwen-VL Max → TTS
 # -----------------------------------------------------------------------------
 automation:
   - id: grooming_coach_evaluate
@@ -36,8 +36,8 @@ automation:
       Kullanıcı aynanın karşısına geçip "Jarvis, kombin nasıl?" veya
       "Görünüşüm nasıl?" dediğinde:
       1. Ayna kamerasından anlık fotoğraf karesi (snapshot) al
-      2. GPT-5.6 Vision'a gönder → kıyafet, saç, tarz analizi
-      3. Jarvis sesli olarak (ElevenLabs TTS, charming persona) stil tavsiyesi ver
+      2. Qwen-VL Max'a gönder → kıyafet, saç, tarz analizi
+      3. Jarvis sesli olarak (MiniMax Voice Cloning, charming persona) stil tavsiyesi ver
 
       🎨 MODA DANIŞMANI TONU:
       Jarvis "chaming" persona ile konuşur — şık, dürüst, stil sahibi.
@@ -83,10 +83,10 @@ automation:
           seconds: 2
 
       # -------------------------------------------------------------------------
-      # AKSİYON 2: Snapshot'ı GPT-5.6 Vision'a gönder
+      # AKSİYON 2: Snapshot'ı Qwen-VL Max'a gönder
       # -------------------------------------------------------------------------
       # MQTT'den snapshot base64 al → multi_model_orchestrator.py'ye gönder
-      # GPT-5.6 Vision: "Bu kişinin kıyafetini, saçını ve tarzını analiz et"
+      # Qwen-VL Max: "Bu kişinin kıyafetini, saçını ve tarzını analiz et"
       - service: mqtt.publish
         data:
           topic: "jarvis/vision/grooming_request"
@@ -103,25 +103,25 @@ automation:
               }
             }
 
-      # GPT-5.6 Vision analizi için bekle
+      # Qwen-VL Max analizi için bekle
       - delay:
           seconds: 5
 
       # -------------------------------------------------------------------------
-      # AKSİYON 3: Jarvis sesli stil tavsiyesi (ElevenLabs TTS, charming)
+      # AKSİYON 3: Jarvis sesli stil tavsiyesi (MiniMax Voice Cloning, charming)
       # -------------------------------------------------------------------------
       # multi_model_orchestrator.py, analizi MQTT'ye publish eder:
       # jarvis/vision/grooming_response → {"text": "Kombin harika ama..."}
       # Aşağıdaki otomasyon (grooming_tts) bunu yakalar ve TTS'e gönderir.
 
   # ===========================================================================
-  # ALT OTOMASYON: GPT-5.6 Vision Cevabı → Jarvis TTS
+  # ALT OTOMASYON: Qwen-VL Max Cevabı → Jarvis TTS
   # ===========================================================================
   - id: grooming_coach_tts
     alias: "Grooming Coach — Vision Cevabı → Jarvis TTS"
     description: >
-      GPT-5.6 Vision'ın stil analiz cevabını alır ve Jarvis'e
-      (ElevenLabs TTS, charming persona) gönderir.
+      Qwen-VL Max'ın stil analiz cevabını alır ve Jarvis'e
+      (MiniMax Voice Cloning, charming persona) gönderir.
 
     trigger:
       - platform: mqtt

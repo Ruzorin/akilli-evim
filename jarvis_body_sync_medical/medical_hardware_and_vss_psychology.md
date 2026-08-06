@@ -1,4 +1,4 @@
-# jarvis_body_sync_medical — Medikal Donanım ve VSS Psikolojisi
+﻿# jarvis_body_sync_medical — Medikal Donanım ve VSS Psikolojisi
 
 > **Modül 26: Jarvis Body-Sync Medical (Medikal Kalkan ve Kişisel Yaşam Destek Ünitesi)**
 > Kullanıcının nörolojik (Visual Snow Syndrome) ve ortopedik (Skolyoz, postür) ihtiyaçlarını Home Assistant ekosistemi üzerinden otonom olarak yöneten medikal destek modülü.
@@ -24,7 +24,7 @@ VSS'nin nörolojik kökeni **Thalamocortical Dysrhythmia** (TCD) olarak bilinir.
 - **Işık stresi** → TCD'yi alevlendirir → statik karıncalanma artar
 - **Düşük stres + doğru ışık** → TCD baskılanır → semptomlar azalır
 
-> **Klinik bağlam:** Jarvis'in AI katmanı (Gemini 3.6 Pro), kullanıcının akıllı saat HRV (Kalp Atış Varyabilitesi) verisinden stres seviyesini analiz eder. HRV düşüşü → otonom sinir sistemi stres altında → VSS krizi yaklaşabilir → AI **proaktif olarak** FL-41 aydınlatma modunu tetikler. "Krizi beklemek yerine, krizi önler."
+> **Klinik bağlam:** Jarvis'in AI katmanı (DeepSeek V4-Pro), kullanıcının akıllı saat HRV (Kalp Atış Varyabilitesi) verisinden stres seviyesini analiz eder. HRV düşüşü → otonom sinir sistemi stres altında → VSS krizi yaklaşabilir → AI **proaktif olarak** FL-41 aydınlatma modunu tetikler. "Krizi beklemek yerine, krizi önler."
 
 ### Pattern Glare (Desen Parlaması)
 

@@ -1,4 +1,4 @@
-# =============================================================================
+﻿# =============================================================================
 # jarvis_body_sync_medical — Anti-VSS Lighting Protocol (Nöro-Optik)
 # =============================================================================
 # Visual Snow Syndrome (VSS) için nörolojik olarak optimize edilmiş
@@ -51,7 +51,7 @@ automation:
       "Bir doktor titizliğiyle, görsel korteksi korur."
 
       🤖 PROAKTİF AI TETİKLEME:
-      Gemini 3.6 Pro, kullanıcının akıllı saat HRV verisinden stres seviyesini
+      DeepSeek V4-Pro, kullanıcının akıllı saat HRV verisinden stres seviyesini
       analiz eder. HRV düşüşü → otonom sinir sistemi stres altında → VSS krizi
       yaklaşabilir → AI proaktif olarak VSS modunu tetikler. "Krizi beklemek
       yerine, krizi önler."

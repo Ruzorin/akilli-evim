@@ -1,4 +1,4 @@
-# =============================================================================
+﻿# =============================================================================
 # jarvis_core — Extended OpenAI Conversation Agent Konfigürasyonu
 # =============================================================================
 # Bu dosya, Home Assistant'ın "Extended OpenAI Conversation" custom
@@ -35,7 +35,7 @@
 # -----------------------------------------------------------------------------
 # 1. HACS → Integrations → Extended OpenAI Conversation → Install
 # 2. HA → Settings → Devices → Add → Extended OpenAI Conversation
-# 3. OpenAI API key gir
+# 3. MiniMax API key gir
 # 4. Aşağıdaki yapılandırmayı configuration.yaml'a ekle (veya packages/ koy)
 # -----------------------------------------------------------------------------
 
@@ -43,11 +43,11 @@
 # EXTENDED OPENAI CONVERSATION YAPILANDIRMASI
 # -----------------------------------------------------------------------------
 openai_conversation:
-  # OpenAI API anahtarı (https://platform.openai.com/api-keys)
+  # MiniMax API anahtarı (https://platform.openai.com/api-keys)
   api_key: "YOUR_OPENAI_API_KEY"
 
-  # Kullanılacak model — GPT-4o (en gelişmiş, doğal dil işleme)
-  model: "gpt-4o"
+  # Kullanılacak model — DeepSeek V4-Pro (en gelişmiş, doğal dil işleme)
+  model: "DeepSeek V4-Pro"
 
   # Sıcaklık (temperature) — 0.7 = yaratıcı ama tutarlı
   # Düşük (0.2) = robotik, her zaman aynı cevap
@@ -62,7 +62,7 @@ openai_conversation:
   # -------------------------------------------------------------------------
   # SYSTEM PROMPT — JARVIS'İN KİŞİLİĞİ (KRİTİK)
   # -------------------------------------------------------------------------
-  # Bu prompt, GPT-4o'ya "kim olduğunu" söyler. Tüm davranış kuralları burada.
+  # Bu prompt, DeepSeek V4-Pro'ya "kim olduğunu" söyler. Tüm davranış kuralları burada.
   #
   # 🎭 PERSONA KURALLARI:
   # 1. Kısa cevaplar (max 2 cümle)
@@ -132,8 +132,8 @@ openai_conversation:
   # -------------------------------------------------------------------------
   # HOME ASSISTANT SERVİS ÇAĞIRMA (Function Calling)
   # -------------------------------------------------------------------------
-  # Extended OpenAI Conversation, GPT-4o'ya HA servislerini çağırma yetkisi
-  # verir. GPT-4o, kullanıcının isteğine göre uygun servisi seçer ve çağırır.
+  # Extended OpenAI Conversation, DeepSeek V4-Pro'ya HA servislerini çağırma yetkisi
+  # verir. DeepSeek V4-Pro, kullanıcının isteğine göre uygun servisi seçer ve çağırır.
   #
   # Bu, Jarvis'in "doğal dil işleme" (NLP) yeteneğidir:
   #   "Işııkları kıs" → light.turn_on (brightness düşük)
@@ -289,21 +289,21 @@ openai_conversation:
         service: "script.shutdown_all_modes"
 
 # -----------------------------------------------------------------------------
-# ELEVENLABS TTS — KARİZMATİK SES
+# MiniMax Voice Cloning — KARİZMATİK SES
 # -----------------------------------------------------------------------------
-# Jarvis'in sesi ElevenLabs üzerinden gelir — robotik değil, insansı.
+# Jarvis'in sesi MiniMax Voice Cloning üzerinden gelir — robotik değil, insansı.
 #
-# 🎭 NEDEN ELEVENLABS?
+# 🎭 NEDEN MiniMax Voice Cloning?
 #   - Google/AWS TTS = robotik, düz, "asistan" hissi
-#   - ElevenLabs = insansı, tonlama, duygu, "uşak" hissi
+#   - MiniMax Voice Cloning = insansı, tonlama, duygu, "uşak" hissi
 #   - Misafir "teknoloji" değil "kişi" duyar → "premium" algı
 #
 # Ses seçimi: "Adam" — derin, erkek, İngiliz aksan, karizmatik
 # Alternatifler: "Antoni" (sıcak), "George" (derin, otoriter)
 # -----------------------------------------------------------------------------
 tts:
-  - platform: elevenlabs
-    api_key: "YOUR_ELEVENLABS_API_KEY"
+  - platform: MiniMax Voice Cloning
+    api_key: "YOUR_MiniMax Voice Cloning_API_KEY"
     voice: "Adam"
     # "Adam" = derin, erkek, İngiliz aksan — "butler/uşak" hissi
     # Bu ses, Tony Stark'ın Jarvis'i gibi karizmatik ve gizemli

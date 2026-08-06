@@ -1,4 +1,4 @@
-# =============================================================================
+﻿# =============================================================================
 # life_os_superapp — SuperApp Lovelace Dashboard (Modern Arayüz)
 # =============================================================================
 # Home Assistant Lovelace için şık, modern bir dashboard konfigürasyonu.
@@ -247,7 +247,7 @@ views:
       # SAĞ ALT: FLOATING CHAT BUTONU (AGI ile mesajlaşma)
       # -------------------------------------------------------------------------
       # 🎨 UX: Sağ alt köşede sürekli duran yuvarlak "Chat" butonu.
-      # Tıkla → AGI chat açılır → GPT-5.6'ya yazılı komut ver.
+      # Tıkla → AGI chat açılır → MiniMax Speech 2.8 Turbo'ya yazılı komut ver.
       # -------------------------------------------------------------------------
       - type: custom:bubble-card
         card_type: pop-up
@@ -261,7 +261,7 @@ views:
             primary: Jarvis AGI
             secondary: >
               {% if is_state('input_boolean.jarvis_proactive_mode', 'on') %}
-                Çevrimiçi · GPT-5.6 + Claude 5
+                Çevrimiçi · MiniMax Speech 2.8 Turbo + DeepSeek V4-Pro
               {% else %}
                 Çevrimdışı
               {% endif %}
@@ -276,7 +276,7 @@ views:
                   content:
                     type: custom:openai-conversation-card
                     # Extended OpenAI Conversation chat arayüzü
-                    # Kullanıcı yazılı komut verir → GPT-5.6/Claude 5 yanıtlar
+                    # Kullanıcı yazılı komut verir → MiniMax Speech 2.8 Turbo/DeepSeek V4-Pro yanıtlar
                     # Fotoğraf atabilir → "Bunu kalori takibime ekle"
 
 # -----------------------------------------------------------------------------

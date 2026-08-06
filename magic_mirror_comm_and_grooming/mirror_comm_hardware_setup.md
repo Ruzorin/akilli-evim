@@ -1,7 +1,7 @@
-# magic_mirror_comm_and_grooming — Ayna Donanım Köprüsü
+﻿# magic_mirror_comm_and_grooming — Ayna Donanım Köprüsü
 
 > **Modül 20: Akıllı Ayna İletişim Konsolu ve Dijital Stil Koçu**
-> Akıllı aynayı WhatsApp/Telegram görüntülü arama ve GPT-5.6 Vision tabanlı stil koçu ile entegre etmek.
+> Akıllı aynayı WhatsApp/Telegram görüntülü arama ve Qwen-VL Max tabanlı stil koçu ile entegre etmek.
 
 ---
 

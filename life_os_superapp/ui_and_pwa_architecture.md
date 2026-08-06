@@ -1,4 +1,4 @@
-# life_os_superapp — UI ve PWA Mimarisi
+﻿# life_os_superapp — UI ve PWA Mimarisi
 
 > **Modül 18: Life OS SuperApp (PWA SuperApp ve Çağrı Yönlendirme)**
 > Home Assistant'ı sıkıcı bir kontrol paneli olmaktan çıkarıp; sağlık, takvim, medya ve AGI chat arayüzünü tek bir yerde toplayan şık bir "SuperApp" (PWA) haline getirmek.
@@ -160,7 +160,7 @@ PWA, bir web sitesini "native uygulama gibi" çalıştıran teknolojidir. Home A
 - [ ] Swipeable sekmeler (Ev kontrolü + Sağlık) çalışıyor
 - [ ] Alt medya kontrolcüsü (Spotify/Hyperion) çalışıyor
 - [ ] `agi_chat_interface.yaml` HA'a yüklendi (floating chat)
-- [ ] AGI chat'ten GPT-5.6'ya yazılı komut gönderilebiliyor
+- [ ] AGI chat'ten MiniMax Speech 2.8 Turbo'ya yazılı komut gönderilebiliyor
 - [ ] `call_routing_automation.yaml` HA'a yüklendi
 - [ ] ESP32-S3 Bluetooth Proxy aktif
 - [ ] HA Companion App → phone_state sensörü çalışıyor

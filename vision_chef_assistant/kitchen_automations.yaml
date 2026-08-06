@@ -1,4 +1,4 @@
-# =============================================================================
+﻿# =============================================================================
 # vision_chef_assistant — Mutfak Otomasyonları (Etkileşim Senaryoları)
 # =============================================================================
 # Bu dosya 3 senaryo için otomasyon tanımlar:
@@ -74,7 +74,7 @@ automation:
 
       🎭 MANTIK:
       Kullanıcı "Jarvis, bunlardan ne çıkar?" der → HA, vision_frame_analyzer.py'ye
-      "recipe" modunda analiz isteği gönderir → Kamera kare alır → GPT-4o Vision
+      "recipe" modunda analiz isteği gönderir → Kamera kare alır → Qwen-VL Max
       malzemeleri tanır → Jarvis şef kişiliğiyle tarif önerir → TTS ile konuşur.
 
       On-Demand: Sadece bu komutta kamera çalışır. Sürekli analiz YOK.
@@ -116,12 +116,12 @@ automation:
       # AKSİYON 2: Vision analiz isteği gönder (recipe modu)
       # -------------------------------------------------------------------------
       # HA, vision_frame_analyzer.py'ye POST isteği gönderir.
-      # Python script: kamera karesi al → GPT-4o Vision → tarif önerisi
+      # Python script: kamera karesi al → Qwen-VL Max → tarif önerisi
       - service: rest_command.chef_analyze_recipe
 
       # Analiz tamamlanana kadar bekle (vision_frame_analyzer.py async)
       - delay:
-          seconds: 5 # GPT-4o Vision ~3-5 saniye
+          seconds: 5 # Qwen-VL Max ~3-5 saniye
 
       # -------------------------------------------------------------------------
       # AKSİYON 3: Analiz sonucunu al ve Jarvis'e TTS olarak gönder
@@ -138,7 +138,7 @@ automation:
     alias: "Chef — Analiz Sonucu → Jarvis TTS"
     description: >
       vision_frame_analyzer.py'nin MQTT'ye publish ettiği analiz sonucunu
-      alır ve Jarvis'e (ElevenLabs TTS) gönderir.
+      alır ve Jarvis'e (MiniMax Voice Cloning) gönderir.
     trigger:
       - platform: mqtt
         topic: "jarvis/chef/analysis"
@@ -256,7 +256,7 @@ automation:
       göre komik bir durum güncellemesi yapması.
 
       🎭 MANTIK:
-      Çift tık → "Durum güncellemesi" → Kamera kare al → GPT-4o Vision
+      Çift tık → "Durum güncellemesi" → Kamera kare al → Qwen-VL Max
       tezgahı analiz et → Jarvis komik/akıllıca bir yorum yapar.
 
       Örnek: Tezgah dağınık → "Bu tezgah bir savaş alanı. Önce düzen, sonra lezzet."
@@ -296,7 +296,7 @@ automation:
       # -------------------------------------------------------------------------
       # AKSİYON 2: Vision etkileşimli analiz tetikle
       # -------------------------------------------------------------------------
-      # "interactive" modu → GPT-4o Vision tezgahı komik bir şekilde yorumlar
+      # "interactive" modu → Qwen-VL Max tezgahı komik bir şekilde yorumlar
       - service: rest_command.chef_analyze_interactive
 
       # Analiz tamamlanana kadar bekle

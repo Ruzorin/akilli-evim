@@ -1,4 +1,4 @@
-"""
+﻿"""
  =============================================================================
  holistic_life_os — Biometric Fusion Engine (Uyku ve Sağlık Verisi)
  =============================================================================
@@ -8,7 +8,7 @@
    1. Yatak altı radar (LD2450) → kalp atışı, nefes, uyku evreleri
    2. Akıllı saat (Apple Health / Google Fit) → uyku süresi, adım, nabız
 
- Birleştirilmiş veri → Gemini 3.5 → "kullanıcı yorgun mu?" analizi
+ Birleştirilmiş veri → DeepSeek V4-Pro → "kullanıcı yorgun mu?" analizi
  → Yorgunsa + takvimde esnetilebilir etkinlik varsa → AGENTIC takvim değişikliği
 
  🤖 AGENTIC TAKVİM ESNETME MANTIĞI:
@@ -55,7 +55,7 @@ class LifeOSConfig:
     GOOGLE_CALENDAR_ID: str = "primary"
     GOOGLE_OAUTH_TOKEN: str = "YOUR_GOOGLE_OAUTH_TOKEN"
 
-    # Gemini 3.5 API (duygu/uyku analizi)
+    # DeepSeek V4-Pro API (duygu/uyku analizi)
     GEMINI_API_KEY: str = "YOUR_GEMINI_API_KEY"
 
     # MQTT
@@ -142,7 +142,7 @@ class BiometricFusionEngine:
     1. Akıllı saat: uyku süresi + derin uyku + REM + uyanma sayısı + nabız
     2. LD2410 radar: varlık (odada biri var mı?) + hareket aktivitesi
     3. FUSION: Akıllı saat uyku verisi + radar varlık → en doğru uyku analizi
-    4. ANALİZ: Gemini 3.6 → "kullanıcı yorgun, derin uyku eksik"
+    4. ANALİZ: DeepSeek V4-Pro → "kullanıcı yorgun, derin uyku eksik"
     5. AGENTİC EYLEM: Takvimde esnetilebilir etkinlik varsa → öner
        "10:00 toplantısını 11:00'e kaydırmamı ister misin?"
     6. Kullanıcı "evet" der → Google Calendar API → etkinliği taşı
@@ -436,7 +436,7 @@ class BiometricFusionEngine:
         )
 
     # =========================================================================
-    # JARVIS'E BAĞLAM GÖNDER (Gemini 3.5 için)
+    # JARVIS'E BAĞLAM GÖNDER (DeepSeek V4-Pro için)
     # =========================================================================
     async def send_health_context_to_jarvis(
         self,
@@ -444,10 +444,10 @@ class BiometricFusionEngine:
         health: HealthData
     ) -> None:
         """
-        Birleştirilmiş sağlık verisini Jarvis'e (Gemini 3.5) bağlam olarak gönder.
+        Birleştirilmiş sağlık verisini Jarvis'e (DeepSeek V4-Pro) bağlam olarak gönder.
 
         🤖 Bu, Jarvis'in "kullanıcının biyolojisini okumasını" sağlar.
-        Gemini 3.5'in 2M token bağlam penceresi tüm veriyi alır:
+        DeepSeek V4-Pro'in 2M token bağlam penceresi tüm veriyi alır:
         - Uyku: 6.5 saat, derin 0.8, kalite 35/100
         - Adım: 4200, nabız: 72, kalori: 380
         - Stres: 3.2/10
@@ -473,7 +473,7 @@ class BiometricFusionEngine:
             "timestamp": datetime.now().isoformat()
         }
 
-        # MQTT'ye publish → jarvis_core Python dinler → Gemini 3.5 bağlamına ekler
+        # MQTT'ye publish → jarvis_core Python dinler → DeepSeek V4-Pro bağlamına ekler
         print(f"[LifeOS] Sağlık bağlamı Jarvis'e gönderildi: {json.dumps(context, indent=2)}")
         # mqtt.publish("jarvis/health/context", json.dumps(context))
 

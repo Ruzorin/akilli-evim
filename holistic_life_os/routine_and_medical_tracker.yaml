@@ -1,4 +1,4 @@
-# =============================================================================
+﻿# =============================================================================
 # holistic_life_os — Rutin ve Tıbbi Takip Otomasyonları
 # =============================================================================
 # Bu dosya 3 senaryo için otomasyon tanımlar:
@@ -284,7 +284,7 @@ automation:
       makro/kalori hedeflerine işleyen ve sesli bilgi veren sistem.
 
       🤖 AGENTIC MANTIK:
-      Jarvis, kameradan yemeği görür → GPT-5.6 Vision → "Domatesli makarna,
+      Jarvis, kameradan yemeği görür → Qwen-VL Max → "Domatesli makarna,
       ~450 kcal, 65g karbonhidrat, 12g protein, 18g yağ" → günlük kalori
       hedefinden düşer → "Bugün 1450/2200 kcal aldınız. 750 kcal kaldı."
 
@@ -307,10 +307,10 @@ automation:
 
     action:
       # -------------------------------------------------------------------------
-      # AKSİYON 1: Mutfak kamerasından görüntü al → GPT-5.6 Vision
+      # AKSİYON 1: Mutfak kamerasından görüntü al → Qwen-VL Max
       # -------------------------------------------------------------------------
       # vision_frame_analyzer.py'yi "calorie" modunda çağır
-      # GPT-5.6 Vision: yemeği tanı → kalori + makro hesapla
+      # Qwen-VL Max: yemeği tanı → kalori + makro hesapla
       - service: rest_command.chef_analyze_recipe
       # Not: Gerçek implementasyonda ayrı bir "calorie" modu eklenecek
 

@@ -1,8 +1,8 @@
-# =============================================================================
+﻿# =============================================================================
 # vision_chef_assistant — Şef Persona System Prompt (Karakter Ayarları)
 # =============================================================================
 # Bu dosya, Jarvis'in mutfak modundayken takınacağı tavrı belirleyen
-# özel system prompt'u içerir. GPT-4o-mini Vision API'ye gönderilir.
+# özel system prompt'u içerir. Qwen-VL Max API'ye gönderilir.
 #
 # 🎭 "GORDON RAMSAY + TONY STARK" KARAKTERİ:
 # =============================================================================

@@ -1,9 +1,9 @@
-# =============================================================================
+﻿# =============================================================================
 # life_os_superapp — AGI Chat Interface (Jarvis ile Mesajlaşma)
 # =============================================================================
 # Dashboard'un sağ alt köşesinde sürekli duran (Floating button) bir "Chat"
 # arayüzü entegrasyonu. Kullanıcı bu chat ekranından 2026 AGI modeline
-# (GPT-5.6 / Claude 5) yazılı komutlar verebilir, fotoğraf atabilir.
+# (MiniMax Speech 2.8 Turbo / DeepSeek V4-Pro) yazılı komutlar verebilir, fotoğraf atabilir.
 #
 # 🎨 UX (Kullanıcı Deneyimi) MANTIK:
 # =============================================================================
@@ -30,13 +30,13 @@ input_boolean:
 # SCRIPT: AGI Chat'e Mesaj Gönder
 # -----------------------------------------------------------------------------
 # Bu script, kullanıcının chat'ten yazdığı mesajı alır ve
-# multi_model_orchestrator.py'ye (GPT-5.6 / Claude 5) gönderir.
+# multi_model_orchestrator.py'ye (MiniMax Speech 2.8 Turbo / DeepSeek V4-Pro) gönderir.
 #
 # 🤖 AGENTIC MANTIK:
 # Kullanıcı "Bize cyberpunk ortamı yap" yazar →
 # 1. Mesaj MQTT'ye publish: jarvis/agi/chat_input
 # 2. multi_model_orchestrator.py dinler → IntentClassifier → en uygun model
-# 3. GPT-5.6: "cyberpunk" → HA_ACTION JSON ÜRETİR
+# 3. MiniMax Speech 2.8 Turbo: "cyberpunk" → HA_ACTION JSON ÜRETİR
 # 4. agentic_home_assistant_api.py → HA REST API → oda değişir
 # 5. Cevap MQTT'ye: jarvis/agi/chat_output → chat'te göster
 # -----------------------------------------------------------------------------
@@ -46,7 +46,7 @@ script:
     icon: mdi:send
     description: >
       Kullanıcının chat mesajını AGI orchestrator'a gönderir.
-      GPT-5.6 / Claude 5 yanıtlar ve gerekirse HA aksiyonu alır.
+      MiniMax Speech 2.8 Turbo / DeepSeek V4-Pro yanıtlar ve gerekirse HA aksiyonu alır.
     fields:
       message:
         description: "Kullanıcının mesajı"
@@ -98,7 +98,7 @@ automation:
       agentic_home_assistant_api.py zaten çalıştırmıştır.
 
       🤖 AGENTIC AKIŞ:
-      Kullanıcı yazılı komut → GPT-5.6/Claude 5 → cevap + HA_ACTION
+      Kullanıcı yazılı komut → MiniMax Speech 2.8 Turbo/DeepSeek V4-Pro → cevap + HA_ACTION
       → HA REST API → oda değişir → cevap chat'te görünür
 
     trigger:
@@ -147,10 +147,10 @@ automation:
     alias: "AGI Chat — Fotoğraf Analizi (Vision API)"
     description: >
       Kullanıcı chat'e fotoğraf atar ve "Bunu kalori takibime ekle" der.
-      Fotoğraf GPT-5.6 Vision'a gönderilir → yemek tanınır → kalori hesaplanır.
+      Fotoğraf Qwen-VL Max'a gönderilir → yemek tanınır → kalori hesaplanır.
 
       🎨 UX: Kullanıcı fotoğraf seçer → "Bunu kalori takibime ekle" yazar
-      → GPT-5.6 Vision yemeği tanır → "Domatesli makarna, 450 kcal" →
+      → Qwen-VL Max yemeği tanır → "Domatesli makarna, 450 kcal" →
       günlük kaloriye eklenir → chat'te cevap görünür.
 
     trigger:
@@ -164,7 +164,7 @@ automation:
         value_template: "{{ trigger.payload_json.image | length > 0 }}"
 
     action:
-      # Fotoğrafı GPT-5.6 Vision'a gönder
+      # Fotoğrafı Qwen-VL Max'a gönder
       - service: mqtt.publish
         data:
           topic: "jarvis/vision/request"
@@ -177,7 +177,7 @@ automation:
             }
 
       # Vision API cevabını bekle (ayrı otomasyon dinler)
-      # GPT-5.6 Vision: yemeği tanır → kalori + makro → cevap
+      # Qwen-VL Max: yemeği tanır → kalori + makro → cevap
 
 # -----------------------------------------------------------------------------
 # LOVELACE: Floating Chat Butonu (Bubble Card)
@@ -208,7 +208,7 @@ automation:
 #   cards:
 #     - type: custom:openai-conversation-card
 #       # Extended OpenAI Conversation chat arayüzü
-#       # Kullanıcı yazılı komut verir → GPT-5.6/Claude 5 yanıtlar
+#       # Kullanıcı yazılı komut verir → MiniMax Speech 2.8 Turbo/DeepSeek V4-Pro yanıtlar
 #       # Fotoğraf atabilir → Vision API
 #       # AGI: cevap + HA_ACTION → oda değişir
 # -----------------------------------------------------------------------------

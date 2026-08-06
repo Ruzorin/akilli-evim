@@ -1,10 +1,10 @@
-"""
+﻿"""
  =============================================================================
  jarvis_core 3.0 — Agentic Home Assistant API (Kendi Kendini Kodlayan Oda)
  =============================================================================
- 2026 Sürümü — Statik intent'ler YOK. GPT-5.6 HA REST API'yi doğrudan manipüle eder.
+ 2026 Sürümü — Statik intent'ler YOK. MiniMax Speech 2.8 Turbo HA REST API'yi doğrudan manipüle eder.
 
- Bu modül, GPT-5.6'ya Home Assistant'ın TAM REST API kontrolünü verir.
+ Bu modül, MiniMax Speech 2.8 Turbo'ya Home Assistant'ın TAM REST API kontrolünü verir.
  Artık "önceden yazılmış komutlara" ihtiyaç YOK.
 
  🤖 "AGENTIC" MANTIK — NEDEN DEVRİMCİ?
@@ -15,19 +15,19 @@
 
  Yeni sistem (v3.0 Agentic):
    Kullanıcı: "Bize cyberpunk bir ortam yap"
-   GPT-5.6: [DÜŞÜNÜR] → "Cyberpunk = neon mor/yeşil, karanlık, synthwave"
-   GPT-5.6: [KOD ÜRETİR] → WLED JSON: {"rgb_color": [128, 0, 255], "brightness": 180}
-   GPT-5.6: [API ÇAĞIRIR] → POST /api/services/light/turn_on
-   GPT-5.6: [MÜZİK BULUR] → Spotify search "synthwave" → play
-   GPT-5.6: [KLİMA AYARLAR] → POST /api/services/climate/set_temperature (18°C)
-   GPT-5.6: "Cyberpunk modu aktif, efendim." (KISA cevap)
+   MiniMax Speech 2.8 Turbo: [DÜŞÜNÜR] → "Cyberpunk = neon mor/yeşil, karanlık, synthwave"
+   MiniMax Speech 2.8 Turbo: [KOD ÜRETİR] → WLED JSON: {"rgb_color": [128, 0, 255], "brightness": 180}
+   MiniMax Speech 2.8 Turbo: [API ÇAĞIRIR] → POST /api/services/light/turn_on
+   MiniMax Speech 2.8 Turbo: [MÜZİK BULUR] → Spotify search "synthwave" → play
+   MiniMax Speech 2.8 Turbo: [KLİMA AYARLAR] → POST /api/services/climate/set_temperature (18°C)
+   MiniMax Speech 2.8 Turbo: "Cyberpunk modu aktif, efendim." (KISA cevap)
 
  FARK:
    Eski: Sistem sadece "önceden tanımlı" komutları anlar
    Yeni: Sistem "herhangi" soyut komutu anlar ve KENDİSİ eylem planlar
 
  Bu, "statik otomasyon" → "yaşayan zihin" dönüşümüdür.
- GPT-5.6, HA'ı bir yazılım geliştiricisi gibi manipüle eder.
+ MiniMax Speech 2.8 Turbo, HA'ı bir yazılım geliştiricisi gibi manipüle eder.
 
  GEREKLİ KÜTÜPHANELER (2026):
    pip install httpx asyncio
@@ -87,12 +87,12 @@ class AgenticHAConfig:
 
 class AgenticHomeAssistantAPI:
     """
-    GPT-5.6'ya Home Assistant REST API'sini doğrudan kullanma yetkisi verir.
+    MiniMax Speech 2.8 Turbo'ya Home Assistant REST API'sini doğrudan kullanma yetkisi verir.
 
     🤖 NASIL ÇALIŞIR?
     =============================================================================
-    1. GPT-5.6, kullanıcı komutunu alır (örn: "Bize cyberpunk ortamı yap")
-    2. GPT-5.6, "HA_ACTIONS:" etiketiyle JSON kod bloğu üretir:
+    1. MiniMax Speech 2.8 Turbo, kullanıcı komutunu alır (örn: "Bize cyberpunk ortamı yap")
+    2. MiniMax Speech 2.8 Turbo, "HA_ACTIONS:" etiketiyle JSON kod bloğu üretir:
        HA_ACTION:
        [
          {"service": "light.turn_on", "entity_id": "light.wled_ambient",
@@ -105,8 +105,8 @@ class AgenticHomeAssistantAPI:
        ]
     3. Bu sınıf, JSON'u parse eder
     4. Her aksiyonu HA REST API'ye gönderir (async)
-    5. Sonucu GPT-5.6'a döndürür
-    6. GPT-5.6, kullanıcıya KISA cevap verir
+    5. Sonucu MiniMax Speech 2.8 Turbo'a döndürür
+    6. MiniMax Speech 2.8 Turbo, kullanıcıya KISA cevap verir
 
     🚨 GÜVENLİK:
     - Sadece ALLOWED_SERVICES listesindeki servisler çağrılabilir
@@ -136,16 +136,16 @@ class AgenticHomeAssistantAPI:
         context: Optional[Dict[str, Any]] = None
     ) -> str:
         """
-        GPT-5.6'nın ürettiği HA_ACTION JSON bloğunu parse edip HA'a gönderir.
+        MiniMax Speech 2.8 Turbo'nın ürettiği HA_ACTION JSON bloğunu parse edip HA'a gönderir.
 
-        Bu, "kendi kendini kodlayan oda"nın kalbidir. GPT-5.6:
+        Bu, "kendi kendini kodlayan oda"nın kalbidir. MiniMax Speech 2.8 Turbo:
         1. Soyut komutu alır ("cyberpunk ortamı")
         2. Hangi cihazların nasıl ayarlanacağını KENDİSİ DÜŞÜNÜR
         3. HA REST API çağrılarını KENDİSİ ÜRETİR
         4. Bu fonksiyon onları ÇALIŞTIRIR
 
         Args:
-            model_response: GPT-5.6'nın cevabı (HA_ACTION: [...] içerir)
+            model_response: MiniMax Speech 2.8 Turbo'nın cevabı (HA_ACTION: [...] içerir)
             context: Bağlam (aktif modüller, sensör verisi)
 
         Returns:
@@ -194,9 +194,9 @@ class AgenticHomeAssistantAPI:
     # =========================================================================
     def _parse_ha_actions(self, response: str) -> List[Dict]:
         """
-        GPT-5.6'nın cevabından HA_ACTION JSON bloğunu çıkar.
+        MiniMax Speech 2.8 Turbo'nın cevabından HA_ACTION JSON bloğunu çıkar.
 
-        GPT-5.6 şu formatta cevap üretir:
+        MiniMax Speech 2.8 Turbo şu formatta cevap üretir:
         "Cyberpunk modu aktif, efendim.
          HA_ACTION:
          [
@@ -274,8 +274,8 @@ class AgenticHomeAssistantAPI:
         """
         Home Assistant REST API'ye servis çağrısı gönder.
 
-        🤖 BU, GPT-5.6'NIN HA'I MANİPÜLE ETTİĞİ NOKTADIR:
-        GPT-5.6, "önceden yazılmış komutlara" ihtiyaç duymadan,
+        🤖 BU, MiniMax Speech 2.8 Turbo'NIN HA'I MANİPÜLE ETTİĞİ NOKTADIR:
+        MiniMax Speech 2.8 Turbo, "önceden yazılmış komutlara" ihtiyaç duymadan,
         doğrudan HA REST API'ye istek gönderir. Bu, "statik otomasyon"
         → "yaşayan zihin" dönüşümüdür.
 
@@ -309,13 +309,13 @@ class AgenticHomeAssistantAPI:
             return {"success": False, "error": str(e)}
 
     # =========================================================================
-    # HA STATE SORGULAMA (GPT-5.6 için)
+    # HA STATE SORGULAMA (MiniMax Speech 2.8 Turbo için)
     # =========================================================================
     async def get_ha_state(self, entity_id: str) -> Optional[Dict]:
         """
         Bir HA entity'sinin mevcut durumunu sorgula.
 
-        GPT-5.6, aksiyon almadan önce "odada ne oluyor?" sorusunu
+        MiniMax Speech 2.8 Turbo, aksiyon almadan önce "odada ne oluyor?" sorusunu
         bu fonksiyonla yanıtlar. Örnek:
         - get_ha_state("sensor.bed_activity_level") → 45
         - get_ha_state("climate.room_ac") → 22°C, cool
@@ -330,13 +330,13 @@ class AgenticHomeAssistantAPI:
             return None
 
     # =========================================================================
-    # HA SERVİS LİSTESİ (GPT-5.6 için tool tanımı)
+    # HA SERVİS LİSTESİ (MiniMax Speech 2.8 Turbo için tool tanımı)
     # =========================================================================
     async def list_available_services(self) -> List[str]:
         """
         HA'da kullanılabilir tüm servisleri listele.
 
-        GPT-5.6, bu listeyi alıp "hangi servis hangi işe yarar" bilgisini
+        MiniMax Speech 2.8 Turbo, bu listeyi alıp "hangi servis hangi işe yarar" bilgisini
         system prompt'undan çıkararak dinamik aksiyon planlar.
         """
         try:
@@ -357,10 +357,10 @@ class AgenticHomeAssistantAPI:
 
 
 # =============================================================================
-# GPT-5.6 TOOL TANIMLARI (Agentic Framework için)
+# MiniMax Speech 2.8 Turbo TOOL TANIMLARI (Agentic Framework için)
 # =============================================================================
-# Bu tool tanımları, GPT-5.6'ya "HA'ı nasıl manipüle edeceğini" söyler.
-# GPT-5.6, bu tool'ları kullanarak dinamik aksiyon planlar.
+# Bu tool tanımları, MiniMax Speech 2.8 Turbo'ya "HA'ı nasıl manipüle edeceğini" söyler.
+# MiniMax Speech 2.8 Turbo, bu tool'ları kullanarak dinamik aksiyon planlar.
 
 HA_TOOLS = [
     {
@@ -433,7 +433,7 @@ async def main():
 
     api = AgenticHomeAssistantAPI()
 
-    # Test: GPT-5.6'nın ürettiği bir "cyberpunk" aksiyon bloğu
+    # Test: MiniMax Speech 2.8 Turbo'nın ürettiği bir "cyberpunk" aksiyon bloğu
     mock_gpt_response = """
     Cyberpunk modu aktif, efendim.
 

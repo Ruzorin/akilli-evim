@@ -1,4 +1,4 @@
-"""
+﻿"""
  =============================================================================
  jarvis_core 2.0 — Zero-Latency Voice Pipeline
  =============================================================================
@@ -6,30 +6,30 @@
  2-3 saniyelik gecikmesini ortadan kaldırır.
 
  MİMARİ:
-   Klasik:  Ses → Whisper STT (~500ms) → GPT-4o (~1-2sn) → ElevenLabs (~500ms) = 2-3sn
-   2.0:     Ses → OpenAI Realtime API (streaming, WebRTC) → Ses = <500ms
+   Klasik:  Ses → MiniMax Sesten-Sese (~500ms) → DeepSeek V4-Pro (~1-2sn) → MiniMax Voice Cloning (~500ms) = 2-3sn
+   2.0:     Ses → MiniMax Realtime API (streaming, WebRTC) → Ses = <500ms
 
- OpenAI Realtime API, sesi doğrudan GPT-4o-realtime modeline stream eder.
+ MiniMax Realtime API, sesi doğrudan DeepSeek V4-Pro-realtime modeline stream eder.
  Model, konuşmayı gerçek zamanlı işler ve sesli yanıt stream eder.
  STT ve TTS ayrı adımlar değil — modelin içinde entegre.
 
- ELEVENLABS ENTEGRASYONU:
-   OpenAI Realtime API kendi sesini üretir, ama biz ElevenLabs'in daha
+ MiniMax Voice Cloning ENTEGRASYONU:
+   MiniMax Realtime API kendi sesini üretir, ama biz MiniMax Voice Cloning'in daha
    karizmatik, duygusal tonlamalı sesini kullanmak istiyoruz.
    Bu yüzden:
    1. Realtime API'den metin yanıtını al (stream)
-   2. Metni ElevenLabs'e stream et (duygusal tonlama ile)
-   3. ElevenLabs sesini hoparlöre stream et
+   2. Metni MiniMax Voice Cloning'e stream et (duygusal tonlama ile)
+   3. MiniMax Voice Cloning sesini hoparlöre stream et
 
  DUYGUSAL TONLAMA (Voice Design):
-   ElevenLabs API'sine "stability", "similarity_boost", "style" parametreleri
+   MiniMax Voice Cloning API'sine "stability", "similarity_boost", "style" parametreleri
    ile Jarvis'in ses tonunu bağlama göre ayarlarız:
    - Misafir karşılamada: "charming" (sıcak, davetkar)
    - Espri/alayda: "sarcastic" (kuru, alaycı)
    - Normal komutta: "neutral" (sakin, profesyonel)
 
  GEREKLİ KÜTÜPHANELER:
-   pip install openai elevenlabs asyncio websockets
+   pip install openai MiniMax Voice Cloning asyncio websockets
 
  =============================================================================
 """
@@ -48,9 +48,9 @@ except ImportError:
     raise ImportError("openai kütüphanesi gerekli: pip install openai")
 
 try:
-    from elevenlabs import ElevenLabs, AsyncElevenLabs
+    from MiniMax Voice Cloning import MiniMax Voice Cloning, AsyncMiniMax Voice Cloning
 except ImportError:
-    raise ImportError("elevenlabs kütüphanesi gerekli: pip install elevenlabs")
+    raise ImportError("MiniMax Voice Cloning kütüphanesi gerekli: pip install MiniMax Voice Cloning")
 
 
 # =============================================================================
@@ -60,13 +60,13 @@ except ImportError:
 class JarvisConfig:
     """Jarvis Core 2.0 konfigürasyonu."""
 
-    # OpenAI Realtime API
+    # MiniMax Realtime API
     OPENAI_API_KEY: str = "YOUR_OPENAI_API_KEY"
-    REALTIME_MODEL: str = "gpt-4o-realtime-preview-2024-12-17"
+    REALTIME_MODEL: str = "DeepSeek V4-Pro-realtime-preview-2024-12-17"
 
-    # ElevenLabs TTS (Duygusal Tonlama)
-    ELEVENLABS_API_KEY: str = "YOUR_ELEVENLABS_API_KEY"
-    ELEVENLABS_VOICE_ID: str = "YOUR_VOICE_ID"  # "Adam" veya özel voice ID
+    # MiniMax Voice Cloning (Duygusal Tonlama)
+    MiniMax Voice Cloning_API_KEY: str = "YOUR_MiniMax Voice Cloning_API_KEY"
+    MiniMax Voice Cloning_VOICE_ID: str = "YOUR_VOICE_ID"  # "Adam" veya özel voice ID
 
     # MQTT (HA ile haberleşme)
     MQTT_BROKER: str = "gl-mt3000.local"
@@ -75,7 +75,7 @@ class JarvisConfig:
     MQTT_TOPIC_AUDIO_OUT: str = "jarvis/audio/out"      # Jarvis → Hoparlör
     MQTT_TOPIC_CONTEXT: str = "jarvis/context"          # Bağlam (yüz, modül durumu)
 
-    # Duygusal Tonlama Parametreleri (ElevenLabs Voice Design)
+    # Duygusal Tonlama Parametreleri (MiniMax Voice Cloning Voice Design)
     # stability: 0.0 (değişken) → 1.0 (stabil)
     # similarity_boost: 0.0 → 1.0 (orijinal sese benzerlik)
     # style: 0.0 (düz) → 1.0 (ifade dolu)
@@ -119,13 +119,13 @@ class JarvisConfig:
 
 class ZeroLatencyVoicePipeline:
     """
-    OpenAI Realtime API + ElevenLabs ile sıfır gecikmeli sesli konuşma.
+    MiniMax Realtime API + MiniMax Voice Cloning ile sıfır gecikmeli sesli konuşma.
 
     Çalışma mantığı:
-    1. Mikrofon sesini OpenAI Realtime API'ye stream et (WebSocket)
+    1. Mikrofon sesini MiniMax Realtime API'ye stream et (WebSocket)
     2. Realtime API sesi işler, metin yanıt üretir (stream)
-    3. Metin yanıtını ElevenLabs'e stream et (duygusal tonlama)
-    4. ElevenLabs sesini hoparlöre stream et
+    3. Metin yanıtını MiniMax Voice Cloning'e stream et (duygusal tonlama)
+    4. MiniMax Voice Cloning sesini hoparlöre stream et
 
     Bu, klasik STT→LLM→TTS döngüsünden ~2-3 saniye daha hızlıdır.
     """
@@ -133,7 +133,7 @@ class ZeroLatencyVoicePipeline:
     def __init__(self, config: JarvisConfig):
         self.config = config
         self.openai_client = AsyncOpenAI(api_key=config.OPENAI_API_KEY)
-        self.elevenlabs_client = AsyncElevenLabs(api_key=config.ELEVENLABS_API_KEY)
+        self.MiniMax Voice Cloning_client = AsyncMiniMax Voice Cloning(api_key=config.MiniMax Voice Cloning_API_KEY)
 
         # Mevcut duygu profili (bağlama göre değişir)
         self.current_emotion: str = "neutral"
@@ -183,7 +183,7 @@ class ZeroLatencyVoicePipeline:
     # =========================================================================
     async def start_session(self) -> None:
         """
-        OpenAI Realtime API session'ı başlat.
+        MiniMax Realtime API session'ı başlat.
 
         Realtime API, WebSocket üzerinden çalışır:
         1. Session oluştur (model, voice, instructions)
@@ -205,7 +205,7 @@ class ZeroLatencyVoicePipeline:
             # Realtime API'ye Jarvis'in kişiliğini ve bağlamı ver
             await session.session.update(
                 session={
-                    # Jarvis'in sesi (OpenAI'nin kendi sesi — biz ElevenLabs kullanacağız)
+                    # Jarvis'in sesi (OpenAI'nin kendi sesi — biz MiniMax Voice Cloning kullanacağız)
                     "voice": "alloy",
                     # System prompt (Karakter Anayasası)
                     "instructions": self.system_prompt + "\n\nBAĞLAM:\n" + self.context,
@@ -230,8 +230,8 @@ class ZeroLatencyVoicePipeline:
             # -----------------------------------------------------------------
             # Bu döngü:
             # 1. MQTT'den mikrofon sesini al → Realtime API'ye gönder
-            # 2. Realtime API'den metin yanıt al → ElevenLabs'e gönder
-            # 3. ElevenLabs sesini MQTT'ye yayınla → hoparlör
+            # 2. Realtime API'den metin yanıt al → MiniMax Voice Cloning'e gönder
+            # 3. MiniMax Voice Cloning sesini MQTT'ye yayınla → hoparlör
             # -----------------------------------------------------------------
             await self._audio_loop(session)
 
@@ -244,12 +244,12 @@ class ZeroLatencyVoicePipeline:
 
         Bu döngü iki paralel görev çalıştırır:
         1. Input: Mikrofon → Realtime API (ses stream)
-        2. Output: Realtime API → ElevenLabs → Hoparlör (yanıt stream)
+        2. Output: Realtime API → MiniMax Voice Cloning → Hoparlör (yanıt stream)
         """
         # Paralel görevler
         await asyncio.gather(
             self._stream_input(session),   # Mikrofon → API
-            self._stream_output(session),   # API → ElevenLabs → Hoparlör
+            self._stream_output(session),   # API → MiniMax Voice Cloning → Hoparlör
         )
 
     # =========================================================================
@@ -280,18 +280,18 @@ class ZeroLatencyVoicePipeline:
             await asyncio.sleep(0.02)  # 20ms chunks (50 FPS)
 
     # =========================================================================
-    # OUTPUT: Realtime API → ElevenLabs → Hoparlör
+    # OUTPUT: Realtime API → MiniMax Voice Cloning → Hoparlör
     # =========================================================================
     async def _stream_output(self, session) -> None:
         """
         Realtime API'den gelen yanıtı işle:
         1. Metin yanıt al (response.text.delta)
-        2. Metni ElevenLabs'e stream et (duygusal tonlama)
-        3. ElevenLabs sesini MQTT'ye yayınla (hoparlör)
+        2. Metni MiniMax Voice Cloning'e stream et (duygusal tonlama)
+        3. MiniMax Voice Cloning sesini MQTT'ye yayınla (hoparlör)
 
-        🎭 NEDEN ELEVENLABS?
-        OpenAI Realtime API kendi sesini üretir ama "robotik" hissettirir.
-        ElevenLabs, metne DUYGUSAL TONLAMA katar:
+        🎭 NEDEN MiniMax Voice Cloning?
+        MiniMax Realtime API kendi sesini üretir ama "robotik" hissettirir.
+        MiniMax Voice Cloning, metne DUYGUSAL TONLAMA katar:
         - "charming": Misafir karşılamada sıcak, davetkar
         - "sarcastic": Espri/alayda kuru, ifadesiz ama zeki
         - "intimate": Romantik modda yumuşak, alçak ses
@@ -309,7 +309,7 @@ class ZeroLatencyVoicePipeline:
                 accumulated_text += event.delta
 
             elif event.type == "response.text.done":
-                # Tam metin alındı → ElevenLabs'e gönder
+                # Tam metin alındı → MiniMax Voice Cloning'e gönder
                 if accumulated_text:
                     await self._speak_with_emotion(accumulated_text)
                     accumulated_text = ""
@@ -321,11 +321,11 @@ class ZeroLatencyVoicePipeline:
                 print("[Jarvis] Yanıt tamamlandı.")
 
     # =========================================================================
-    # ELEVENLABS İLE DUYGUSAL SES ÜRETİMİ
+    # MiniMax Voice Cloning İLE DUYGUSAL SES ÜRETİMİ
     # =========================================================================
     async def _speak_with_emotion(self, text: str) -> None:
         """
-        Metni ElevenLabs'e stream et ve sesi MQTT'ye yayınla.
+        Metni MiniMax Voice Cloning'e stream et ve sesi MQTT'ye yayınla.
 
         Duygusal tonlama, self.current_emotion'a göre ayarlanır:
         - Misafir karşılamada → "charming" (sıcak)
@@ -333,7 +333,7 @@ class ZeroLatencyVoicePipeline:
         - Normal komutta → "neutral" (sakin)
         - Romantik modda → "intimate" (yumuşak)
 
-        ElevenLabs Voice Design parametreleri:
+        MiniMax Voice Cloning Voice Design parametreleri:
         - stability: Düşük = değişken/duygulu, Yüksek = stabil/sakin
         - similarity_boost: Orijinal sese benzerlik
         - style: Düşük = düz okuma, Yüksek = ifade dolu
@@ -346,10 +346,10 @@ class ZeroLatencyVoicePipeline:
 
         print(f"[Jarvis] Konuşuyor (duygu: {self.current_emotion}): {text}")
 
-        # ElevenLabs stream TTS
-        audio_stream = await self.elevenlabs_client.text_to_speech.stream(
+        # MiniMax Voice Cloning stream TTS
+        audio_stream = await self.MiniMax Voice Cloning_client.text_to_speech.stream(
             text=text,
-            voice_id=self.config.ELEVENLABS_VOICE_ID,
+            voice_id=self.config.MiniMax Voice Cloning_VOICE_ID,
             model_id="eleven_turbo_v2_5",
             voice_settings={
                 "stability": emotion_profile["stability"],

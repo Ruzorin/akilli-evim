@@ -1,4 +1,4 @@
-"""
+﻿"""
  =============================================================================
  car_omniscience_copilot — Fatigue & Ergonomic Guard (Biyometrik Gözetmen)
  =============================================================================
@@ -12,7 +12,7 @@
  🧬 "TANRI KOMPLEKSİ" TİTİZLİĞİ:
  =============================================================================
  Sistem sürücüyü "görür" (IR kamera), "hisseder" (akıllı saat) ve "anlar"
- (Gemini 3.6). Normal → sessiz. Dalgın → uyarı. Kritik → müdahale.
+ (DeepSeek V4-Pro). Normal → sessiz. Dalgın → uyarı. Kritik → müdahale.
  Sürücü farkında olmadan korunur — "Tanrı" gibi gözetler ama "uşak" gibi
  müdahale eder. Zarif, sessiz, hayat kurtarıcı.
 
@@ -178,11 +178,11 @@ class FatigueErgonomicGuard:
         - %15-25: uyarı (müdahale gerekir)
         - > %25: kritik (mola zorunlu)
 
-        IR kamera → GPT-5.6 Vision → göz açık/kapalı tespiti → oran hesapla
+        IR kamera → Qwen-VL Max → göz açık/kapalı tespiti → oran hesapla
         """
         # Gerçek implementasyonda:
         # 1. IR kameradan 10 FPS kare al
-        # 2. GPT-5.6 Vision → "göz açık mı kapalı mı?"
+        # 2. Qwen-VL Max → "göz açık mı kapalı mı?"
         # 3. Son 60 saniyede kapalı oranı = PERCLOS
 
         # HA'dan sensör oku (Android webhook → HA sensor)
@@ -219,7 +219,7 @@ class FatigueErgonomicGuard:
         # Omurga stres skoru
         spine_stress = self.compute_spine_stress(drive_time)
 
-        # Esneme sayısı (IR kamera → GPT-5.6 Vision → yawn detection)
+        # Esneme sayısı (IR kamera → Qwen-VL Max → yawn detection)
         yawn_response = await self.ha_client.get("/api/states/sensor.yawn_count_5min")
         yawn_count = int(yawn_response.json().get("state", 0)) if yawn_response.status_code == 200 else 0
 

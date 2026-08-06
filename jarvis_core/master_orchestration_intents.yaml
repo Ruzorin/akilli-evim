@@ -1,4 +1,4 @@
-# =============================================================================
+﻿# =============================================================================
 # jarvis_core — Master Orchestration Intents (NLP Niyet Senaryoları)
 # =============================================================================
 # Bu dosya, Jarvis'in doğal dil işleme (NLP) ile diğer modülleri nasıl
@@ -111,7 +111,7 @@ script:
   # INTENT 1: "Misafirimizi Ağırlayalım" — Hospitality Mode
   # ===========================================================================
   # Kullanıcı "Jarvis, misafirimizi ağırlayalım" (veya benzer doğal cümle)
-  # kurduğunda; Jarvis sesli onay verip (ElevenLabs TTS), Modül 11'i
+  # kurduğunda; Jarvis sesli onay verip (MiniMax Voice Cloning), Modül 11'i
   # (barista_mode) ve Modül 9'u (smart_diffuser) tetikler.
   #
   # 🎭 "PREMIUM HOSPITALITY" MANTIĞI:
@@ -129,7 +129,7 @@ script:
       tetikler. Jarvis kısa onay verir, arka planda kahve ve koku hazırlanır.
     sequence:
       # -------------------------------------------------------------------------
-      # ADIM 1: Jarvis sesli onay (ElevenLabs TTS)
+      # ADIM 1: Jarvis sesli onay (MiniMax Voice Cloning)
       # -------------------------------------------------------------------------
       # 🎭 Kısa, zarif onay — "İhmal etmedim, efendim."
       # Neden bu kadar kısa? Çünkü "uzun açıklama" = "robot" hissi.
@@ -377,16 +377,16 @@ script:
 # -----------------------------------------------------------------------------
 # OTOMASYON: Doğal Dil İşleme → Intent Yönlendirme
 # -----------------------------------------------------------------------------
-# Bu otomasyon, Jarvis'in (GPT-4o) doğal dil işleme sonucunu alıp
+# Bu otomasyon, Jarvis'in (DeepSeek V4-Pro) doğal dil işleme sonucunu alıp
 # uygun intent script'ine yönlendirir.
 #
 # 🧠 NLP MANTIĞI:
-# GPT-4o, kullanıcının cümlesini analiz eder ve "niyet" (intent) belirler:
+# DeepSeek V4-Pro, kullanıcının cümlesini analiz eder ve "niyet" (intent) belirler:
 #   "Misafirimizi ağırlayalım" → intent: hospitality
 #   "Modumuzu değiştir" → intent: vibe_transition
 #   "Işıkları kıs" → intent: control_lights (function calling)
 #
-# GPT-4o, openai_conversation_agent.yaml'deki "functions" üzerinden
+# DeepSeek V4-Pro, openai_conversation_agent.yaml'deki "functions" üzerinden
 # doğrudan HA servislerini çağırabilir. Ama karmaşık niyetler (çoklu modül
 # tetikleme) için intent script'leri kullanılır.
 # -----------------------------------------------------------------------------
@@ -394,14 +394,14 @@ automation:
   - id: jarvis_intent_router
     alias: "Jarvis — Intent Yönlendirici (NLP)"
     description: >
-      GPT-4o'nun doğal dil işleme sonucuna göre uygun intent script'ini
+      DeepSeek V4-Pro'nun doğal dil işleme sonucuna göre uygun intent script'ini
       tetikler. Jarvis "Sessiz İşleyiş" modunda çalışır — kısa onay,
       arka planda eylem.
     trigger:
       # -------------------------------------------------------------------------
       # Tetikleyici: HA conversation agent'tan gelen intent event
       # -------------------------------------------------------------------------
-      # Extended OpenAI Conversation, GPT-4o'nun cevabını işler ve
+      # Extended OpenAI Conversation, DeepSeek V4-Pro'nun cevabını işler ve
       # "intent" event'i yayınlar. Bu event, kullanıcının niyetini içerir.
       - platform: event
         event_type: "jarvis_intent"

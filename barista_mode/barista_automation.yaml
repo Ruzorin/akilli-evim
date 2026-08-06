@@ -1,4 +1,4 @@
-# =============================================================================
+﻿# =============================================================================
 # barista_mode — Home Assistant Ana Otomasyonu
 # =============================================================================
 # Bu otomasyon, misafir masanın altındaki NFC etiketine telefon dokundurduğunda
@@ -72,7 +72,7 @@ automation:
       # -------------------------------------------------------------------------
       # Tetikleyici 4: Webhook (jarvis_core Python modülünden)
       # -------------------------------------------------------------------------
-      # jarvis_core, OpenAI API'den gelen komutu işledikten sonra
+      # jarvis_core, MiniMax API'den gelen komutu işledikten sonra
       # HA Webhook'a POST isteği gönderir. Bu, sesli komutun daha
       # akıllı işlenmesi için kullanılır (örn: "misafirler için kahve hazırla").
       - platform: webhook

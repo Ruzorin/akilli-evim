@@ -1,8 +1,8 @@
-"""
+﻿"""
  =============================================================================
  hyperion_media_sync — Agentic Media Orchestrator (Otonom Sahne Yaratıcı)
  =============================================================================
- 2026 Sürümü — GPT-5.6 ile izlenen içeriği anla → odayı otonom ayarla
+ 2026 Sürümü — MiniMax Speech 2.8 Turbo ile izlenen içeriği anla → odayı otonom ayarla
 
  Bu modül, kullanıcının izlediği içeriği (YouTube/Netflix/ekran analizi) tanır
  ve odayı o içeriğin atmosferine OTOMATIK olarak ayarlar.
@@ -10,7 +10,7 @@
  🤖 "OTONOM SAHNE YARATICI" MANTIĞI:
  =============================================================================
  Kullanıcı "Blade Runner" izlemeye başlar →
-   1. GPT-5.6 Vision: ekran analizi → "karanlık, neon, yağmurlu, siberpunk"
+   1. Qwen-VL Max: ekran analizi → "karanlık, neon, yağmurlu, siberpunk"
    2. AI: "Bu siberpunk → neon pembe/mavi, karanlık, synthwave"
    3. AI KENDİSİ ÜRETİR:
       - WLED: rgb_color [255, 0, 128] (neon pembe), brightness 150
@@ -191,8 +191,8 @@ class AgenticMediaOrchestrator:
     🤖 NASIL ÇALIŞIR?
     =============================================================================
     1. Hyperion ekran piksellerini yakalar (anlık, <16ms UDP)
-    2. Her 30 saniyede bir ekran karesi al → GPT-5.6 Vision'a gönder
-    3. GPT-5.6: "Bu ekran ne gösteriyor? Film tipi ne?"
+    2. Her 30 saniyede bir ekran karesi al → Qwen-VL Max'a gönder
+    3. MiniMax Speech 2.8 Turbo: "Bu ekran ne gösteriyor? Film tipi ne?"
     4. İçerik tipi belirlenir → AtmosphereProfile seçilir
     5. HA_ACTION JSON ÜRETİLİR (AI KENDİSİ ÜRETİR):
        - WLED: rgb_color, brightness, effect
@@ -241,7 +241,7 @@ class AgenticMediaOrchestrator:
 
         Bu döngü:
         1. Hyperion'dan ekran karesi al (veya ekran görüntüsü yakala)
-        2. GPT-5.6 Vision'a gönder → içerik tipi belirle
+        2. Qwen-VL Max'a gönder → içerik tipi belirle
         3. İçerik tipi değiştiyse → yeni atmosfer profili uygula
         4. HA REST API → oda değişir
 
@@ -253,7 +253,7 @@ class AgenticMediaOrchestrator:
 
         while True:
             try:
-                # Adım 1: Ekran karesi al + GPT-5.6 Vision analizi
+                # Adım 1: Ekran karesi al + Qwen-VL Max analizi
                 content_type = await self._analyze_screen_content()
 
                 # Adım 2: İçerik tipi değişti mi?
@@ -273,14 +273,14 @@ class AgenticMediaOrchestrator:
             await asyncio.sleep(self._analysis_interval)
 
     # =========================================================================
-    # EKRAN İÇERİĞİ ANALİZİ — GPT-5.6 Vision
+    # EKRAN İÇERİĞİ ANALİZİ — Qwen-VL Max
     # =========================================================================
     async def _analyze_screen_content(self) -> ContentType:
         """
-        Ekran karesini GPT-5.6 Vision'a gönder → içerik tipi belirle.
+        Ekran karesini Qwen-VL Max'a gönder → içerik tipi belirle.
 
         🤖 AGENTIC MANTIK:
-        GPT-5.6, ekran görüntüsünü alır ve "bu ne?" sorusunu yanıtlar:
+        MiniMax Speech 2.8 Turbo, ekran görüntüsünü alır ve "bu ne?" sorusunu yanıtlar:
         - "Karanlık, neon ışıklar, yağmur → CYBERPUNK"
         - "Yeşil orman, hayvanlar → NATURE"
         - "Kırmızı kan, karanlık → HORROR"
@@ -292,7 +292,7 @@ class AgenticMediaOrchestrator:
         # Gerçek implementasyonda:
         # 1. Hyperion API'den ekran karesi al (veya HDMI grabber'dan)
         # 2. Base64'e çevir
-        # 3. GPT-5.6 Vision'a gönder
+        # 3. Qwen-VL Max'a gönder
         # 4. Cevap: içerik tipi
 
         # Pseudo-code:
@@ -304,7 +304,7 @@ class AgenticMediaOrchestrator:
         # )
         # content_type = parse_content_type(response)
 
-        # Şimdilik mock — gerçek implementasyonda GPT-5.6 Vision kullanılır
+        # Şimdilik mock — gerçek implementasyonda Qwen-VL Max kullanılır
         # return ContentType.CYBERPUNK  # Mock
         return ContentType.UNKNOWN  # Varsayılan
 

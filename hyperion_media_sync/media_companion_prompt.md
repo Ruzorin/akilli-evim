@@ -1,8 +1,8 @@
-# Jarvis Core 3.0 — Media Companion Prompt (Spor Yorumcusu + Sinema Eleştirmeni)
+﻿# Jarvis Core 3.0 — Media Companion Prompt (Spor Yorumcusu + Sinema Eleştirmeni)
 
 > **Bu dosya, Jarvis Core 3.0'ın sistem anayasasına eklenecek "Medya Yoldaşı" rolünü tanımlar.**
 > Kullanıcı maç izlerken veya film izlerken Jarvis'in takınacağı tavrı belirler.
-> Multi-Model Orchestrator, bu prompt'u GPT-5.6-Realtime modeline yükler.
+> Multi-Model Orchestrator, bu prompt'u MiniMax Speech 2.8 Turbo modeline yükler.
 
 ---
 
@@ -134,7 +134,7 @@ Maçta gol → 1 cümle. Filmde başlangıç → 1 cümle. Sonra: sessizlik.
 ## 📝 Bu Prompt Nasıl Kullanılır?
 
 1. **Multi-Model Orchestrator:** `load_system_prompt("media_companion", prompt)` ile yüklenir
-2. **GPT-5.6-Realtime modeline:** Medya izlerken bu prompt GPT-5.6'ya gönderilir (hızlı tepki için)
+2. **MiniMax Speech 2.8 Turbo modeline:** Medya izlerken bu prompt MiniMax Speech 2.8 Turbo'ya gönderilir (hızlı tepki için)
 3. **MQTT persona switch:** `jarvis/persona/switch` → "media_companion" → bu prompt aktif
 4. **Dinamik:** Maç bitti → "default" persona'ya dön → normal Jarvis
 

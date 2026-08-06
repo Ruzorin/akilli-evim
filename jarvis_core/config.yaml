@@ -1,13 +1,13 @@
-# jarvis_core - Sistemin Beyni
-# OpenAI API, STT/TTS ve ana orkestrasyon mantığı konfigürasyonu
+﻿# jarvis_core - Sistemin Beyni
+# MiniMax API, STT/TTS ve ana orkestrasyon mantığı konfigürasyonu
 
 openai:
   api_key: "YOUR_OPENAI_API_KEY"
-  model: "gpt-4o"
+  model: "DeepSeek V4-Pro"
   temperature: 0.7
 
 stt:
-  engine: "whisper"
+  engine: "MiniMax Sesten-Sese"
   model: "base"
   language: "tr"
 

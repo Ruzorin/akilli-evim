@@ -1,4 +1,4 @@
-# car_omniscience_copilot — Gözetmen Copilot Mimarisi
+﻿# car_omniscience_copilot — Gözetmen Copilot Mimarisi
 
 > **Modül 22: Car Omniscience Copilot (Dalgınlık, Kehanet ve G-Kuvveti)**
 > Sürücü anatomisine göre omurga yükünü izlemek, OBD2'den arıza kehaneti, IR kamera ile sürücü dalgınlığı tespiti ve G-Kuvveti optimizasyonu.
@@ -23,14 +23,14 @@
   │  ┌──────┴──────────────────┴────────────────────┴─────────┐  │
   │  │  Android Multimedya (Tailscale → VPS)                    │  │
   │  │  - Webhook → HA (saniyede veri akışı)                   │  │
-  │  │  - AI süzme: GPT-5.6 / Gemini 3.6 (anomali → uyarı)     │  │
+  │  │  - AI süzme: MiniMax Speech 2.8 Turbo / DeepSeek V4-Pro (anomali → uyarı)     │  │
   │  └────────────────────────────────────────────────────────┘  │
   └─────────────────────────────────────────────────────────────┘
           │ Tailscale VPN
           ▼
   ┌─────────────────────────────────────────────────────────────┐
   │  VPS: Home Assistant + jarvis_core 3.0                       │
-  │  - Sensor Fusion: IR + Saat + OBD2 → Gemini 3.6             │
+  │  - Sensor Fusion: IR + Saat + OBD2 → DeepSeek V4-Pro             │
   │  - Anomali tespiti → Jarvis sesli uyarı (<2sn)              │
   │  - Kehanet: "Yağ basıncı düşüyor, 500 km içinde bakım"     │
   └─────────────────────────────────────────────────────────────┘
@@ -40,8 +40,8 @@
 
 | Kaynak | Veri | Frekans | AI Süzme |
 |---|---|---|---|
-| **IR Kamera** | Yüz mikro-ifadeleri, göz kırpma, esneme | 10 FPS | GPT-5.6 Vision → PERCLOS hesapla |
-| **Akıllı Saat** | Nabız, HRV (kalp atış varyabilitesi), stres | 1 Hz | Gemini 3.6 → yorgunluk skoru |
+| **IR Kamera** | Yüz mikro-ifadeleri, göz kırpma, esneme | 10 FPS | Qwen-VL Max → PERCLOS hesapla |
+| **Akıllı Saat** | Nabız, HRV (kalp atış varyabilitesi), stres | 1 Hz | DeepSeek V4-Pro → yorgunluk skoru |
 | **OBD2** | MAF, silindir ateşleme, yağ basıncı, şanzıman sıcaklığı | 10 Hz | Anomali tespiti (istatistiksel) |
 | **GPS + İvmeölçer** | Hız, ivme, G-kuvveti, viraj açısı | 10 Hz | Sürtünme katsayısı hesapla |
 

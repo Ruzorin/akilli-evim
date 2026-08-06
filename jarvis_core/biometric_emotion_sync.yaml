@@ -1,4 +1,4 @@
-# =============================================================================
+﻿# =============================================================================
 # jarvis_core 3.0 — Biometric Emotion Sync (Duygu Algılama)
 # =============================================================================
 # 2026 Sürümü — Radar tabanlı biyometrik duygu analizi + proaktif müdahale
@@ -9,9 +9,9 @@
 # kalp atış hızı (BPM) ve nefes alışverişi (soluk/dk) ölçer.
 #
 # Bu veriler + kamera mikro-ifadeleri (micro-expressions) birleştirilip
-# Gemini 3.5'in devasa bağlam penceresine (2M token) gönderilir.
+# DeepSeek V4-Pro'in devasa bağlam penceresine (2M token) gönderilir.
 #
-# Gemini 3.5, kullanıcının duygusal durumunu analiz eder:
+# DeepSeek V4-Pro, kullanıcının duygusal durumunu analiz eder:
 #   - Stresli mi? (yüksek kalp atışı + düzensiz nefes)
 #   - Rahatlamış mı? (düşük kalp atışı + düzenli nefes)
 #   - Üzgün mü? (yüz mikro-ifadeleri: kaş çatma, dudak bükme)
@@ -26,7 +26,7 @@
 # =============================================================================
 
 # -----------------------------------------------------------------------------
-# INPUT SELECT — Kullanıcı duygu durumu (Gemini 3.5 analizi sonucu)
+# INPUT SELECT — Kullanıcı duygu durumu (DeepSeek V4-Pro analizi sonucu)
 # -----------------------------------------------------------------------------
 input_select:
   jarvis_user_emotion:
@@ -144,13 +144,13 @@ template:
 # -----------------------------------------------------------------------------
 automation:
   # ===========================================================================
-  # SENARYO 1: Biyometrik Veri Toplama — Akıllı Saat + Kamera → Gemini 3.6
+  # SENARYO 1: Biyometrik Veri Toplama — Akıllı Saat + Kamera → DeepSeek V4-Pro
   # ===========================================================================
   - id: jarvis_biometric_collect
     alias: "Jarvis — Biyometrik Veri Toplama (Akıllı Saat + Kamera)"
     description: >
       Her 2 dakikada bir, akıllı saatten (Apple Health/Google Fit) kalp atışı
-      verisi ve kameradan mikro-ifadeler toplanır. Bu veriler Gemini 3.6'ya
+      verisi ve kameradan mikro-ifadeler toplanır. Bu veriler DeepSeek V4-Pro'ya
       gönderilir ve kullanıcının duygu durumu belirlenir.
 
       ⚠️ DÜZELTME: LD2450/LD2410 radar kalp atışı ve nefes ÖLÇMEZ.
@@ -207,17 +207,17 @@ automation:
           value: "{{ stress_score }}"
 
       # -------------------------------------------------------------------------
-      # AKSİYON 2: Kameradan mikro-ifade analizi (GPT-5.6 Vision)
+      # AKSİYON 2: Kameradan mikro-ifade analizi (Qwen-VL Max)
       # -------------------------------------------------------------------------
-      # Kamera → GPT-5.6 Vision → yüz ifadesi analizi
+      # Kamera → Qwen-VL Max → yüz ifadesi analizi
       # "Bu kişinin yüz ifadesi ne? Üzgün, mutlu, nötr, stresli?"
       # Bu, radar verisiyle birleştirilir.
       # (Gerçek implementasyonda REST command ile vision_frame_analyzer.py çağrılır)
 
       # -------------------------------------------------------------------------
-      # AKSİYON 3: Gemini 3.5'e biyometrik + ifade verisi gönder
+      # AKSİYON 3: DeepSeek V4-Pro'e biyometrik + ifade verisi gönder
       # -------------------------------------------------------------------------
-      # Gemini 3.5'in 2M token bağlam penceresi tüm sensör verisini alır:
+      # DeepSeek V4-Pro'in 2M token bağlam penceresi tüm sensör verisini alır:
       # - Kalp atışı: 75 BPM
       # - Nefes: 14/dk
       # - Stres skoru: 3.2/10
@@ -225,7 +225,7 @@ automation:
       # - Yüz ifadesi: "hafif kaş çatma, dudak bükme"
       # → Gemini: "Kullanıcı üzgün/stresli. Rahatlatıcı ortam öner."
       #
-      # Bu, multi_model_orchestrator.py üzerinden Gemini 3.5'e gönderilir.
+      # Bu, multi_model_orchestrator.py üzerinden DeepSeek V4-Pro'e gönderilir.
       - service: mqtt.publish
         data:
           topic: "jarvis/biometric/analysis_request"
@@ -243,7 +243,7 @@ automation:
   - id: jarvis_emotion_response
     alias: "Jarvis — Duygu Yanıtı (Proaktif Ortam)"
     description: >
-      Gemini 3.5 duygu analizi sonucunu (input_select.jarvis_user_emotion)
+      DeepSeek V4-Pro duygu analizi sonucunu (input_select.jarvis_user_emotion)
       değiştirdiğinde, Jarvis ortamı proaktif olarak ayarlar.
 
       🎭 PROAKTİF EMPATİ:

@@ -1,10 +1,10 @@
-"""
+﻿"""
  =============================================================================
  jarvis_core — MiniMax Realtime Orchestrator (Sesten-Sese Voice Brain)
  =============================================================================
  2026 Sürümü — MiniMax Speech 2.8 Turbo + Voice Cloning + Duygu Kontrol
 
- OpenAI Realtime API'nin astronomik faturalarından kurtulup:
+ MiniMax Realtime API'nin astronomik faturalarından kurtulup:
  - Sıfır gecikme (<300ms) sesten-sese (Speech-to-Speech) mimarisi
  - Voice Cloning: 10 sn referans ses → Jarvis tonu (Paul Bettany / Türkçe dublaj)
  - Duygu kontrol: charming, sarcastic, intimate, authoritative — otonom
@@ -12,7 +12,7 @@
 
  🎯 MİMARİ DEVRİM — STT/TTS ARA KATMANLARI SİLİNDİ:
  =============================================================================
- Eski sistem: Ses → Whisper STT → GPT-4o → ElevenLabs TTS → Ses (3 ara katman, 2-3sn)
+ Eski sistem: Ses → MiniMax Sesten-Sese → DeepSeek V4-Pro → MiniMax Voice Cloning → Ses (3 ara katman, 2-3sn)
  Yeni sistem: Ses → MiniMax Speech 2.8 Turbo → Ses (TEK katman, <300ms)
 
  MiniMax Speech 2.8 Turbo:
@@ -116,7 +116,7 @@ class MiniMaxRealtimeOrchestrator:
     - Duygu kontrol: charming/sarcastic/intimate/authoritative — otonom
     - WebSocket streaming: <300ms gecikme (gerçek zamanlı)
 
-    Eski: Ses → Whisper → GPT-4o → ElevenLabs → Ses (3 katman, 2-3sn)
+    Eski: Ses → MiniMax Sesten-Sese → DeepSeek V4-Pro → MiniMax Voice Cloning → Ses (3 katman, 2-3sn)
     Yeni: Ses → MiniMax → Ses (TEK katman, <300ms)
 
     "Sıfır gecikme, kusursuz voice cloning, aylık ~$10 maliyet."
@@ -334,7 +334,7 @@ class MiniMaxRealtimeOrchestrator:
         Bağlama göre en uygun duygu profilini otomatik seç.
 
         🤖 PROAKTİF AI:
-        Gemini 3.6 / DeepSeek, bağlamı analiz eder:
+        DeepSeek V4-Pro / DeepSeek, bağlamı analiz eder:
         - Misafir var → charming
         - Intimacy modu → intimate
         - Gece → intimate

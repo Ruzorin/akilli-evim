@@ -1,4 +1,4 @@
-# 🔧 INSTALLATION.md — Eksiksiz Kurulum Rehberi
+﻿# 🔧 INSTALLATION.md — Eksiksiz Kurulum Rehberi
 
 > Bu dosya, tüm parçalar alındıktan sonra her modülün sırasıyla nasıl kurulacağını adım adım anlatır. Modüller bağımlılık sırasına göre dizilmiştir: önce altyapı, sonra sensörler, sonra atmosfer, en son yapay zeka.
 
@@ -134,7 +134,7 @@
 6. Aşağıdaki custom component'leri HACS'ten kur:
    - SmartIR (Modül 8)
    - Extended OpenAI Conversation (Modül 1)
-   - ElevenLabs TTS (Modül 1)
+   - MiniMax Voice Cloning (Modül 1)
    - LocalTuya (Modül 3, 9)
    - Alexa Media Player (Modül 5)
 ```
@@ -206,12 +206,12 @@
 
 ```
 1. HA → Settings → Devices → Add → Extended OpenAI Conversation
-2. OpenAI API key gir
+2. MiniMax API key gir
 3. openai_conversation_agent.yaml'ı configuration.yaml'a import et:
    openai_conversation: !include jarvis_core/openai_conversation_agent.yaml
-4. ElevenLabs TTS yapılandır:
+4. MiniMax Voice Cloning yapılandır:
    tts:
-     - platform: elevenlabs
+     - platform: MiniMax Voice Cloning
        api_key: "YOUR_KEY"
        voice: "Adam"
 5. master_orchestration_intents.yaml'ı HA'a yükle
@@ -588,7 +588,7 @@
    pip install opencv-python openai asyncio httpx
 2. vision_frame_analyzer.py'yi Pi'ye kopyala:
    scp vision_chef_assistant/vision_frame_analyzer.py pi@PI_IP:~/
-3. RTSP URL ve OpenAI API key'i config'e gir
+3. RTSP URL ve MiniMax API key'i config'e gir
 4. chef_persona_system_prompt.yaml'deki system_prompt'u yükle
 5. Script'i başlat:
    python3 vision_frame_analyzer.py
@@ -602,7 +602,7 @@
 1. kitchen_automations.yaml'ı HA'a yükle
 2. RESTful command'leri (chef_analyze_recipe, vb.) HA'a tanımla
 3. Mutfak Zigbee butonunu Zigbee2MQTT'e ekle (sensor.kitchen_button_action)
-4. Test: "Jarvis, bunlardan ne çıkar?" → kamera kare al → GPT-4o Vision → tarif
+4. Test: "Jarvis, bunlardan ne çıkar?" → kamera kare al → Qwen-VL Max → tarif
 5. Test: Ocak açık + oda boş 10dk → güvenlik analizi → uyarı
 6. Test: Mutfak butonu çift tık → komik durum güncellemesi
 ```
@@ -720,8 +720,8 @@
 1. Raspberry Pi 4'te PyPDF2 kur:
    pip install pypdf2
 2. HA → File upload → PDF → /config/uploads/blood_test.pdf
-3. Python script: PDF → metin çıkar → Gemini 3.5'e gönder
-4. Gemini 3.5: değerleri referanslarla karşılaştır → öneriler
+3. Python script: PDF → metin çıkar → DeepSeek V4-Pro'e gönder
+4. DeepSeek V4-Pro: değerleri referanslarla karşılaştır → öneriler
 5. Sonuç MQTT'ye publish: jarvis/health/blood_analysis
 6. ChromaDB'ye kaydet (geçmiş takip)
 7. Test: PDF yükle → Jarvis "D vitamini düşük, demir eksik" der
@@ -757,7 +757,7 @@
 ```
 1. life_coach_prompt_extension.md'yi Jarvis Core 3.0'a yükle:
    orchestrator.load_system_prompt("health_coach", prompt)
-2. Gemini 3.5 modeline bu prompt gönderilir (sağlık verisi analizi)
+2. DeepSeek V4-Pro modeline bu prompt gönderilir (sağlık verisi analizi)
 3. agi_system_prompt_2026.md'ye extension olarak ekle
 4. Test: "Jarvis, kan değerlerim nasıl?" → "D vitamini düşük. Güneşe çıkın."
 5. Test: "Jarvis, bugün ne yapmalıyım?" → takvim + sağlık + tavsiye
@@ -939,7 +939,7 @@
 6. Test: Gelen arama → aynada "Gelen Arama: [Kişi]" bildirimi
 ```
 
-### 20.3 Stil Koçu (GPT-5.6 Vision)
+### 20.3 Stil Koçu (Qwen-VL Max)
 
 ```
 1. digital_grooming_coach_vision.yaml'ı HA'a yükle
@@ -948,7 +948,7 @@
 4. input_boolean.grooming_protocol_active → ON
 5. input_select.today_event_type tanımlı mı kontrol et
 6. Takvim (calendar.personal) + hava durumu (weather.home) HA'ta aktif
-7. Test: "Jarvis, kombin nasıl?" → snapshot → GPT-5.6 Vision → TTS
+7. Test: "Jarvis, kombin nasıl?" → snapshot → Qwen-VL Max → TTS
 8. Test: "Bugün CEO görüşmesi var" → "Lacivert ceket giymelisin"
 9. Test: Hava 5°C yağmur → "Mont + şemsiye öneririm"
 ```
@@ -1127,13 +1127,13 @@
 1. VPS + Tailscale + HA çalışıyor mu? → http://VPS_IP:8123
 2. GL-MT3000 + MQTT broker çalışıyor mu? → MQTT Explorer ile test
 3. Zigbee2MQTT + dongle çalışıyor mu? → Zigbee cihaz keşfi
-4. Jarvis sesli komut: "Jarvis" → "Anlaşıldı efendim" (ElevenLabs sesi)
+4. Jarvis sesli komut: "Jarvis" → "Anlaşıldı efendim" (MiniMax Voice Cloning sesi)
 5. Gizli buton tek tık → Lounge modu (WLED + Spotify + difüzör)
 6. Ahşap dokunma 2sn → Intimacy modu (WLED kırmızı + klima + koku)
 7. NFC kahve → Barista modu (priz + ışıklar + müzik)
 8. Gece yataktan kalk → Yatak altı LED %15
 9. Sabah uyanış → WLED gündoğumu + perde + kahve
-10. Mutfak: "Bunlardan ne çıkar?" → GPT-4o Vision tarif önerisi
+10. Mutfak: "Bunlardan ne çıkar?" → Qwen-VL Max tarif önerisi
 11. Misafir geldi → Yüz tanıma → "Tekrar hoş geldiniz, Ayşe"
 12. 15dk sessizlik → Jarvis proaktif sohbet başlat
 ```

@@ -1,4 +1,4 @@
-"""
+﻿"""
  =============================================================================
  jarvis_core 3.0 — Multi-Model Orchestrator (Mixture of Experts)
  =============================================================================
@@ -8,18 +8,18 @@
  uygular. Tek bir LLM yerine, görev tipine göre en uygun AI modeline
  yönlendirme yapar:
 
-   GPT-5.6-Realtime  → Cihaz kontrolü, hızlı eylemler, espri/wingman, vision
-   Claude 5 Opus     → Derin felsefi/psikolojik sohbet, yaratıcı rol yapma
-   Claude 5 Fable    → Dil Koçu (Modül 15), dil pratik, kelime öğretimi
-   Gemini 3.5        → Biyometrik duygu analizi, devasa bağlam penceresi
+   MiniMax Speech 2.8 Turbo  → Cihaz kontrolü, hızlı eylemler, espri/wingman, vision
+   DeepSeek V4-Pro     → Derin felsefi/psikolojik sohbet, yaratıcı rol yapma
+   DeepSeek V4-Pro    → Dil Koçu (Modül 15), dil pratik, kelime öğretimi
+   DeepSeek V4-Pro        → Biyometrik duygu analizi, devasa bağlam penceresi
 
  🧠 "MIXTURE OF EXPERTS" MANTIĞI:
  =============================================================================
  Her AI modelinin farklı uzmanlık alanı vardır:
-   - GPT-5.6: Hızlı, gerçek zamanlı, çok modlu (vision + ses + metin)
-   - Claude 5 Opus: Derin düşünme, empati, felsefe, yaratıcılık
-   - Claude 5 Fable: Dil eğitimi, pedagoji, sabırlı koçluk
-   - Gemini 3.5: Devasa bağlam (2M token), çoklu sensör verisi analizi
+   - MiniMax Speech 2.8 Turbo: Hızlı, gerçek zamanlı, çok modlu (vision + ses + metin)
+   - DeepSeek V4-Pro: Derin düşünme, empati, felsefe, yaratıcılık
+   - DeepSeek V4-Pro: Dil eğitimi, pedagoji, sabırlı koçluk
+   - DeepSeek V4-Pro: Devasa bağlam (2M token), çoklu sensör verisi analizi
 
  Orchestrator, kullanıcının niyetini (intent) analiz eder ve en uygun
  modele yönlendirir. Bu, "tek boyutlu asistan" → "çok boyutlu zihin"
@@ -71,7 +71,7 @@ except ImportError:
 
 class ExpertModel(Enum):
     """Mixture of Experts — her modelin uzmanlık alanı."""
-    GPT56_REALTIME = "gpt-5.6-realtime"       # Hızlı, çok modlu, cihaz kontrolü
+    GPT56_REALTIME = "MiniMax Speech 2.8 Turbo"       # Hızlı, çok modlu, cihaz kontrolü
     CLAUDE5_OPUS = "claude-5-opus-2026"       # Derin düşünme, felsefe, empati
     CLAUDE5_FABLE = "claude-5-fable-2026"     # Dil eğitimi, pedagoji
     GEMINI35 = "gemini-3.5-pro-2026"          # Devasa bağlam, sensör analizi
@@ -91,15 +91,15 @@ class ModelConfig:
 # Model konfigürasyonları
 MODEL_CONFIGS = {
     ExpertModel.GPT56_REALTIME: ModelConfig(
-        name="GPT-5.6 Realtime",
-        model_id="gpt-5.6-realtime",
+        name="MiniMax Speech 2.8 Turbo Realtime",
+        model_id="MiniMax Speech 2.8 Turbo",
         api_key_env="OPENAI_API_KEY",
         temperature=0.7,
         max_tokens=150,
         specialty="Cihaz kontrolü, hızlı eylem, vision, espri/wingman"
     ),
     ExpertModel.CLAUDE5_OPUS: ModelConfig(
-        name="Claude 5 Opus",
+        name="DeepSeek V4-Pro",
         model_id="claude-5-opus-2026",
         api_key_env="ANTHROPIC_API_KEY",
         temperature=0.8,
@@ -107,7 +107,7 @@ MODEL_CONFIGS = {
         specialty="Derin felsefe, psikolojik sohbet, yaratıcı rol yapma"
     ),
     ExpertModel.CLAUDE5_FABLE: ModelConfig(
-        name="Claude 5 Fable",
+        name="DeepSeek V4-Pro",
         model_id="claude-5-fable-2026",
         api_key_env="ANTHROPIC_API_KEY",
         temperature=0.6,
@@ -115,7 +115,7 @@ MODEL_CONFIGS = {
         specialty="Dil eğitimi, pedagoji, sabırlı koçluk, IELTS/TEF"
     ),
     ExpertModel.GEMINI35: ModelConfig(
-        name="Gemini 3.5 Pro",
+        name="DeepSeek V4-Pro Pro",
         model_id="gemini-3.5-pro-2026",
         api_key_env="GOOGLE_API_KEY",
         temperature=0.5,
@@ -134,10 +134,10 @@ class IntentClassifier:
     Kullanıcının niyetini (intent) analiz eder ve en uygun AI modeline yönlendirir.
 
     🧠 MANTIK AĞACI:
-    1. Cihaz kontrolü / hızlı eylem / espri → GPT-5.6-Realtime
-    2. Dil eğitimi / dil pratik → Claude 5 Fable
-    3. Derin sohbet / felsefe / rol yapma → Claude 5 Opus
-    4. Duygu analizi / sensör verisi → Gemini 3.5
+    1. Cihaz kontrolü / hızlı eylem / espri → MiniMax Speech 2.8 Turbo
+    2. Dil eğitimi / dil pratik → DeepSeek V4-Pro
+    3. Derin sohbet / felsefe / rol yapma → DeepSeek V4-Pro
+    4. Duygu analizi / sensör verisi → DeepSeek V4-Pro
     """
 
     @staticmethod
@@ -160,7 +160,7 @@ class IntentClassifier:
         input_lower = user_input.lower()
 
         # -------------------------------------------------------------------------
-        # 1. DİL EĞİTMENİ MODU → Claude 5 Fable
+        # 1. DİL EĞİTMENİ MODU → DeepSeek V4-Pro
         # -------------------------------------------------------------------------
         if active_persona == "language_tutor":
             return ExpertModel.CLAUDE5_FABLE
@@ -175,7 +175,7 @@ class IntentClassifier:
             return ExpertModel.CLAUDE5_FABLE
 
         # -------------------------------------------------------------------------
-        # 2. DERİN SOHBET / FELSEFE / ROL YAPMA → Claude 5 Opus
+        # 2. DERİN SOHBET / FELSEFE / ROL YAPMA → DeepSeek V4-Pro
         # -------------------------------------------------------------------------
         deep_keywords = [
             "neden", "nasıl", "felsefe", "psikoloji", "hisset",
@@ -187,7 +187,7 @@ class IntentClassifier:
             return ExpertModel.CLAUDE5_OPUS
 
         # -------------------------------------------------------------------------
-        # 3. DUYGU ANALİZİ / SENSÖR VERİSİ → Gemini 3.5
+        # 3. DUYGU ANALİZİ / SENSÖR VERİSİ → DeepSeek V4-Pro
         # -------------------------------------------------------------------------
         emotion_keywords = [
             "stres", "üzgün", "yorgun", "mutlu", "duygu",
@@ -198,12 +198,12 @@ class IntentClassifier:
         if any(kw in input_lower for kw in emotion_keywords):
             return ExpertModel.GEMINI35
 
-        # Eğer sensör verisi bağlamda varsa → Gemini 3.5
+        # Eğer sensör verisi bağlamda varsa → DeepSeek V4-Pro
         if context.get("biometric_data") or context.get("sensor_fusion"):
             return ExpertModel.GEMINI35
 
         # -------------------------------------------------------------------------
-        # 4. VARSAYILAN → GPT-5.6-Realtime (hızlı, çok modlu)
+        # 4. VARSAYILAN → MiniMax Speech 2.8 Turbo (hızlı, çok modlu)
         # -------------------------------------------------------------------------
         # Cihaz kontrolü, hızlı eylemler, espri, wingman, vision
         return ExpertModel.GPT56_REALTIME
@@ -226,7 +226,7 @@ class MultiModelOrchestrator:
 
     🤖 AGENTIC MANTIK:
     Statik intent script'leri YOK. Agent'lar dinamik karar verir.
-    GPT-5.6, "Bize cyberpunk ortamı yap" gibi soyut komutları aldıysa:
+    MiniMax Speech 2.8 Turbo, "Bize cyberpunk ortamı yap" gibi soyut komutları aldıysa:
     1. WLED için neon mor/yeşil JSON'u KENDİSİ ÜRETİR
     2. Spotify'dan Synthwave müziği KENDİSİ BULUR
     3. HA REST API'ye KENDİSİ İSTEK GÖNDERİR
@@ -347,7 +347,7 @@ class MultiModelOrchestrator:
         """
         Sensör, yüz tanıma ve duygu verilerini model için formatla.
 
-        Gemini 3.5'in devasa bağlam penceresi (2M token) sayesinde tüm
+        DeepSeek V4-Pro'in devasa bağlam penceresi (2M token) sayesinde tüm
         sensör verisini tek seferde gönderebiliriz.
         """
         parts = []

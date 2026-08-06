@@ -1,16 +1,16 @@
-"""
+﻿"""
  =============================================================================
  vision_chef_assistant — Vision Frame Analyzer (Mutfak Gözü)
  =============================================================================
  Bu script, mutfak tezgahını tepeden gören IP kameradan (RTSP) görüntü alır,
- OpenAI GPT-4o-mini (Vision) API'sine gönderir ve Jarvis'in şef kişiliğiyle
+ OpenAI DeepSeek V4-Pro-mini (Vision) API'sine gönderir ve Jarvis'in şef kişiliğiyle
  analiz etmesini sağlar.
 
  MİMARİ:
    1. RTSP stream → OpenCV ile kare al (On-Demand veya 1 FPS)
    2. Kareyi base64'e çevir
-   3. OpenAI GPT-4o-mini Vision API'ye gönder (async)
-   4. GPT-4o'dan tarif/uyarı/eleştiri al
+   3. OpenAI Qwen-VL Max API'ye gönder (async)
+   4. DeepSeek V4-Pro'dan tarif/uyarı/eleştiri al
    5. Jarvis'e (TTS) gönder → hoparlörden şef yorumu
 
  🎯 ON-DEMAND ANALİZ MANTIĞI:
@@ -57,9 +57,9 @@ class VisionChefConfig:
     # TP-Link Tapo RTSP formatı: rtsp://kullanıcı:şifre@IP:554/stream1
     RTSP_URL: str = "rtsp://admin:password@192.168.1.107:554/stream1"
 
-    # OpenAI Vision API
+    # Qwen-VL API
     OPENAI_API_KEY: str = "YOUR_OPENAI_API_KEY"
-    VISION_MODEL: str = "gpt-4o-mini"  # Hızlı ve ekonomik vision modeli
+    VISION_MODEL: str = "DeepSeek V4-Pro-mini"  # Hızlı ve ekonomik vision modeli
     MAX_TOKENS: int = 200  # Kısa cevaplar (şef yorumu max 2-3 cümle)
 
     # Analiz Modu
@@ -182,7 +182,7 @@ class VisionFrameAnalyzer:
         user_message: str = ""
     ) -> Optional[str]:
         """
-        Kameradan kare al, OpenAI GPT-4o-mini Vision'a gönder, analiz et.
+        Kameradan kare al, OpenAI Qwen-VL Max'a gönder, analiz et.
 
         Args:
             mode: Analiz modu (ON_DEMAND, RECIPE, SAFETY, INTERACTIVE)
@@ -192,7 +192,7 @@ class VisionFrameAnalyzer:
             Jarvis'in şef yorumu (metin), veya None (hata)
 
         🎯 ASYNC MANTIK:
-        OpenAI API çağrısı asenkron — kamera karesi alınırken API beklerken
+        MiniMax API çağrısı asenkron — kamera karesi alınırken API beklerken
         diğer görevler çalışabilir. Bu, gecikmeyi minimize eder.
         """
         # Rate limiting kontrolü
@@ -214,9 +214,9 @@ class VisionFrameAnalyzer:
         # Mode'a göre prompt hazırla
         prompt = self._build_prompt(mode, user_message)
 
-        print(f"[VisionChef] GPT-4o Vision'a gönderiliyor (mod: {mode.value})...")
+        print(f"[VisionChef] Qwen-VL Max'a gönderiliyor (mod: {mode.value})...")
 
-        # OpenAI Vision API çağrısı (async)
+        # Qwen-VL API çağrısı (async)
         try:
             response = await self.openai_client.chat.completions.create(
                 model=self.config.VISION_MODEL,
@@ -250,7 +250,7 @@ class VisionFrameAnalyzer:
             return analysis
 
         except Exception as e:
-            print(f"[VisionChef] HATA: OpenAI Vision API hatası: {e}")
+            print(f"[VisionChef] HATA: Qwen-VL API hatası: {e}")
             return None
 
     # =========================================================================

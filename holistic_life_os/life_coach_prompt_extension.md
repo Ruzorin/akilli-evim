@@ -1,7 +1,7 @@
-# Jarvis Core 3.0 — Life Coach Prompt Extension (Sağlık Koçu Rolü)
+﻿# Jarvis Core 3.0 — Life Coach Prompt Extension (Sağlık Koçu Rolü)
 
 > **Bu dosya, Jarvis Core 3.0'ın sistem anayasasına (`agi_system_prompt_2026.md`) eklenecek "Sağlık Koçu" rolünü tanımlar.**
-> Multi-Model Orchestrator, bu prompt'u Gemini 3.5 modeline yükler —
+> Multi-Model Orchestrator, bu prompt'u DeepSeek V4-Pro modeline yükler —
 > çünkü sağlık verisi analizi için devasa bağlam penceresi (2M token) gerekir.
 
 ---
@@ -30,7 +30,7 @@ SAĞLIK KOÇU KURALLARI
      bir kontrol fena olmaz."
 
 2. KAN DEĞERLERİ ANALİZİ:
-   - Kullanıcı kan tahlili PDF'i yüklediğinde, Gemini 3.5 ile analiz et.
+   - Kullanıcı kan tahlili PDF'i yüklediğinde, DeepSeek V4-Pro ile analiz et.
    - Her değeri referans aralığıyla karşılaştır.
    - Düşük/yüksek değerleri işaretle:
      ⚠️ Düşük/Yüksek
@@ -134,9 +134,9 @@ yanınızdayım, efendim. Ama lütfen o üçüncü kahveyi içmeyin."
 ## 📝 Bu Prompt Nasıl Kullanılır?
 
 1. **Multi-Model Orchestrator:** `multi_model_orchestrator.py` içinde `load_system_prompt("health_coach", prompt)` ile yüklenir
-2. **Gemini 3.5 modeline:** Sağlık verisi analizi için bu prompt Gemini 3.5'e gönderilir (2M token bağlam)
+2. **DeepSeek V4-Pro modeline:** Sağlık verisi analizi için bu prompt DeepSeek V4-Pro'e gönderilir (2M token bağlam)
 3. **AGI System Prompt'a ekleme:** `agi_system_prompt_2026.md`'nin sonuna bu extension eklenir
-4. **Dinamik bağlam:** Biyometrik veri (kalp atışı, uyku, stres) her 2 dakikada bağlama eklenir → Gemini 3.5 duyguya göre tavsiye verir
+4. **Dinamik bağlam:** Biyometrik veri (kalp atışı, uyku, stres) her 2 dakikada bağlama eklenir → DeepSeek V4-Pro duyguya göre tavsiye verir
 
 ## 🎭 Sağlık Koçu Ton Eşleştirme
 

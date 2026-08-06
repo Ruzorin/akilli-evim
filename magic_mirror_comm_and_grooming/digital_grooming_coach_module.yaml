@@ -1,4 +1,4 @@
-# =============================================================================
+﻿# =============================================================================
 # magic_mirror_comm_and_grooming — Stil ve Bakım Protokolü (Life OS Entegre)
 # =============================================================================
 # Bu modül, kullanıcının aynanın karşısındayken kıyafetini, saçını, tıraşını
@@ -71,8 +71,8 @@ automation:
 
       1. GÖRSEL TARAMA: Ayna kamerasından anlık yüksek çözünürlüklü kare al
       2. BAĞLAM ENTEGRASYONU: Takvim + hava durumu → etkinlik tipi belirle
-      3. KOMBİN & BAKIM ANALİZİ: GPT-5.6 Vision → kıyafet + saç + bakım + hava uygunluğu
-      4. SESLİ KOÇLUK: ElevenLabs TTS (charming) → "Takviminde CEO görüşmesi var
+      3. KOMBİN & BAKIM ANALİZİ: Qwen-VL Max → kıyafet + saç + bakım + hava uygunluğu
+      4. SESLİ KOÇLUK: MiniMax Voice Cloning (charming) → "Takviminde CEO görüşmesi var
          ama tişört casual kalmış, lacivert ceket giymelisin"
 
       🎯 İMAJ DANIŞMANI:
@@ -183,9 +183,9 @@ automation:
               option: "none"
 
       # -------------------------------------------------------------------------
-      # AKSİYON 3: KOMBİN & BAKIM ANALİZİ — GPT-5.6 Vision
+      # AKSİYON 3: KOMBİN & BAKIM ANALİZİ — Qwen-VL Max
       # -------------------------------------------------------------------------
-      # Snapshot + takvim + hava → GPT-5.6 Vision → tam imaj analizi
+      # Snapshot + takvim + hava → Qwen-VL Max → tam imaj analizi
       - service: mqtt.publish
         data:
           topic: "jarvis/vision/grooming_request"
@@ -208,12 +208,12 @@ automation:
               }
             }
 
-      # GPT-5.6 Vision analizi için bekle
+      # Qwen-VL Max analizi için bekle
       - delay:
           seconds: 5
 
       # -------------------------------------------------------------------------
-      # AKSİYON 4: SESLİ KOÇLUK — ElevenLabs TTS (charming persona)
+      # AKSİYON 4: SESLİ KOÇLUK — MiniMax Voice Cloning (charming persona)
       # -------------------------------------------------------------------------
       # grooming_coach_tts otomasyonu (digital_grooming_coach_vision.yaml'de)
       # MQTT cevabı yakalar ve TTS'e gönderir.

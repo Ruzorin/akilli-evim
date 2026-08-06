@@ -1,4 +1,4 @@
-# 📋 EQUIPMENT.md — Akıllı Yurt Odası Teçhizat Listesi
+﻿# 📋 EQUIPMENT.md — Akıllı Yurt Odası Teçhizat Listesi
 
 > Bu dosya, projenin tüm 14 modülü için gereken donanım, sensör, kablo ve materyallerin eksiksiz listesidir. Modüllere göre sıralanmıştır.
 
@@ -196,7 +196,7 @@
 | 4 | Akıllı Priz (Ocak) | Shelly Plug s | 1 | ~$15 | Ocak güç izleme (güvenlik) |
 | 5 | Zigbee Buton (Mutfak) | Sonoff ZBMINI / Tuya | 1 | ~$10 | Mutfak tezgahı yanında |
 
-> Not: OpenAI GPT-4o-mini Vision API (Modül 1 ile paylaşımlı).
+> Not: OpenAI Qwen-VL Max API (Modül 1 ile paylaşımlı).
 
 ---
 
@@ -385,7 +385,7 @@
 | **Esans Yağları** | 3 | ~$45 |
 | **Kahve & Sunum** | — | ~$60 |
 | **Kablo & Direnç & Kondansatör** | — | ~$20 |
-| **API Abonelikleri** (OpenAI, ElevenLabs, Spotify) | — | ~$25/ay |
+| **API Abonelikleri** (OpenAI, MiniMax Voice Cloning, Spotify) | — | ~$25/ay |
 | **TOPLAM (Tek Seferlik)** | — | **~$920** |
 | **TOPLAM (Aylık)** | — | **~$35/ay** |
 
@@ -401,7 +401,7 @@
 3. Raspberry Pi 4 (jarvis_core Python)
 4. Sonoff ZBMINI × 2 (gizli butonlar)
 5. TTP223 + ESP32 (kapasitif dokunma)
-6. OpenAI + ElevenLabs API abonelikleri
+6. OpenAI + MiniMax Voice Cloning API abonelikleri
 
 ### Faz 2 (Atmosfer — Işık + Ses + Koku)
 7. ESP32 + INMP441 + WS2812B (audio reactive WLED)

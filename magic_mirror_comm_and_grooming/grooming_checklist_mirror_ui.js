@@ -1,4 +1,4 @@
-/* =============================================================================
+﻿/* =============================================================================
  * magic_mirror_comm_and_grooming — Grooming Checklist Mirror UI
  * =============================================================================
  * MagicMirror² arayüzüne, kullanıcı aynaya baktığında sağ alt köşede
@@ -18,7 +18,7 @@
  *   "Lacivert ceket giymelisin"
  *
  * Kullanıcı telefonundan onayladıkça maddeler listeden silinir.
- * Grooming puanı, GPT-5.6 Vision analizinden güncellenir.
+ * Grooming puanı, Qwen-VL Max analizinden güncellenir.
  *
  * Kurulum:
  *   ~/MagicMirror/modules/MMM-Grooming-Checklist/MMM-Grooming-Checklist.js
