@@ -1,26 +1,69 @@
-﻿# jarvis_core - Sistemin Beyni
-# MiniMax API, STT/TTS ve ana orkestrasyon mantığı konfigürasyonu
+﻿# jarvis_core — Sistemin Beyni
+# MiniMax Speech 2.8 Turbo + DeepSeek V4-Pro + Qwen-VL Max Hibrit Mimari
+#
+# Bu dosya, minimax_realtime_orchestrator.py ve hybrid_brain_and_memory_manager.py
+# için temel konfigürasyon parametrelerini içerir.
 
-openai:
-  api_key: "YOUR_OPENAI_API_KEY"
-  model: "DeepSeek V4-Pro"
+# =============================================================================
+# MiniMax Speech 2.8 Turbo — Sesten-Sese Realtime Pipeline
+# =============================================================================
+# WebSocket üzerinden <300ms gecikme ile sesten-sese iletişim.
+# Voice Cloning: 10sn referans WAV → Jarvis tonu
+# Duygu kontrolü: charming, sarcastic, intimate, authoritative
+minimax:
+  api_key: "YOUR_MINIMAX_API_KEY"
+  # WebSocket endpoint (Speech 2.8 Turbo Realtime)
+  ws_url: "wss://api.minimax.chat/v1/realtime/chat"
+  # Voice Cloning referans sesi (10sn WAV — Jarvis tonu)
+  voice_clone_reference: "./jarvis_voice_reference.wav"
+  # Varsayılan duygu tonu
+  default_emotion: "charming"
+  # Sample rate
+  sample_rate: 24000
+
+# =============================================================================
+# DeepSeek V4-Pro — Ağır Zeka (Düşünme, Kod, Günlük Özet)
+# =============================================================================
+# MiniMax voice token'ları pahalı → düşünme işi DeepSeek'e devredilir.
+# Günlük konuşma özetleri → Prompt Caching → ertesi gün MiniMax yüklenir.
+deepseek:
+  api_key: "YOUR_DEEPSEEK_API_KEY"
+  base_url: "https://api.deepseek.com/v1"
+  model: "deepseek-chat"
   temperature: 0.7
+  max_tokens: 4096
+  # Prompt Caching (önceki günün özeti → cache hit → maliyet ~$0)
+  enable_prompt_caching: true
 
-stt:
-  engine: "MiniMax Sesten-Sese"
-  model: "base"
-  language: "tr"
+# =============================================================================
+# Qwen-VL Max — Görüntü Analizi (Vision)
+# =============================================================================
+# Kamera görüntüsü, yemek tanıma, postür analizi, mikro-ifadeler.
+qwen_vl:
+  api_key: "YOUR_QWEN_VL_API_KEY"
+  base_url: "https://dashscope.aliyuncs.com/api/v1"
+  model: "qwen-vl-max"
 
-tts:
-  engine: "openai"
-  voice: "alloy"
-  speed: 1.0
-
+# =============================================================================
+# Home Assistant — Agentic REST API
+# =============================================================================
 home_assistant:
   url: "http://homeassistant.local:8123"
   token: "YOUR_HA_LONG_LIVED_TOKEN"
 
+# =============================================================================
+# MQTT — Sensör ve Modül Haberleşmesi
+# =============================================================================
 mqtt:
   broker: "mqtt://gl-mt3000.local"
   port: 1883
   topic_prefix: "jarvis"
+
+# =============================================================================
+# Hafıza — Günlük Özet Depolama
+# =============================================================================
+memory:
+  # DeepSeek günlük özetlerin saklandığı lokal JSON dosyası
+  daily_summary_path: "./jarvis_memory/daily_summaries.json"
+  # Kaç gün özet tutulsun (eski özetler silinir)
+  retention_days: 30

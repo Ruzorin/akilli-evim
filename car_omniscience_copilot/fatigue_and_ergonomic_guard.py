@@ -4,8 +4,8 @@
  =============================================================================
  2026 Sürümü — PERCLOS + Omurga Stresi + Dalgınlık Müdahalesi
 
- Bu modül, sürücünün uzun yolculuklardaki bel/omurga stresini (2.10m/125kg
- bağlamında) hesaplar ve PERCLOS (göz kırpma oranı) ile dalgınlığı tespit eder.
+ Bu modül, sürücünün uzun yolculuklardaki bel/omurga stresini (sürücü
+ fiziksel parametrelerine göre) hesaplar ve PERCLOS (göz kırpma oranı) ile dalgınlığı tespit eder.
  Dalgınlık tespit edildiğinde → HA servis çağrıları ile klima -2°C, difüzör
  nane/limon, koltuk bel desteği şişir.
 
@@ -45,7 +45,7 @@ class FatigueGuardConfig:
     HA_URL: str = "http://homeassistant.local:8123"
     HA_TOKEN: str = "YOUR_HA_LONG_LIVED_TOKEN"
 
-    # Sürücü anatomisi (2.10m / 125kg)
+    # Sürücü anatomisi (kişiye özel — config'den ayarlanır)
     DRIVER_HEIGHT_CM: int = 210
     DRIVER_WEIGHT_KG: int = 125
 
@@ -110,9 +110,9 @@ class FatigueErgonomicGuard:
     Bu sistem sürücüyü "görür" (IR kamera → PERCLOS), "hisseder" (akıllı saat
     → nabız/HRV) ve "anlar" (sürüş süresi → omurga stresi).
 
-    2.10m boy / 125kg için omurga stresi hesaplaması:
+    Sürücü fiziksel parametrelerine göre omurga stresi hesaplaması:
     - Uzun boy → bel bölgesine daha fazla yük biner (fiziksel gerçek)
-    - 125kg → koltuk bel desteği kritik (anatomik gerçek)
+    - Ağır vücut → koltuk bel desteği kritik (anatomik gerçek)
     - Sürüş süresi > 90 dk → omurga stres skoru artar
     - Stres skoru > 70 → koltuk bel desteği şişir (HA → MQTT → koltuk motoru)
 
@@ -135,15 +135,15 @@ class FatigueErgonomicGuard:
         print("[FatigueGuard] Biyometrik Gözetmen başlatıldı (2026)")
 
     # =========================================================================
-    # OMURGA STRESİ HESAPLAMA (2.10m / 125kg bağlamı)
+    # OMURGA STRESİ HESAPLAMA (sürücü fiziksel parametreleri)
     # =========================================================================
     def compute_spine_stress(self, drive_time_minutes: int) -> float:
         """
-        2.10m boy / 125kg için omurga stres skoru hesapla (0-100).
+        Sürücü fiziksel parametrelerine göre omurga stres skoru hesapla (0-100).
 
         🧬 BİYOLOJİK BAĞLAM:
-        Uzun boy (2.10m) → bel bölgesine binen yük daha fazla.
-        125kg → koltuk bel desteği kritik (ağırlık merkezi farklı).
+        Uzun boy → bel bölgesine binen yük daha fazla.
+        Ağır vücut → koltuk bel desteği kritik (ağırlık merkezi farklı).
         Sürüş süresi arttıkça → omurga stresi artar.
 
         Skala:
@@ -152,10 +152,10 @@ class FatigueErgonomicGuard:
         - 60-80: yüksek (120+ dk)
         - 80-100: kritik (150+ dk) → bel desteği şişir
         """
-        # Boy faktörü: 2.10m → normalden %30 daha fazla bel yükü
+        # Boy faktörü: uzun boy → normalden daha fazla bel yükü
         height_factor = (self.config.DRIVER_HEIGHT_CM - 170) / 40  # 170cm = normal
 
-        # Kilo faktörü: 125kg → normalden %25 daha fazla basınç
+        # Kilo faktörü: ağır vücut → normalden daha fazla basınç
         weight_factor = (self.config.DRIVER_WEIGHT_KG - 70) / 55  # 70kg = normal
 
         # Süre faktörü: 60 dk = 30 puan, 120 dk = 60 puan, 180 dk = 90 puan
@@ -310,7 +310,7 @@ class FatigueErgonomicGuard:
             )
 
             # Koltuk bel desteği şişir (omurga stresi → bel desteği maksimum)
-            # 🧬 2.10m/125kg → bel desteği KRİTİK
+            # 🧬 Uzun boy + ağır vücut → bel desteği KRİTİK
             await self._call_ha_service(
                 "mqtt.publish",
                 None,
@@ -344,7 +344,7 @@ class FatigueErgonomicGuard:
         """
         Omurga stres skoru yüksekse → koltuk bel desteği şişir.
 
-        🧬 2.10m / 125kg BAĞLAMI:
+        🧬 SÜRÜCÜ FİZİKSEL BAĞLAMI:
         Uzun boy + ağır vücut → bel bölgesine binen yük normalden %55 daha fazla.
         Sürüş > 90 dk → omurga stres skoru > 60 → bel desteği şişir.
         Sürüş > 150 dk → stres > 80 → bel desteği maksimum + Jarvis "Oturun, gerinin".

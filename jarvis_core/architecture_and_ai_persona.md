@@ -1,7 +1,7 @@
 ﻿# jarvis_core — Mimari ve AI Persona Rehberi
 
-> **Modül 1: Jarvis Core (OpenAI Destekli Ana Beyin)**
-> Standart sıkıcı asistanları devreden çıkarıp; OpenAI DeepSeek V4-Pro mantığıyla düşünen, bağlamı anlayan ve MiniMax Voice Cloning üzerinden karizmatik gerçekçi sesle konuşan "Premium Yapay Zeka Uşak" yaratmak.
+> **Modül 1: Jarvis Core (MiniMax + DeepSeek Hibrit Beyin)**
+> Standart sıkıcı asistanları devreden çıkarıp; MiniMax Speech 2.8 Turbo ile sesten-sese konuşan, DeepSeek V4-Pro ile düşünen ve Voice Cloning ile karizmatik gerçekçi sesle yanıt veren "Premium Yapay Zeka Uşak" yaratmak.
 
 ---
 
@@ -30,18 +30,30 @@
   │  ┌──────────────────────────────────────────────────────────┐    │
   │  │              HOME ASSISTANT (Docker)                      │    │
   │  │                                                          │    │
-  │  │  ┌─────────────┐  ┌──────────────┐  ┌─────────────────┐  │    │
-  │  │  │ MiniMax Sesten-Sese │  │  MiniMax API  │  │  MiniMax Voice Cloning │  │    │
-  │  │  │ (Ses→Metin)  │  │  (DeepSeek V4-Pro)    │  │  (Metin→Ses)    │  │    │
-  │  │  └──────┬──────┘  └──────┬───────┘  └────────┬────────┘  │    │
-  │  │         │                │                   │            │    │
-  │  │         ▼                ▼                   ▼            │    │
   │  │  ┌──────────────────────────────────────────────────┐    │    │
-  │  │  │          JARVIS CORE (Orkestra Şefi)              │    │    │
-  │  │  │  - Doğal dil işleme (NLP)                        │    │    │
-  │  │  │  - Modül tetikleme (11 modül)                    │    │    │
-  │  │  │  - Bağlam anlama (context awareness)             │    │    │
-  │  │  │  - Persona (karizmatik uşak)                     │    │    │
+  │  │  │  JARVIS CORE — HIBRIT BEYIN                        │    │    │
+  │  │  │                                                    │    │    │
+  │  │  │  ┌─────────────────┐  ┌──────────────────────┐   │    │    │
+  │  │  │  │ MiniMax Speech  │  │ DeepSeek V4-Pro       │   │    │    │
+  │  │  │  │ 2.8 Turbo       │  │ (Ağır Zeka)           │   │    │    │
+  │  │  │  │ (Sesten-Sese)   │  │ - Kod, analiz, özet   │   │    │    │
+  │  │  │  │ <300ms gecikme  │  │ - Günlük hafıza        │   │    │    │
+  │  │  │  │ Voice Cloning   │  │ - Tool calling        │   │    │
+  │  │  │  │ Duygu kontrol   │  │                        │   │    │
+  │  │  │  └────────┬────────┘  └───────────┬────────────┘   │    │
+  │  │  │           │                       │                 │    │
+  │  │  │           └───────────┬───────────┘                 │    │
+  │  │  │                       ▼                             │    │
+  │  │  │  ┌──────────────────────────────────────────┐     │    │
+  │  │  │  │  Qwen-VL Max (Görüntü Analizi)            │     │    │
+  │  │  │  │  - Kamera/vision                         │     │    │
+  │  │  │  │  - Mutfak şefi, stil koçu                 │     │    │
+  │  │  │  └──────────────────────────────────────────┘     │    │
+  │  │  │                                                    │    │
+  │  │  │  - Modül tetikleme (26 modül)                     │    │
+  │  │  │  - Bağlam anlama (context awareness)              │    │
+  │  │  │  - Persona (karizmatik uşak)                      │    │
+  │  │  │  - Agentic HA REST API                            │    │
   │  │  └──────────────────────────────────────────────────┘    │    │
   │  └──────────────────────────────────────────────────────────┘    │
   └──────────────────────────────────────────────────────────────────┘
@@ -52,31 +64,36 @@
 | Bileşen | Rol | Konum |
 |---|---|---|
 | **Mikrofon** | Ses yakalama (gizli, görünmez) | Oda |
-| **ESP32-S3 (Audio Hub)** | Mikrofon → MQTT, MQTT → Hoparlör | Oda |
+| **ESP32-S3 (Audio Hub)** | Mikrofon → WebSocket → MiniMax, MiniMax → Hoparlör | Oda |
 | **GL-MT3000** | Yerel ağ + MQTT broker + Tailscale client | Oda |
 | **Tailscale VPN** | Oda ↔ VPS şifreli tünel | Oda ↔ VPS |
 | **Home Assistant** | Orkestra şefi, otomasyon motoru | VPS (Docker) |
-| **MiniMax Sesten-Sese** | Ses → metin (OpenAI MiniMax Sesten-Sese API) | VPS (HA üzerinden) |
-| **OpenAI DeepSeek V4-Pro** | Doğal dil işleme, karar verme | Bulut (MiniMax API) |
-| **MiniMax Voice Cloning** | Metin → ses (karizmatik, gerçekçi) | Bulut (MiniMax Voice Cloning API) |
+| **MiniMax Speech 2.8 Turbo** | Sesten-sese (Speech-to-Speech) End-to-End. STT/TTS YOK. <300ms gecikme. Voice Cloning. Duygu kontrol | Bulut (MiniMax API) |
+| **DeepSeek V4-Pro** | Ağır zeka — kod yazma, analiz, günlük özet. Çok ucuz (~$1-2/ay) | Bulut (DeepSeek API) |
+| **Qwen-VL Max** | Görüntü analizi — kamera, vision. Ucuz (~$2/ay) | Bulut (Qwen API) |
 
-### Sesli Komut Akışı (Latency)
+### Sesli Komut Akışı (Yeni Mimari — <300ms)
 
 ```
-  Kullanıcı konuşur → Mikrofon → ESP32-S3 → MQTT → HA (GL-MT3000 → VPS)
-  → MiniMax Sesten-Sese (~500ms) → DeepSeek V4-Pro (~1-2sn) → Intent işleme (~100ms)
-  → Modül tetikleme (~100ms) → MiniMax Voice Cloning (~500ms) → MQTT → ESP32-S3 → Hoparlör
+  ESKİ (3 katman, 2-3sn):
+  Ses → Whisper STT → GPT-4o → ElevenLabs TTS → Ses
 
-  Toplam gecikme: ~2-3 saniye (kabul edilebilir — "düşünüp cevap veren" hissi)
+  YENİ (TEK katman, <300ms):
+  Ses → MiniMax Speech 2.8 Turbo → Ses
+  (End-to-End Multimodal — STT/TTS ara katmanları SİLİNDİ)
+
+  Ağır zeka gerektiğinde:
+  Ses → MiniMax → DeepSeek V4-Pro → sonuç → MiniMax → Ses
+  (Düşünme ucuz beyne, seslendirme MiniMax'e)
 ```
 
-> **Neden 2-3 saniye kabul edilebilir?** İnsan beyni, "düşünüp cevap veren" bir asistan için 2-3 saniyeyi "doğal" algılar. Anında cevap = "robot"; 2-3 saniye = "düşünen kişi". Jarvis'in "kısa bir duraklama sonra zarif cevap" vermesi → "karizmatik" hissi.
+> **Gecikme:** <300ms (sesten-sese). Ağır zeka gerektiğinde ~1-2sn (DeepSeek köprüsü). "Düşünüp cevap veren" hissi için kabul edilebilir.
 
 ---
 
-## 🎙️ Neden MiniMax Voice Cloning? (TTS Seçimi)
+## 🎙️ Neden MiniMax Voice Cloning?
 
-### Robotik Ses vs MiniMax Voice Cloning
+### Robotik Ses vs Voice Cloning
 
 | Faktör | HA TTS (Google/AWS) | MiniMax Voice Cloning |
 |---|---|---|
@@ -85,34 +102,39 @@
 | **Aksan** | Standart | İngiliz aksanı (premium) |
 | **Hissi** | "Asistan" | "Uşak/Butler" |
 | **Misafir Algısı** | "Teknoloji" | "İnsan gibi, karizmatik" |
-| **Fiyat** | Ücretsiz/ucuz | ~$5/ay (5,000 karakter) |
+| **Fiyat** | Ücretsiz/ucuz | Dahil (~$10/ay MiniMax paketinde) |
 
-### Sinematik Etki
+### Voice Cloning Kurulumu
+
+1. **Referans ses:** 10 saniyelik WAV/MP3 (Paul Bettany / Jarvis tonu veya Türkçe dublaj)
+2. **MiniMax API:** Voice Cloning özelliği aktif
+3. **Konfigürasyon:** `minimax_realtime_orchestrator.py` içinde `voice_clone` parametresi
+4. **Sonuç:** Tüm konuşmalar bu tonda — ekstra maliyet YOK (tek seferlik klonlama)
+
+> **Misafir Algısı:** Misafir, robotik bir ses duyduğunda "teknoloji" düşünür. MiniMax Voice Cloning'in insansı sesini duyduğunda "bir kişiyle konuşuyorum" hisseder → "premium" algı.
+
+---
+
+## 🧠 Hybrid Brain Mantığı — Maliyet Optimizasyonu
+
+### Böl ve Yönet
+
+| İş | Beyin | Maliyet |
+|---|---|---|
+| **Hızlı sesli konuşma** | MiniMax Speech 2.8 Turbo | ~$10/ay (ses token) |
+| **Ağır düşünme (kod, analiz)** | DeepSeek V4-Pro | ~$1-2/ay (metin token) |
+| **Görüntü analizi** | Qwen-VL Max | ~$2/ay (vision token) |
+| **Günlük hafıza** | DeepSeek özet → Prompt Caching | ~$0 (bedava) |
+
+> **Prensip:** "Ses token'larını sadece konuşmaya harca, düşünmeyi ucuz beyne devret."
+
+### Günlük Hafıza Akışı
 
 ```
-  ❌ GOOGLE TTS (Robotik)
-  "Barista mode activated. Pre-heating the espresso machine."
-  → Düz, monoton, "asistan" hissi → "teknoloji"
-
-  ✅ MiniMax Voice Cloning (Karizmatik)
-  "Barista mode activated. Pre-heating the espresso machine."
-  → İngiliz aksanı, zarif tonlama, hafif gülümseme → "uşak" hissi → "premium"
+  Gün 1: Konuşma → DeepSeek özet → lokal JSON kaydet (~$0.001)
+  Gün 2: Özet → MiniMax System Prompt'a yükle (Prompt Caching) → bedava hafıza
+  "Jarvis dünkü konuşmaları hatırlar — ses token maliyetine girmeden."
 ```
-
-> **Misafir Algısı:** Misafir, robotik bir ses duyduğunda "teknoloji" düşünür. MiniMax Voice Cloning'in insansı sesini duyduğunda "bir kişiyle konuşuyorum" hisseder → "premium" algı. Tony Stark'ın Jarvis'i gibi — robotik değil, karizmatik.
-
-### MiniMax Voice Cloning Kurulum
-
-1. **MiniMax Voice Cloning hesabı:** MiniMax Voice Cloning.io → kayıt ol → API key al
-2. **HA entegrasyonu:** HACS → MiniMax Voice Cloning custom component
-3. **Ses seçimi:** "Adam" (derin, erkek, İngiliz aksan) veya "Antoni" (zarif, sıcak)
-4. **HA configuration:**
-   ```yaml
-   tts:
-     - platform: MiniMax Voice Cloning
-       api_key: "YOUR_MiniMax Voice Cloning_API_KEY"
-       voice: "Adam"
-   ```
 
 ---
 
@@ -121,16 +143,6 @@
 ### "Görünmez Teknoloji" İlkesi
 
 Mikrofon, **asla görünür olmamalıdır**. Misafir, "dinlenildiğini" hissetmemeli — sadece "oda akıllı" hissetmeli.
-
-### Konum Stratejileri
-
-| Konum | Gizlilik | Ses Kalitesi | Öneri |
-|---|---|---|---|
-| **Tavan lamba içinde** | ✅ Tam gizli | ⚠️ Uzak | İyi |
-| **Komodin içinde** | ✅ Gizli | ✅ Yakın | En iyi |
-| **Kitaplık rafı** | ✅ Gizli | ✅ İyi | İyi |
-| **Duvar paneli arkası** | ✅ Tam gizli | ⚠️ Duvar engeli | Orta |
-| **Masada görünür** | ❌ Görünür | ✅ Çok iyi | ASLA |
 
 ### Önerilen Kurulum: ESP32-S3 + INMP441 (Komodin İçi)
 
@@ -168,7 +180,7 @@ Mikrofon, **asla görünür olmamalıdır**. Misafir, "dinlenildiğini" hissetme
 | **Asistan** (Siri/Alexa) | "Yardımcı" — emir alır, yerine getirir, "teknoloji" |
 | **Uşak** (Jarvis) | "Hizmetkâr" — öngörülü, zarif, gizemli, "premium" |
 
-> Tony Stark'ın Jarvis'i bir "asistan" değil, bir "uşak"tır. "Asistan" emir bekler; "uşak" ihtiyacı sezer. "Asistan" konuşur; "uşak" eyleme geçer.
+> Jarvis bir "asistan" değil, bir "uşak"tır. "Asistan" emir bekler; "uşak" ihtiyacı sezer. "Asistan" konuşur; "uşak" eyleme geçer.
 
 ### Persona Kuralları
 
@@ -184,26 +196,33 @@ Mikrofon, **asla görünür olmamalıdır**. Misafir, "dinlenildiğini" hissetme
 
 | # | Bileşen | Model | Adet | Not |
 |---|---|---|---|---|
-| 1 | Audio Hub | ESP32-S3 | 1 | Mikrofon + hoparlör yönetimi |
-| 2 | Mikrofon | INMP441 I2S | 1 | Komodin içinde gizli |
-| 3 | Hoparlör | 2x Echo Dot (stereo pair) | 1 set | Spatial audio (Modül 5) |
-| 4 | API | OpenAI DeepSeek V4-Pro | 1 | Doğal dil işleme |
-| 5 | API | MiniMax Voice Cloning | 1 | Karizmatik ses |
-| 6 | API | OpenAI MiniMax Sesten-Sese | 1 | STT (ses→metin) |
+| 1 | Audio Hub | ESP32-S3 DevKit | 1 | Sesten-sese WebSocket + Bluetooth Proxy |
+| 2 | Dijital Mikrofon | INMP441 I2S | 1 | Komodin içinde gizli, 24-bit |
+| 3 | IP Kamera (Yüz Tanıma) | TP-Link Tapo C200 | 1 | RTSP, oturma alanı için |
+| 4 | Akıllı Hoparlör | Echo Dot 5. Gen (veya Nest Mini) | 2 | Stereo pair (spatial audio) |
+| 5 | MiniMax API | Speech 2.8 Turbo | — | ~$10/ay (sesten-sese + voice cloning) |
+| 6 | DeepSeek API | V4-Pro | — | ~$1-2/ay (ağır zeka + özet) |
+| 7 | Qwen-VL API | Max | — | ~$2/ay (görüntü analizi) |
+| 8 | Python Sunucu | Raspberry Pi 4 (4GB) | 1 | jarvis_core Python + ChromaDB |
+| 9 | Kondansatör | 100nF | 1 | INMP441 VDD filtresi |
 
 ---
 
 ## ✅ Kurulum Kontrol Listesi
 
-- [ ] ESP32-S3 + INMP441 mikrofon komodin içine gizlendi
-- [ ] ESP32-S3 MQTT üzerinden HA'a ses verisi gönderiyor
-- [ ] HA'a MiniMax Sesten-Sese entegrasyonu eklendi
-- [ ] HA'a Extended OpenAI Conversation entegrasyonu eklendi
-- [ ] OpenAI DeepSeek V4-Pro API anahtarı HA'a girildi
-- [ ] HA'a MiniMax Voice Cloning entegrasyonu eklendi
-- [ ] MiniMax Voice Cloning sesi "Adam" (veya tercih edilen) olarak ayarlandı
-- [ ] `openai_conversation_agent.yaml` HA'a yüklendi (system prompt ile)
-- [ ] `master_orchestration_intents.yaml` HA'a yüklendi
-- [ ] Test: "Jarvis" de → "Anlaşıldı efendim" cevabı (MiniMax Voice Cloning sesiyle)
+- [ ] ESP32-S3 + INMP441 ses hub montajı (komodin içi gizli)
+- [ ] ESP32-S3 WebSocket → MiniMax Speech 2.8 Turbo bağlantısı
+- [ ] MiniMax API anahtarı ayarlandı (Speech 2.8 Turbo)
+- [ ] Voice Cloning: 10 sn referans ses (Paul Bettany / Türkçe dublaj) yüklendi
+- [ ] DeepSeek API anahtarı ayarlandı (V4-Pro)
+- [ ] Qwen-VL API anahtarı ayarlandı (Max)
+- [ ] `minimax_realtime_orchestrator.py` Pi 4'te çalışıyor (systemd service)
+- [ ] `hybrid_brain_and_memory_manager.py` Pi 4'te çalışıyor (günlük özet)
+- [ ] `facial_memory_and_vector_db.py` Pi 4'te çalışıyor (yüz tanıma)
+- [ ] `advanced_system_prompt_v2.md` yüklendi (karakter anayasası)
+- [ ] HA'a MiniMax entegrasyonu eklendi
+- [ ] Test: "Jarvis" de → <300ms → "Anlaşıldı efendim" (Voice Cloning sesiyle)
 - [ ] Test: "Misafirimizi ağırlayalım" → barista + diffuser tetiklenir
-- [ ] Test: "Modumuzu değiştir" → audio reactive + spatial audio tetiklenir
+- [ ] Test: "Bu Python kodunu düzelt" → DeepSeek → kod düzeltir → MiniMax seslendirir
+- [ ] Test: "Kameradan mutfağa bak" → Qwen-VL → analiz → MiniMax seslendirir
+- [ ] Test: Günlük özet → DeepSeek → ertesi gün hafıza yüklü

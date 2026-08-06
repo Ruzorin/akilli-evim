@@ -1,9 +1,17 @@
 ﻿# =============================================================================
-# jarvis_core — Extended OpenAI Conversation Agent Konfigürasyonu
+# jarvis_core — HA Conversation Agent (Metin Tabanlı Fallback)
 # =============================================================================
 # Bu dosya, Home Assistant'ın "Extended OpenAI Conversation" custom
 # component'inin yapılandırmasını içerir. Jarvis'in kişiliğini (persona),
 # sistem prompt'unu ve HA servis çağırma yetkilerini tanımlar.
+#
+# ⚠️ ÖNEMLİ:
+# Bu entegrasyon METİN TABANLI fallback olarak kullanılır (HA dashboard chat,
+# mobil app mesajlaşma). Ana sesli iletişim minimax_realtime_orchestrator.py
+# üzerinden MiniMax Speech 2.8 Turbo WebSocket ile çalışır (<300ms).
+#
+# DeepSeek V4-Pro, OpenAI-uyumlu API formatı kullandığı için bu entegrasyon
+# ile sorunsuz çalışır (base_url DeepSeek'e yönlendirilir).
 #
 # 🧠 "KARİZMATİK UŞAK" PERSONASI:
 # =============================================================================
@@ -35,7 +43,7 @@
 # -----------------------------------------------------------------------------
 # 1. HACS → Integrations → Extended OpenAI Conversation → Install
 # 2. HA → Settings → Devices → Add → Extended OpenAI Conversation
-# 3. MiniMax API key gir
+# 3. DeepSeek API key gir (OpenAI-uyumlu format)
 # 4. Aşağıdaki yapılandırmayı configuration.yaml'a ekle (veya packages/ koy)
 # -----------------------------------------------------------------------------
 
@@ -43,11 +51,13 @@
 # EXTENDED OPENAI CONVERSATION YAPILANDIRMASI
 # -----------------------------------------------------------------------------
 openai_conversation:
-  # MiniMax API anahtarı (https://platform.openai.com/api-keys)
-  api_key: "YOUR_OPENAI_API_KEY"
+  # DeepSeek API anahtarı (https://platform.deepseek.com/api_keys)
+  api_key: "YOUR_DEEPSEEK_API_KEY"
+  # DeepSeek, OpenAI-uyumlu API kullanır — base_url DeepSeek'e yönlendir
+  base_url: "https://api.deepseek.com/v1"
 
-  # Kullanılacak model — DeepSeek V4-Pro (en gelişmiş, doğal dil işleme)
-  model: "DeepSeek V4-Pro"
+  # Kullanılacak model — DeepSeek V4-Pro (ağır zeka, doğal dil işleme)
+  model: "deepseek-chat"
 
   # Sıcaklık (temperature) — 0.7 = yaratıcı ama tutarlı
   # Düşük (0.2) = robotik, her zaman aynı cevap
@@ -136,7 +146,7 @@ openai_conversation:
   # verir. DeepSeek V4-Pro, kullanıcının isteğine göre uygun servisi seçer ve çağırır.
   #
   # Bu, Jarvis'in "doğal dil işleme" (NLP) yeteneğidir:
-  #   "Işııkları kıs" → light.turn_on (brightness düşük)
+  #   "Işıkları kıs" → light.turn_on (brightness düşük)
   #   "Kahve hazırla" → input_boolean.barista_mode_active ON
   #   "Sıcak" → climate.set_temperature (20°C)
   # -------------------------------------------------------------------------
@@ -156,7 +166,6 @@ openai_conversation:
         - name: brightness
           description: "Parlaklık 0-255 (opsiyonel)"
           type: integer
-      # HA servis çağrısı
       target:
         service: "light.turn_on"
         entity_id: "{{ entity_id }}"
@@ -284,26 +293,24 @@ openai_conversation:
       description: "Tüm premium modları kapat ve odayı normale döndür"
       parameters: []
       target:
-        # Bu bir script çağrısı — invisible_orchestration_automations.yaml'de
-        # tanımlı "tüm sistemi kapat" script'ini tetikler
         service: "script.shutdown_all_modes"
 
 # -----------------------------------------------------------------------------
-# MiniMax Voice Cloning — KARİZMATİK SES
+# MiniMax Speech 2.8 Turbo — KARİZMATİK SES (Voice Cloning)
 # -----------------------------------------------------------------------------
-# Jarvis'in sesi MiniMax Voice Cloning üzerinden gelir — robotik değil, insansı.
+# Jarvis'in sesi MiniMax Speech 2.8 Turbo Voice Cloning üzerinden gelir.
+# Sesli iletişim minimax_realtime_orchestrator.py WebSocket ile çalışır.
+# Bu TTS entegrasyonu sadece HA dashboard/metin tabanlı fallback içindir.
 #
-# 🎭 NEDEN MiniMax Voice Cloning?
-#   - Google/AWS TTS = robotik, düz, "asistan" hissi
-#   - MiniMax Voice Cloning = insansı, tonlama, duygu, "uşak" hissi
-#   - Misafir "teknoloji" değil "kişi" duyar → "premium" algı
+# Voice Cloning: 10sn referans WAV → Jarvis tonu (robotik değil, insansı)
+# Duygu kontrolü: charming, sarcastic, intimate, authoritative
 #
-# Ses seçimi: "Adam" — derin, erkek, İngiliz aksan, karizmatik
-# Alternatifler: "Antoni" (sıcak), "George" (derin, otoriter)
+# Ses seçimi: Voice Cloning ile oluşturulmuş özel Jarvis tonu
+# (referans WAV: ./jarvis_voice_reference.wav)
 # -----------------------------------------------------------------------------
 tts:
-  - platform: MiniMax Voice Cloning
-    api_key: "YOUR_MiniMax Voice Cloning_API_KEY"
-    voice: "Adam"
-    # "Adam" = derin, erkek, İngiliz aksan — "butler/uşak" hissi
-    # Bu ses, Tony Stark'ın Jarvis'i gibi karizmatik ve gizemli
+  - platform: minimax
+    api_key: "YOUR_MINIMAX_API_KEY"
+    voice: "jarvis_cloned"
+    # Voice Cloning referansı — minimax_realtime_orchestrator.py'de tanımlı
+    # Derin, erkek, İngiliz aksan, karizmatik "butler/uşak" hissi

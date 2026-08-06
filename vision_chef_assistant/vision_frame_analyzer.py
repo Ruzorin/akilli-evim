@@ -3,15 +3,14 @@
  vision_chef_assistant — Vision Frame Analyzer (Mutfak Gözü)
  =============================================================================
  Bu script, mutfak tezgahını tepeden gören IP kameradan (RTSP) görüntü alır,
- OpenAI DeepSeek V4-Pro-mini (Vision) API'sine gönderir ve Jarvis'in şef kişiliğiyle
- analiz etmesini sağlar.
+ Qwen-VL Max API'sine gönderir ve Jarvis'in şef kişiliğiyle analiz etmesini sağlar.
 
  MİMARİ:
    1. RTSP stream → OpenCV ile kare al (On-Demand veya 1 FPS)
    2. Kareyi base64'e çevir
-   3. OpenAI Qwen-VL Max API'ye gönder (async)
-   4. DeepSeek V4-Pro'dan tarif/uyarı/eleştiri al
-   5. Jarvis'e (TTS) gönder → hoparlörden şef yorumu
+   3. Qwen-VL Max API'ye gönder (async, OpenAI-uyumlu format)
+   4. Qwen-VL Max'tan tarif/uyarı/eleştiri al
+   5. Jarvis'e (MiniMax Speech 2.8 Turbo) gönder → hoparlörden şef yorumu
 
  🎯 ON-DEMAND ANALİZ MANTIĞI:
  =============================================================================
@@ -40,6 +39,7 @@ from enum import Enum
 # =============================================================================
 # KÜTÜPHANE IMPORTLARI
 # =============================================================================
+# Qwen-VL Max, OpenAI-uyumlu API formatı kullanır (DashScope endpoint)
 try:
     from openai import AsyncOpenAI
 except ImportError:
@@ -57,9 +57,10 @@ class VisionChefConfig:
     # TP-Link Tapo RTSP formatı: rtsp://kullanıcı:şifre@IP:554/stream1
     RTSP_URL: str = "rtsp://admin:password@192.168.1.107:554/stream1"
 
-    # Qwen-VL API
-    OPENAI_API_KEY: str = "YOUR_OPENAI_API_KEY"
-    VISION_MODEL: str = "DeepSeek V4-Pro-mini"  # Hızlı ve ekonomik vision modeli
+    # Qwen-VL Max API (DashScope — OpenAI-uyumlu format)
+    QWEN_VL_API_KEY: str = "YOUR_QWEN_VL_API_KEY"
+    QWEN_VL_BASE_URL: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    VISION_MODEL: str = "qwen-vl-max"  # Hızlı ve ekonomik vision modeli
     MAX_TOKENS: int = 200  # Kısa cevaplar (şef yorumu max 2-3 cümle)
 
     # Analiz Modu
@@ -93,7 +94,7 @@ class AnalysisMode(Enum):
 
 class VisionFrameAnalyzer:
     """
-    Mutfak kamerasından görüntü alır, OpenAI Vision ile analiz eder.
+    Mutfak kamerasından görüntü alır, Qwen-VL Max ile analiz eder.
 
     Çalışma modları:
     1. ON_DEMAND: HA'dan "jarvis/chef/request" geldiğinde tek kare al ve analiz et
@@ -104,7 +105,11 @@ class VisionFrameAnalyzer:
 
     def __init__(self, config: VisionChefConfig):
         self.config = config
-        self.openai_client = AsyncOpenAI(api_key=config.OPENAI_API_KEY)
+        # Qwen-VL Max, OpenAI-uyumlu API kullanır — base_url DashScope'e yönlendir
+        self.vision_client = AsyncOpenAI(
+            api_key=config.QWEN_VL_API_KEY,
+            base_url=config.QWEN_VL_BASE_URL
+        )
 
         # Şef kişiliği system prompt'u (chef_persona_system_prompt.yaml'den yüklenir)
         self.chef_system_prompt: str = ""
@@ -170,11 +175,11 @@ class VisionFrameAnalyzer:
     # GÖRÜNTÜYÜ BASE64'E ÇEVİR
     # =========================================================================
     def _encode_frame(self, frame_bytes: bytes) -> str:
-        """JPEG byte'ları base64 string'e çevir (OpenAI Vision için)."""
+        """JPEG byte'ları base64 string'e çevir (Qwen-VL Max için)."""
         return base64.b64encode(frame_bytes).decode('utf-8')
 
     # =========================================================================
-    # OPENAI VISION ANALİZİ (ASYNC)
+    # QWEN-VL MAX ANALİZİ (ASYNC)
     # =========================================================================
     async def analyze_frame(
         self,
@@ -182,7 +187,7 @@ class VisionFrameAnalyzer:
         user_message: str = ""
     ) -> Optional[str]:
         """
-        Kameradan kare al, OpenAI Qwen-VL Max'a gönder, analiz et.
+        Kameradan kare al, Qwen-VL Max'a gönder, analiz et.
 
         Args:
             mode: Analiz modu (ON_DEMAND, RECIPE, SAFETY, INTERACTIVE)
@@ -192,7 +197,7 @@ class VisionFrameAnalyzer:
             Jarvis'in şef yorumu (metin), veya None (hata)
 
         🎯 ASYNC MANTIK:
-        MiniMax API çağrısı asenkron — kamera karesi alınırken API beklerken
+        Qwen-VL API çağrısı asenkron — kamera karesi alınırken API beklerken
         diğer görevler çalışabilir. Bu, gecikmeyi minimize eder.
         """
         # Rate limiting kontrolü
@@ -216,9 +221,9 @@ class VisionFrameAnalyzer:
 
         print(f"[VisionChef] Qwen-VL Max'a gönderiliyor (mod: {mode.value})...")
 
-        # Qwen-VL API çağrısı (async)
+        # Qwen-VL API çağrısı (async, OpenAI-uyumlu format)
         try:
-            response = await self.openai_client.chat.completions.create(
+            response = await self.vision_client.chat.completions.create(
                 model=self.config.VISION_MODEL,
                 max_tokens=self.config.MAX_TOKENS,
                 messages=[
@@ -258,7 +263,7 @@ class VisionFrameAnalyzer:
     # =========================================================================
     def _build_prompt(self, mode: AnalysisMode, user_message: str) -> str:
         """
-        Analiz moduna göre OpenAI Vision'a gönderilecek prompt'u hazırla.
+        Analiz moduna göre Qwen-VL Max'a gönderilecek prompt'u hazırla.
 
         Her mod farklı bir soru sorar:
         - RECIPE: "Bu malzemelerle ne yapılabilir?"
@@ -286,8 +291,8 @@ class VisionFrameAnalyzer:
         elif mode == AnalysisMode.INTERACTIVE:
             return (
                 "Bu mutfak tezgahının fotoğrafını analiz et. Tezgahın mevcut "
-                "durumunu KOMİK ve ZEKİCE yorumla. Gordon Ramsay ile Tony Stark "
-                "karışımı, hafif kibirli ama yardımcı bir şef gibi. Max 2 cümle."
+                "durumunu KOMİK ve ZEKİCE yorumla. Hafif kibirli ama yardımcı "
+                "bir şef gibi. Max 2 cümle."
             )
 
         else:  # ON_DEMAND
@@ -377,8 +382,8 @@ async def main():
     # Şef system prompt'unu yükle (chef_persona_system_prompt.yaml'den)
     # Gerçek implementasyonda YAML okunur
     analyzer.chef_system_prompt = (
-        "Sen Jarvis'in mutfak modusun. Gordon Ramsay ile Tony Stark karışımı, "
-        "hafif kibirli ama zekice dalga geçen ama bir o kadar da yardımcı bir şefsin. "
+        "Sen Jarvis'in mutfak modusun. Hafif kibirli, zekice dalga geçen "
+        "ama bir o kadar da yardımcı bir şefsin. "
         "Cevapların KISA (max 3 cümle), zekice ve hafif alaycı olmalı."
     )
 
@@ -390,7 +395,7 @@ async def main():
     )
 
     if result:
-        print(f"\n🧑‍🍳 Jarvis Şef: {result}")
+        print(f"\nJarvis Şef: {result}")
 
     analyzer.cleanup()
 

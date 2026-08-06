@@ -10,7 +10,7 @@
 
 | | Önerilen | Alternatif 1 | Alternatif 2 |
 |---|---|---|---|
-| **Model** | MiniMax Speech 2.8 Turbo | MiniMax Realtime API (DeepSeek V4-Pro) | MiniMax Voice Cloning + MiniMax Sesten-Sese (STT/TTS ayrı) |
+| **Model** | MiniMax Speech 2.8 Turbo | OpenAI Realtime API (GPT-4o Realtime) | ElevenLabs + Whisper (STT/TTS ayrı) |
 | **Fiyat** | ~$10/ay | ~$50-100/ay | ~$15/ay (STT + TTS ayrı) |
 | **Neden önerilen?** | Sesten-sese TEK katman (<300ms), Voice Cloning dahil (ekstra $0), duygu kontrol, WebSocket streaming. En düşük maliyet + en düşük gecikme | İyi ama ASTRONOMİK fatura. STT/TTS ara katmanları var (2-3sn gecikme). Voice Cloning yok | STT + TTS ayrı → 3 ara katman → 2-3sn gecikme. Voice Cloning var ama ekstra $5/ay. MiniMax'ten pahalı ve yavaş |
 
@@ -108,7 +108,7 @@
 |---|---|---|---|
 | **Model** | Raspberry Pi 4 (4GB) | Raspberry Pi 5 (8GB) | Mini PC (Intel NUC) |
 | **Fiyat** | ~$55 | ~$100 | ~$150 |
-| **Neden önerilen?** | ChromaDB + face_recognition + multi_model_orchestrator için yeterli RAM. Düşük güç. Sessiz. Yurt odası için ideal | Daha güçlü ama gereksiz — 4GB yeterli. Daha pahalı, daha sıcak | Güçlü ama pahalı, büyük, fan sesi var. Yurt odası için fazla |
+| **Neden önerilen?** | ChromaDB + face_recognition + hybrid_brain_and_memory_manager için yeterli RAM. Düşük güç. Sessiz. Yurt odası için ideal | Daha güçlü ama gereksiz — 4GB yeterli. Daha pahalı, daha sıcak | Güçlü ama pahalı, büyük, fan sesi var. Yurt odası için fazla |
 
 ---
 

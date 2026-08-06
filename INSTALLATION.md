@@ -193,7 +193,7 @@
     Description=Jarvis Core 2.0
     After=network.target
     [Service]
-    ExecStart=/usr/bin/python3 /home/pi/jarvis_core/zero_latency_voice_pipeline.py
+    ExecStart=/usr/bin/python3 /home/pi/jarvis_core/minimax_realtime_orchestrator.py
     Restart=always
     User=pi
     [Install]
@@ -586,9 +586,10 @@
 ```
 1. Raspberry Pi 4'te (Modül 1 ile aynı) gerekli kütüphaneleri kur:
    pip install opencv-python openai asyncio httpx
+   # Qwen-VL Max, OpenAI-uyumlu API kullanır (DashScope endpoint)
 2. vision_frame_analyzer.py'yi Pi'ye kopyala:
    scp vision_chef_assistant/vision_frame_analyzer.py pi@PI_IP:~/
-3. RTSP URL ve MiniMax API key'i config'e gir
+3. RTSP URL ve Qwen-VL Max API key'i config'e gir
 4. chef_persona_system_prompt.yaml'deki system_prompt'u yükle
 5. Script'i başlat:
    python3 vision_frame_analyzer.py
@@ -635,7 +636,7 @@
 2. MQTT "jarvis/persona/switch" topic'ini dinleyen kod ekle:
    - "language_tutor" → Dil eğitmeni system prompt'u yükle
    - "default" → Varsayılan Jarvis system prompt'a dön
-3. zero_latency_voice_pipeline.py'de persona switching desteği ekle
+3. minimax_realtime_orchestrator.py'de persona switching desteği ekle
 4. Test: "Jarvis, Fransızca çalışmaya başlayalım" →
    - WLED soğuk beyaz (5000K)
    - Klima 21°C
@@ -851,7 +852,7 @@
 1. agi_chat_interface.yaml'ı HA'a yükle
 2. input_boolean.agi_chat_active → ON
 3. MQTT topic'ler: jarvis/agi/chat_input, jarvis/agi/chat_output
-4. multi_model_orchestrator.py chat_input'u dinlemeli
+4. hybrid_brain_and_memory_manager.py chat_input'u dinlemeli
 5. Test: Chat'ten "Bize cyberpunk ortamı yap" yaz → oda değişir
 6. Test: Fotoğraf at + "Bunu kalori takibime ekle" → Vision API
 ```
@@ -1158,7 +1159,7 @@
 
 ## 🎨 Kablo Gizleme ve Estetik Montaj (Tüm Modüller)
 
-> **"Tony Stark / Premium Lounge" teması için KRİTİK adım.**
+> **"Premium Lounge" teması için KRİTİK adım.**
 > Tüm modüllerin donanımı kurulduktan sonra, kabloların gizlenmesi ŞARTTIR.
 > WLED şeridinin, kameranın veya radarın kablosu duvardan sarkarsa, misafirin
 > gözünde lüks algısı anında "öğrenci işi kablo karmaşasına" döner.

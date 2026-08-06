@@ -85,7 +85,7 @@ automation:
       # -------------------------------------------------------------------------
       # AKSİYON 2: Snapshot'ı Qwen-VL Max'a gönder
       # -------------------------------------------------------------------------
-      # MQTT'den snapshot base64 al → multi_model_orchestrator.py'ye gönder
+      # MQTT'den snapshot base64 al → hybrid_brain_and_memory_manager.py'ye gönder
       # Qwen-VL Max: "Bu kişinin kıyafetini, saçını ve tarzını analiz et"
       - service: mqtt.publish
         data:
@@ -110,7 +110,7 @@ automation:
       # -------------------------------------------------------------------------
       # AKSİYON 3: Jarvis sesli stil tavsiyesi (MiniMax Voice Cloning, charming)
       # -------------------------------------------------------------------------
-      # multi_model_orchestrator.py, analizi MQTT'ye publish eder:
+      # hybrid_brain_and_memory_manager.py, analizi MQTT'ye publish eder:
       # jarvis/vision/grooming_response → {"text": "Kombin harika ama..."}
       # Aşağıdaki otomasyon (grooming_tts) bunu yakalar ve TTS'e gönderir.
 

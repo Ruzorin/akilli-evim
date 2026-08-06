@@ -1,6 +1,8 @@
 """
 jarvis_core - Premium Jarvis Sisteminin Beyni
-Ana orkestrasyon, OpenAI entegrasyonu ve STT/TTS yönetimi.
+Ana orkestrasyon: MiniMax Speech 2.8 Turbo + DeepSeek V4-Pro + Qwen-VL Max hibrit beyin.
+Sesli iletişim: minimax_realtime_orchestrator.py
+Düşünme/hafıza: hybrid_brain_and_memory_manager.py
 """
 
 import asyncio

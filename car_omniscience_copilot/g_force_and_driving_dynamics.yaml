@@ -7,11 +7,11 @@
 #
 # 🏁 "SÜRÜŞ OTORİTESİ" MANTIĞI:
 # =============================================================================
-# Jarvis, sürücünün 2.10m/125kg fiziksel yapısını bilir → yüksek kütle =
-# yüksek momentum = virajlarda daha fazla G-kuvveti = daha fazla fren mesafesi.
+# Jarvis, sürücünün fiziksel parametrelerini bilir (input_number.driver_weight_kg) →
+# yüksek kütle = yüksek momentum = virajlarda daha fazla G-kuvveti = daha fazla fren mesafesi.
 # Sistem, sürücünün fiziksel ağırlığını hesaba katarak viraj hızını optimize eder.
 #
-# "Tony Stark aracı sürer, ama Jarvis onu korur."
+# "Premium sürücü aracı sürer, ama Jarvis onu korur."
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -78,7 +78,7 @@ template:
           {% endif %}
 
       # Sürücü ağırlığına göre dinamik fren mesafesi çarpanı
-      # 125kg → normalden %25 daha uzun fren mesafesi
+      # input_number.driver_weight_kg → ağırlığa göre dinamik çarpan
       - name: "Dynamic Brake Distance Factor"
         unique_id: "dynamic_brake_distance_factor"
         unit_of_measurement: "x"
@@ -98,12 +98,12 @@ automation:
     alias: "G-Force — Viraj Optimizasyonu (Yüksek G-Kuvveti)"
     description: >
       Yatay G-kuvveti eşiği aştığında (viraj alma) → Jarvis sesli uyarı.
-      2.10m/125kg sürücü için yüksek kütle = yüksek momentum = virajlarda
+      Yüksek kütleli sürücü için yüksek momentum = virajlarda
       daha fazla G-kuvveti = daha fazla kayma riski.
 
       🏁 SÜRÜŞ OTORİTESİ:
-      Jarvis sürücünün ağırlığını bilir → 125kg → virajlarda %25 daha fazla
-      yanal kuvvet → eşiği normalden düşük tut (0.8g yerine 0.6g).
+      Jarvis sürücünün ağırlığını bilir (input_number.driver_weight_kg) →
+      virajlarda yanal kuvvet artar → eşiği ağırlığa göre dinamik ayarla.
 
     trigger:
       # Yatay G-kuvveti eşiği aştığında
@@ -150,7 +150,7 @@ automation:
 
       🏁 MANTIK:
       Yağmurlu asfalt: sürtünme 0.45 → fren mesafesi 2x
-      125kg sürücü: ekstra momentum → fren mesafesi 2.5x
+      Ağır sürücü: ekstra momentum → fren mesafesi artar
       Jarvis: "Kaygan zemin, bu ağırlıkla dikkatli olun."
 
     trigger:
@@ -215,7 +215,7 @@ automation:
       Boylamsal G-kuvveti -0.7g'nin altına düştüğünde (agresif fren) →
       Jarvis acil durum tespiti → tehlike analizi.
 
-      🏁 125kg → agresif fren = çok uzun fren mesafesi = tehlike.
+      🏁 Ağır sürücü → agresif fren = çok uzun fren mesafesi = tehlike.
       Jarvis: "Agresif fren tespit edildi. Önünüzdeki trafik kontrol ediliyor."
 
     trigger:

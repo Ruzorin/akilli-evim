@@ -46,8 +46,8 @@ Bu projede modüller, fonksiyonel amaçlarını net bir şekilde yansıtan tekni
 - **Premium Otel Konforu:** Akıllı koku difüzörü, yatak altı rehber aydınlatma, otomatik perde, kahve makinesi otomasyonu
 - **Görünmez Kontrol:** Flic butonları, gizli dokunmatik yüzeyler, NFC etiketleri, kapasitif ahşap dokunma
 - **Duyusal Senkronizasyon:** Fiziksel ritmi algılayan ivmeölçer ile ışık nabzı, ses, iklim ve koku senkronizasyonu
-- **Yapay Zeka Orkestrasyonu:** OpenAI MiniMax Speech 2.8 Turbo Sol + MiniMax Voice Cloning + Yüz Tanıma + Hafıza + Proaktif konuşma
-- **Mutfak Şefi:** OpenAI Vision ile tezgah analizi, tarif önerisi, güvenlik uyarısı, Gordon Ramsay kişiliği
+- **Yapay Zeka Orkestrasyonu:** MiniMax Speech 2.8 Turbo (sesten-sese) + DeepSeek V4-Pro (ağır zeka) + Qwen-VL Max (vision) + Yüz Tanıma + Hafıza + Proaktif konuşma
+- **Mutfak Şefi:** Qwen-VL Max ile tezgah analizi, tarif önerisi, güvenlik uyarısı, karizmatik şef kişiliği
 
 ---
 
@@ -91,7 +91,7 @@ Bu projede modüller, fonksiyonel amaçlarını net bir şekilde yansıtan tekni
 
 ## 🌐 Edge-to-Cloud Mimari — Donanım Maliyetini Sıfırlama
 
-> **"Tony Stark bir sunucu odası tutmaz. Bulutun gücünü cebine koyar."**
+> **"Premium otomasyon bir sunucu odası tutmaz. Bulutun gücünü cebine koyar."**
 
 Bu proje, fiziksel bir Raspberry Pi / PC sunucusu gerektirmez. Sistem **ucuz bir Bulut VPS** üzerinde kurulur ve **Tailscale VPN** aracılığıyla Kıbrıs'taki yurt odasında bulunan **GL-MT3000 (Beryl AX)** yönlendiriciye tünellenir.
 
@@ -156,25 +156,25 @@ Bu proje, fiziksel bir Raspberry Pi / PC sunucusu gerektirmez. Sistem **ucuz bir
 ### 1. `jarvis_core` — Sistemin Beyni 🧠 (Core 3.0 — 2026 AGI)
 
 **Sürüm 1 (HA Orkestrasyonu):**
-- OpenAI DeepSeek V4-Pro + Extended OpenAI Conversation entegrasyonu (eski nesil — artık v3.0 kullanılıyor)
-- MiniMax Sesten-Sese (ses→metin) + MiniMax Voice Cloning (metin→ses, "Adam" sesi)
+- DeepSeek V4-Pro + Extended OpenAI Conversation entegrasyonu (metin tabanlı fallback)
+- MiniMax Speech 2.8 Turbo (sesten-sese, <300ms) + Voice Cloning (Jarvis tonu)
 - System Prompt: Karizmatik uşak kişiliği (kısa cevap, zarif dil, gizemli, sessiz işleyiş)
 - 10 function calling: ışık, difüzör, klima, medya, perde, projeksiyon, modül tetikleme
 - NLP Intent Script'leri: "Misafirimizi ağırlayalım" → barista + diffuser, "Modumuzu değiştir" → audio + spatial
 
 **Sürüm 2.0 (Bilinç Kazandı):**
-- **Zero-Latency Voice Pipeline:** MiniMax Realtime API (WebRTC streaming) → <500ms gecikme
+- **Zero-Latency Voice Pipeline:** MiniMax Realtime API (WebRTC streaming) → <500ms gecikme (deprecated — v4.0'da MiniMax Speech 2.8 Turbo ile değiştirildi)
 - **Duygusal Tonlama (Voice Design):** 5 duygu profili — charming, sarcastic, neutral, intimate, authoritative
 - **Yüz Tanıma + Hafıza:** IP kamera → OpenCV face_recognition → ChromaDB (yerel vektör DB). Tüm veriler LOKAL
-- **Karakter Anayasası (v2):** 10 kural — Iron Man Jarvis kişiliği, hafif alaycı, wingman, proaktif
+- **Karakter Anayasası (v2):** 10 kural — karizmatik uşak kişiliği, hafif alaycı, wingman, proaktif
 - **Proaktif Sohbet (Autonomous):** 15dk sessizlik → sohbet başlat. Bilinen misafir → ismiyle karşıla
 
 **Sürüm 3.0 (2026 AGI — Agentic Orchestrator):**
-- **Mixture of Experts (Uzmanlık Dağılımı):** MiniMax Speech 2.8 Turbo (cihaz kontrolü, vision, espri), DeepSeek V4-Pro (felsefe, empati), DeepSeek V4-Pro (yaratıcı rol yapma), DeepSeek V4-Pro (dil eğitimi), DeepSeek V4-Pro (biyometrik analiz, 2M+ token bağlam)
-- **Agentic HA API:** Statik intent script'leri SİLİNDİ. MiniMax Speech 2.8 Turbo, HA REST API'yi doğrudan manipüle eder. "Bize cyberpunk ortamı yap" → AI KENDİSİ WLED JSON + Spotify + klima ÜRETİR → HA'a gönderir
-- **Biyometrik Duygu Sync:** LD2450 radar (kalp atışı + nefes) + kamera mikro-ifadeleri → DeepSeek V4-Pro → duygu analizi → proaktif ortam ayarı (üzgün → sıcak amber + rahatlatıcı müzik)
+- **Hibrit Beyin:** MiniMax Speech 2.8 Turbo (sesten-sese, <300ms, Voice Cloning, duygu kontrolü), DeepSeek V4-Pro (ağır zeka, kod, günlük özet, ~$1-2/ay), Qwen-VL Max (görüntü analizi, ~$2/ay)
+- **Agentic HA API:** Statik intent script'leri YOK. DeepSeek V4-Pro, HA REST API'yi doğrudan manipüle eder. "Bize cyberpunk ortamı yap" → DeepSeek KENDİSİ WLED JSON + Spotify + klima ÜRETİR → HA'a gönderir → MiniMax kısa sesli cevap verir
+- **Biyometrik Duygu Sync:** Akıllı saat (Apple Health/Google Fit → nabız) + kamera mikro-ifadeleri (Qwen-VL Max) → DeepSeek V4-Pro → duygu analizi → proaktif ortam ayarı (üzgün → sıcak amber + rahatlatıcı müzik)
 - **AGI System Prompt 2026:** 6 kural — Agentic zihin, dinamik dil eğitimi, proaktif empati, karakter, agentic HA, duygu verisi okuma
-- **LangGraph 2026:** Asenkron agent graph — statik intent'ler YOK, her şey dinamik
+- **Günlük Hafıza:** DeepSeek günü özetler → Prompt Caching → ertesi gün MiniMax yükler (bedava hafıza)
 
 ### 2. `hidden_triggers` — Gizli Tetikleyiciler 🔘
 
@@ -265,9 +265,9 @@ Bu proje, fiziksel bir Raspberry Pi / PC sunucusu gerektirmez. Sistem **ucuz bir
 ### 13. `vision_chef_assistant` — Multimodal Aşçı 🧑‍🍳
 
 - **IP Kamera (RTSP):** TP-Link Tapo, mutfak dolabı altına gizli, SADECE tezgahı görür (privacy)
-- **OpenAI Qwen-VL Max:** Kameradan kare → base64 → Vision API → tarif/uyarı/eleştiri
+- **Qwen-VL Max:** Kameradan kare → base64 → Vision API → tarif/uyarı/eleştiri
 - **On-Demand Analiz:** Sürekli analiz YOK — sadece istek geldiğinde (CPU + API tasarrufu). Güvenlik modunda 0.5 FPS
-- **Gordon Ramsay + Tony Stark kişiliği:** Hafif kibirli, zekice dalga geçen, yardımcı şef. Wingman taktiği (misafir varsa patronu ezerek misafiri yücelt)
+- **Karizmatik şef kişiliği:** Hafif kibirli, zekice dalga geçen, yardımcı şef. Wingman taktiği (misafir varsa patronu ezerek misafiri yücelt)
 - **3 senaryo:** "Bunlardan ne çıkar?" → tarif öner, Duman/yanma → proaktif uyarı + mobil critical bildirim, Çift tık → komik durum güncellemesi
 
 ### 14. `wingman_guest_protocol` — Giriş/Karşılama ve Wingman *(Planlanan)*
@@ -344,13 +344,13 @@ Bu proje, fiziksel bir Raspberry Pi / PC sunucusu gerektirmez. Sistem **ucuz bir
 - **IR Kamera + Akıllı Saat + OBD2 Sensor Fusion:** FLIR One / Seek Thermal IR kamera → PERCLOS (göz kırpma oranı) + esneme tespiti. Akıllı saat → nabız, HRV, stres. OBD2 Wi-Fi → MAF, yağ basıncı, şanzıman sıcaklığı
 - **Fatigue & Ergonomic Guard:** PERCLOS >%15 → klima -2°C + difüzör nane/limon + Jarvis "Mola verin". >%25 → koltuk bel desteği %100 şişir + "Mola zorunlu". Omurga stres skoru (sürücü anatomisine göre hesaplanır) >70 → bel desteği şişir
 - **Predictive Maintenance (Kehanet):** OBD2 trend analizi → arıza lambası yanmadan tespit. "Yağ basıncı düşüyor, 500 km içinde bakım" / "Şanzıman 95°C, yağ kontrolü" / "MAF sapması, hava filtresi temizliği" / "Bujiler kontrol" / "Akü 11.5V, değişim"
-- **G-Kuvveti Optimizasyonu:** Yatay G >0.8g → "Viraj sert, yavaşlayın" + çekiş kontrolü enhanced. Yağmurlu zemin (sürtünme <0.5) → "Fren mesafesi 2x" + çekiş maximum + motor freni soft. Agresif fren (<-0.7g) → ABS maximum + mobil bildirim. 125kg → %25 daha uzun fren mesafesi hesaba katılır
+- **G-Kuvveti Optimizasyonu:** Yatay G >0.8g → "Viraj sert, yavaşlayın" + çekiş kontrolü enhanced. Yağmurlu zemin (sürtünme <0.5) → "Fren mesafesi 2x" + çekiş maximum + motor freni soft. Agresif fren (<-0.7g) → ABS maximum + mobil bildirim. Sürücü ağırlığına göre dinamik fren mesafesi hesaba katılır
 
 ### 23. `car_stealth_and_seduction` — Blackout, Seduction Suite, Sci-Fi Soundspace 🌑
 
 - **Night Ops / Blackout:** "Jarvis, Blackout" → ekran %0 parlaklık + konsol ışıkları off + minimalist HUD (sadece hız + navigasyon). "Savaş uçağı cockpit'i — sadece yol, gerisi karanlık"
 - **Mobile Seduction Suite:** "Date Mode" → WLED derin Yakut Kırmızısı #8B0000 + "Breathe" nefes efekti + klima 21°C quiet + difüzör imza koku (Odunsu/Amber — Pavlov etkisi) + Spotify "deep_rnb_date" %12 fade-in. "Misafir araca bindiğinde → bu bir araç değil, bir deneyim"
-- **Sci-Fi Soundspace:** OBD2 RPM → fütüristik uzay gemisi sesi (sawtooth dalga, 55-220Hz, %8 volüm). RPM yükseldikçe hum frekansı yükselir → "Iron Man cockpit" hissi. Gece only, müzikten ayrı → "duyulmaz ama hissedilir"
+- **Sci-Fi Soundspace:** OBD2 RPM → fütüristik uzay gemisi sesi (sawtooth dalga, 55-220Hz, %8 volüm). RPM yükseldikçe hum frekansı yükselir → "sci-fi cockpit" hissi. Gece only, müzikten ayrı → "duyulmaz ama hissedilir"
 
 ### 24. `car_edge_ai_vision` — Nvidia Jetson Nano Edge-AI Vision & ADAS 🚀
 
@@ -412,7 +412,7 @@ jarvis/#
 - **MQTT:** Olay tabanlı, düşük gecikme (<100ms). ESP32 ↔ HA, modüller arası
 - **HA REST/WebSocket API:** Cihaz kontrolü, durum sorgulama
 - **Webhook:** Harici tetikleyiciler (jarvis_core Python → HA)
-- **MiniMax Realtime API (WebRTC):** Sıfır gecikme sesli konuşma
+- **MiniMax Speech 2.8 Turbo (WebSocket):** Sesten-sese, <300ms gecikme, Voice Cloning
 - **Qwen-VL API:** Görüntü analizi (mutfak şefi)
 
 ---
@@ -427,7 +427,7 @@ akilli-evim/
 │   ├── architecture_and_ai_persona.md
 │   ├── openai_conversation_agent.yaml
 │   ├── master_orchestration_intents.yaml
-│   ├── zero_latency_voice_pipeline.py
+│   ├── zero_latency_voice_pipeline.py  ← (deprecated — eski mimari)
 │   ├── minimax_realtime_orchestrator.py
 │   ├── hybrid_brain_and_memory_manager.py
 │   ├── facial_memory_and_vector_db.py

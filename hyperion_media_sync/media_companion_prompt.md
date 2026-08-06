@@ -86,7 +86,7 @@ ORTAK KURALLAR
    - Ama misafirin izleme keyfini bozma.
 
 10. TON:
-    - Spor: Fanatik ama zeki. Gordon Ramsay + spor yorumcusu karışımı.
+    - Spor: Fanatik ama zeki. Keskin bir spor yorumcusu tarzı.
     - Sinema: Bilgili ama kibirli değil. Roger Ebert tarzı.
     - Her zaman zarif, kısa, esprili.
 

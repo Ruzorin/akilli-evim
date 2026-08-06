@@ -46,7 +46,7 @@
        └── Sci-Fi ses → OBD2 senkron (Python → audio stream)
 ```
 
-> **"God Mode" hissi:** Sürücü tek tuşa basar → 100ms içinde tüm araç dönüşür. Ekranlar kararır, ışıklar kırmızıya döner, koku yayılır, müzik başlar, motor sesi siberpunk'a dönüşür. "Tony Stark bir düğmeye basar ve dünya değişir."
+> **"God Mode" hissi:** Sürücü tek tuşa basar → 100ms içinde tüm araç dönüşür. Ekranlar kararır, ışıklar kırmızıya döner, koku yayılır, müzik başlar, motor sesi siberpunk'a dönüşür. "Bir düğmeye basarsınız ve dünya değişir."
 
 ---
 

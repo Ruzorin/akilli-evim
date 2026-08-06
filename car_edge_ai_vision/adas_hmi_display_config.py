@@ -105,7 +105,7 @@ class ADASHMI(QMainWindow):
     Tüm bu adımlar 33ms içinde tamamlanır → 30 FPS → gerçek zamanlı.
     TensorRT FP16 olmadan bu imkansız (200ms/frame → 5 FPS).
 
-    "Tony Stark'ın aracı yolu gerçek zamanlı görür ve anlar."
+    "Premium bir araç yolu gerçek zamanlı görür ve anlar."
     """
 
     warning_signal = pyqtSignal(str)  # FCW uyarısı sinyali

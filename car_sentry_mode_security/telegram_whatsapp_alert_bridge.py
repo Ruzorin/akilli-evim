@@ -84,7 +84,7 @@ class TelegramWhatsAppAlertBridge:
        + fotoğraf
     4. MQTT → HA → SuperApp güvenlik paneli güncellenir
 
-    "Tony Stark'ın aracı tehdit algıladığında, o an telefonda görür."
+    "Premium bir araç tehdit algıladığında, o an telefonda görür."
     """
 
     def __init__(self, config: AlertBridgeConfig = None):

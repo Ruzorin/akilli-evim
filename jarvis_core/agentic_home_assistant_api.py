@@ -2,10 +2,22 @@
  =============================================================================
  jarvis_core 3.0 — Agentic Home Assistant API (Kendi Kendini Kodlayan Oda)
  =============================================================================
- 2026 Sürümü — Statik intent'ler YOK. MiniMax Speech 2.8 Turbo HA REST API'yi doğrudan manipüle eder.
+ 2026 Sürümü — Statik intent'ler YOK. DeepSeek V4-Pro HA REST API'yi doğrudan manipüle eder.
 
- Bu modül, MiniMax Speech 2.8 Turbo'ya Home Assistant'ın TAM REST API kontrolünü verir.
+ Bu modül, DeepSeek V4-Pro'a Home Assistant'ın TAM REST API kontrolünü verir.
  Artık "önceden yazılmış komutlara" ihtiyaç YOK.
+
+ 🧠 HİBRİT BEYİN MİMARİSİ:
+ =============================================================================
+ Sesli iletişim: MiniMax Speech 2.8 Turbo (sesten-sese, <300ms, Voice Cloning)
+ Düşünme/Kod:   DeepSeek V4-Pro (ağır zeka, ucuz, kod üretir)
+ Görüntü:       Qwen-VL Max (vision analizi)
+
+ Akış:
+   Kullanıcı konuşur → MiniMax Speech 2.8 Turbo (ses→metin+düşünme+metin→ses)
+   → Karmaşık komut ise DeepSeek V4-Pro'a yönlendirilir (hybrid_brain_and_memory_manager.py)
+   → DeepSeek V4-Pro HA_ACTION JSON üretir → bu modül çalıştırır
+   → Sonuç MiniMax'e geri verilir → kullanıcıya sesli kısa cevap
 
  🤖 "AGENTIC" MANTIK — NEDEN DEVRİMCİ?
  =============================================================================
@@ -15,19 +27,19 @@
 
  Yeni sistem (v3.0 Agentic):
    Kullanıcı: "Bize cyberpunk bir ortam yap"
-   MiniMax Speech 2.8 Turbo: [DÜŞÜNÜR] → "Cyberpunk = neon mor/yeşil, karanlık, synthwave"
-   MiniMax Speech 2.8 Turbo: [KOD ÜRETİR] → WLED JSON: {"rgb_color": [128, 0, 255], "brightness": 180}
-   MiniMax Speech 2.8 Turbo: [API ÇAĞIRIR] → POST /api/services/light/turn_on
-   MiniMax Speech 2.8 Turbo: [MÜZİK BULUR] → Spotify search "synthwave" → play
-   MiniMax Speech 2.8 Turbo: [KLİMA AYARLAR] → POST /api/services/climate/set_temperature (18°C)
-   MiniMax Speech 2.8 Turbo: "Cyberpunk modu aktif, efendim." (KISA cevap)
+   DeepSeek V4-Pro: [DÜŞÜNÜR] → "Cyberpunk = neon mor/yeşil, karanlık, synthwave"
+   DeepSeek V4-Pro: [KOD ÜRETİR] → WLED JSON: {"rgb_color": [128, 0, 255], "brightness": 180}
+   DeepSeek V4-Pro: [API ÇAĞIRIR] → POST /api/services/light/turn_on
+   DeepSeek V4-Pro: [MÜZİK BULUR] → Spotify search "synthwave" → play
+   DeepSeek V4-Pro: [KLİMA AYARLAR] → POST /api/services/climate/set_temperature (18°C)
+   MiniMax Speech 2.8 Turbo: "Cyberpunk modu aktif, efendim." (KISA sesli cevap)
 
  FARK:
    Eski: Sistem sadece "önceden tanımlı" komutları anlar
    Yeni: Sistem "herhangi" soyut komutu anlar ve KENDİSİ eylem planlar
 
  Bu, "statik otomasyon" → "yaşayan zihin" dönüşümüdür.
- MiniMax Speech 2.8 Turbo, HA'ı bir yazılım geliştiricisi gibi manipüle eder.
+ DeepSeek V4-Pro, HA'ı bir yazılım geliştiricisi gibi manipüle eder.
 
  GEREKLİ KÜTÜPHANELER (2026):
    pip install httpx asyncio
@@ -87,12 +99,12 @@ class AgenticHAConfig:
 
 class AgenticHomeAssistantAPI:
     """
-    MiniMax Speech 2.8 Turbo'ya Home Assistant REST API'sini doğrudan kullanma yetkisi verir.
+    DeepSeek V4-Pro'a Home Assistant REST API'sini doğrudan kullanma yetkisi verir.
 
     🤖 NASIL ÇALIŞIR?
     =============================================================================
-    1. MiniMax Speech 2.8 Turbo, kullanıcı komutunu alır (örn: "Bize cyberpunk ortamı yap")
-    2. MiniMax Speech 2.8 Turbo, "HA_ACTIONS:" etiketiyle JSON kod bloğu üretir:
+    1. DeepSeek V4-Pro, kullanıcı komutunu alır (örn: "Bize cyberpunk ortamı yap")
+    2. DeepSeek V4-Pro, "HA_ACTIONS:" etiketiyle JSON kod bloğu üretir:
        HA_ACTION:
        [
          {"service": "light.turn_on", "entity_id": "light.wled_ambient",
@@ -105,8 +117,8 @@ class AgenticHomeAssistantAPI:
        ]
     3. Bu sınıf, JSON'u parse eder
     4. Her aksiyonu HA REST API'ye gönderir (async)
-    5. Sonucu MiniMax Speech 2.8 Turbo'a döndürür
-    6. MiniMax Speech 2.8 Turbo, kullanıcıya KISA cevap verir
+    5. Sonucu DeepSeek V4-Pro'a döndürür
+    6. DeepSeek'in metin cevabı MiniMax Speech 2.8 Turbo'ya verilir → sesli KISA cevap
 
     🚨 GÜVENLİK:
     - Sadece ALLOWED_SERVICES listesindeki servisler çağrılabilir
@@ -136,20 +148,20 @@ class AgenticHomeAssistantAPI:
         context: Optional[Dict[str, Any]] = None
     ) -> str:
         """
-        MiniMax Speech 2.8 Turbo'nın ürettiği HA_ACTION JSON bloğunu parse edip HA'a gönderir.
+        DeepSeek V4-Pro'un ürettiği HA_ACTION JSON bloğunu parse edip HA'a gönderir.
 
-        Bu, "kendi kendini kodlayan oda"nın kalbidir. MiniMax Speech 2.8 Turbo:
+        Bu, "kendi kendini kodlayan oda"nın kalbidir. DeepSeek V4-Pro:
         1. Soyut komutu alır ("cyberpunk ortamı")
         2. Hangi cihazların nasıl ayarlanacağını KENDİSİ DÜŞÜNÜR
         3. HA REST API çağrılarını KENDİSİ ÜRETİR
         4. Bu fonksiyon onları ÇALIŞTIRIR
 
         Args:
-            model_response: MiniMax Speech 2.8 Turbo'nın cevabı (HA_ACTION: [...] içerir)
+            model_response: DeepSeek V4-Pro'un cevabı (HA_ACTION: [...] içerir)
             context: Bağlam (aktif modüller, sensör verisi)
 
         Returns:
-            Jarvis'in kullanıcıya verdiği cevap (KISA)
+            Jarvis'in kullanıcıya verdiği cevap (KISA — MiniMax'e sesli okunacak)
         """
         # HA_ACTION bloğunu parse et
         actions = self._parse_ha_actions(model_response)
@@ -183,6 +195,7 @@ class AgenticHomeAssistantAPI:
         print(f"[AgenticHA] {success_count}/{len(results)} aksiyon başarılı")
 
         # Modelin metin cevabını döndür (HA_ACTION bloğu hariç)
+        # Bu cevap MiniMax Speech 2.8 Turbo'ya sesli okunmak üzere gönderilir
         text_response = model_response.split("HA_ACTION:")[0].strip()
         if not text_response:
             text_response = "Elbette, efendim."
@@ -194,9 +207,9 @@ class AgenticHomeAssistantAPI:
     # =========================================================================
     def _parse_ha_actions(self, response: str) -> List[Dict]:
         """
-        MiniMax Speech 2.8 Turbo'nın cevabından HA_ACTION JSON bloğunu çıkar.
+        DeepSeek V4-Pro'un cevabından HA_ACTION JSON bloğunu çıkar.
 
-        MiniMax Speech 2.8 Turbo şu formatta cevap üretir:
+        DeepSeek V4-Pro şu formatta cevap üretir:
         "Cyberpunk modu aktif, efendim.
          HA_ACTION:
          [
@@ -274,8 +287,8 @@ class AgenticHomeAssistantAPI:
         """
         Home Assistant REST API'ye servis çağrısı gönder.
 
-        🤖 BU, MiniMax Speech 2.8 Turbo'NIN HA'I MANİPÜLE ETTİĞİ NOKTADIR:
-        MiniMax Speech 2.8 Turbo, "önceden yazılmış komutlara" ihtiyaç duymadan,
+        🤖 BU, DEEPSEEK V4-PRO'NUN HA'I MANİPÜLE ETTİĞİ NOKTADIR:
+        DeepSeek V4-Pro, "önceden yazılmış komutlara" ihtiyaç duymadan,
         doğrudan HA REST API'ye istek gönderir. Bu, "statik otomasyon"
         → "yaşayan zihin" dönüşümüdür.
 
@@ -309,13 +322,13 @@ class AgenticHomeAssistantAPI:
             return {"success": False, "error": str(e)}
 
     # =========================================================================
-    # HA STATE SORGULAMA (MiniMax Speech 2.8 Turbo için)
+    # HA STATE SORGULAMA (DeepSeek V4-Pro için)
     # =========================================================================
     async def get_ha_state(self, entity_id: str) -> Optional[Dict]:
         """
         Bir HA entity'sinin mevcut durumunu sorgula.
 
-        MiniMax Speech 2.8 Turbo, aksiyon almadan önce "odada ne oluyor?" sorusunu
+        DeepSeek V4-Pro, aksiyon almadan önce "odada ne oluyor?" sorusunu
         bu fonksiyonla yanıtlar. Örnek:
         - get_ha_state("sensor.bed_activity_level") → 45
         - get_ha_state("climate.room_ac") → 22°C, cool
@@ -330,13 +343,13 @@ class AgenticHomeAssistantAPI:
             return None
 
     # =========================================================================
-    # HA SERVİS LİSTESİ (MiniMax Speech 2.8 Turbo için tool tanımı)
+    # HA SERVİS LİSTESİ (DeepSeek V4-Pro için tool tanımı)
     # =========================================================================
     async def list_available_services(self) -> List[str]:
         """
         HA'da kullanılabilir tüm servisleri listele.
 
-        MiniMax Speech 2.8 Turbo, bu listeyi alıp "hangi servis hangi işe yarar" bilgisini
+        DeepSeek V4-Pro, bu listeyi alıp "hangi servis hangi işe yarar" bilgisini
         system prompt'undan çıkararak dinamik aksiyon planlar.
         """
         try:
@@ -357,10 +370,11 @@ class AgenticHomeAssistantAPI:
 
 
 # =============================================================================
-# MiniMax Speech 2.8 Turbo TOOL TANIMLARI (Agentic Framework için)
+# DeepSeek V4-Pro TOOL TANIMLARI (Agentic Framework için)
 # =============================================================================
-# Bu tool tanımları, MiniMax Speech 2.8 Turbo'ya "HA'ı nasıl manipüle edeceğini" söyler.
-# MiniMax Speech 2.8 Turbo, bu tool'ları kullanarak dinamik aksiyon planlar.
+# Bu tool tanımları, DeepSeek V4-Pro'a "HA'ı nasıl manipüle edeceğini" söyler.
+# DeepSeek V4-Pro, bu tool'ları kullanarak dinamik aksiyon planlar.
+# MiniMax Speech 2.8 Turbo sadece sesli arayüz — düşünme DeepSeek'te.
 
 HA_TOOLS = [
     {
@@ -433,8 +447,8 @@ async def main():
 
     api = AgenticHomeAssistantAPI()
 
-    # Test: MiniMax Speech 2.8 Turbo'nın ürettiği bir "cyberpunk" aksiyon bloğu
-    mock_gpt_response = """
+    # Test: DeepSeek V4-Pro'un ürettiği bir "cyberpunk" aksiyon bloğu
+    mock_deepseek_response = """
     Cyberpunk modu aktif, efendim.
 
     HA_ACTION:
@@ -450,9 +464,9 @@ async def main():
     ]
     """
 
-    print("=== TEST: Cyberpunk ortamı (Agentic) ===\n")
-    result = await api.execute_agentic_action(mock_gpt_response)
-    print(f"\nJarvis: {result}")
+    print("=== TEST: Cyberpunk ortamı (Agentic — DeepSeek V4-Pro) ===\n")
+    result = await api.execute_agentic_action(mock_deepseek_response)
+    print(f"\nJarvis (MiniMax'e sesli okunacak): {result}")
 
     await api.close()
 

@@ -1,7 +1,7 @@
 # magic_mirror — Donanım ve Cam İşçiliği Rehberi
 
 > **Modül 4: Magic Mirror (Akıllı Ayna)**
-> Duvara asılı sıradan bir aynanın, kişi yaklaştığında içinden parlayan minimalist yazılarla gizli bir ekrana dönüşmesi. Tony Stark laboratuvarından fırlamış "Calm Technology" (Sakin Teknoloji) deneyimi.
+> Duvara asılı sıradan bir aynanın, kişi yaklaştığında içinden parlayan minimalist yazılarla gizli bir ekrana dönüşmesi. "Calm Technology" (Sakin Teknoloji) deneyimi.
 
 ---
 
@@ -145,7 +145,7 @@ Magic Mirror, **Calm Technology** prensibinin mükemmel bir örneğidir:
 | **Dikkat Dağıtmama** | Renkli ikonlar, animasyonlar, bildirimler YOK — sadece bilgi |
 | **Doğal Geçiş** | Ayna → ekran geçişi kademedir, ani değil |
 
-> **Tony Stark İlkesi:** Tony Stark'ın aynası, kullanılmadığında sadece bir aynadır. İhtiyaç duyulduğunda "canlanır" — ama asla "teknoloji" gibi görünmez. Sadece "bilgi" görünür. Bu, "Calm Technology"nin özüdür.
+> **Premium İlke:** Akıllı ayna, kullanılmadığında sadece bir aynadır. İhtiyaç duyulduğunda "canlanır" — ama asla "teknoloji" gibi görünmez. Sadece "bilgi" görünür. Bu, "Calm Technology"nin özüdür.
 
 ---
 

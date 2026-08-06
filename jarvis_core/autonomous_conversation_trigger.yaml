@@ -4,6 +4,10 @@
 # Bu otomasyon, Jarvis'in her zaman komut beklemesini engeller. Jarvis,
 # ortamı gözlemleyerek SOHBETİ KENDİ BAŞINA BAŞLATABİLİR (Proactive Speaking).
 #
+# ⚠️ NOT: Sesli proaktif konuşma minimax_realtime_orchestrator.py üzerinden
+# MiniMax Speech 2.8 Turbo WebSocket ile yapılır. Bu YAML, HA otomasyon
+# tetikleyicilerini ve MQTT olaylarını tanımlar.
+#
 # 🧠 "PROAKTİF DAVRANIŞ" MANTIĞI:
 # =============================================================================
 # Sıradan asistanlar (Siri/Alexa) sadece komut bekler — pasif.
@@ -16,7 +20,7 @@
 # 🎭 "PREMIUM" HİSSİYAT:
 # =============================================================================
 # Misafir bir kitaba bakıyorsa → Jarvis "İlginç bir seçim" der →
-# "Oda beni izliyor ve düşünüyor" hissi → "premium" → "Tony Stark".
+# "Oda beni izliyor ve düşünüyor" hissi → "premium".
 #
 # Ama asla rahatsız edici olma — sessizlik "söz hakkı" demek.
 # Jarvis sadece "doğal bir an" olduğunda konuşur.
@@ -25,7 +29,6 @@
 # -----------------------------------------------------------------------------
 # INPUT BOOLEAN — Proaktif mod aktif/pasif
 # -----------------------------------------------------------------------------
-# Kullanıcı isterse proaktif konuşmayı kapatabilir (bazen sessizlik istenir).
 input_boolean:
   jarvis_proactive_mode:
     name: "Jarvis Proactive Mode"
@@ -35,8 +38,6 @@ input_boolean:
 # -----------------------------------------------------------------------------
 # INPUT NUMBER — Sessizlik eşiği (dakika)
 # -----------------------------------------------------------------------------
-# Ortamda kaç dakika sessizlik olunca Jarvis konuşmaya başlasın?
-# Varsayılan: 15 dakika (çok uzun sessizlik → "sıkıcı" hissi → Jarvis konuşur)
 input_number:
   jarvis_silence_threshold:
     name: "Jarvis Silence Threshold"
@@ -50,15 +51,12 @@ input_number:
 # -----------------------------------------------------------------------------
 # SENSOR — Son ses/movement algılama zamanı
 # -----------------------------------------------------------------------------
-# Bu template sensor, ortamda son hareket/ses algılandığından beri
-# kaç dakika geçtiğini hesaplar.
 template:
   - sensor:
       - name: "Minutes Since Last Activity"
         unique_id: "minutes_since_last_activity"
         icon: mdi:clock-alert
         unit_of_measurement: "min"
-        # Son hareket algılamadan bu yana geçen dakika
         state: >
           {% if has_value('binary_sensor.room_presence') %}
             {% set last = states.binary_sensor.room_presence.last_changed %}
@@ -94,9 +92,6 @@ automation:
       - "Bu sakinlik hoş. Çok nadir bulunan bir lüks."
 
     trigger:
-      # -------------------------------------------------------------------------
-      # Tetikleyici: "Minutes Since Last Activity" sessizlik eşiğini aşarsa
-      # -------------------------------------------------------------------------
       - platform: template
         value_template: >
           {{ states('sensor.minutes_since_last_activity') | int >=
@@ -104,57 +99,40 @@ automation:
         id: silence_threshold
 
     condition:
-      # Koşul 1: Proaktif mod aktif olmalı
       - condition: state
         entity_id: input_boolean.jarvis_proactive_mode
         state: "on"
-
-      # Koşul 2: Odada biri olmalı (boş odada konuşma)
       - condition: state
         entity_id: binary_sensor.room_presence
         state: "on"
-
-      # Koşul 3: Hiçbir premium mod aktif olmamalı
-      # (Intimacy/film modunda sessizlik istenir — Jarvis konuşmaz)
       - condition: state
         entity_id: input_boolean.intimacy_sync_active
         state: "off"
       - condition: state
         entity_id: input_boolean.movie_mode_active
         state: "off"
-
-      # Koşul 4: Gece değil (gece sessizliği = uyku → konuşma)
       - condition: sun
         before: sunset
         after: sunrise
-
-      # Koşul 5: Son 30 dakikada Jarvis zaten konuşmadı
-      # (sürekli tekrar etmesin)
       - condition: template
         value_template: >
           {{ (now() - states.input_boolean.jarvis_proactive_mode.last_changed).total_seconds() > 1800 }}
 
     action:
-      # -------------------------------------------------------------------------
-      # AKSİYON: Jarvis proaktif konuşma başlat
-      # -------------------------------------------------------------------------
-      # 🎭 Kısa, zarif, gizemli — "uzun açıklama" değil.
-      # Jarvis "sessizliği kırar" ama "bozmaz" — zarif bir yorum.
-      #
-      # Duygu profili: "neutral" (sakin) veya "charming" (misafir varsa)
-      - service: tts.speak
-        target:
-          entity_id: tts.jarvis_voice
+      # MiniMax Speech 2.8 Turbo üzerinden proaktif konuşma
+      # minimax_realtime_orchestrator.py MQTT "jarvis/voice/speak" dinler
+      - service: mqtt.publish
         data:
-          # Rastgele bir proaktif yorum seç (her seferinde farklı)
-          message: >
+          topic: "jarvis/voice/speak"
+          payload: >
             {{ [
               "Sessizlik bazen en iyi sohbettir, efendim.",
               "Bir şey mi düşünüyorsunuz? Yoksa sadece anın tadını mı çıkarıyorsunuz?",
               "Bu sakinlik hoş. Çok nadir bulunan bir lüks.",
               "Bir şey gerekirse, buradayım. Ama sessizlik de güzel.",
               "Odanın bu hali... huzurlu. Daha ne istenebilir?"
-            ] | random }}
+            ] | random | to_json }}
+          retain: false
 
   # ===========================================================================
   # SENARYO 2: Kamera — İlginç Hareket → Proaktif Yorum
@@ -168,7 +146,7 @@ automation:
 
       🎭 MANTIK:
       Misafir bir kitaba bakıyorsa → "Oda beni izliyor" hissi →
-      Jarvis "İlginç bir seçim" der → "premium" → "Tony Stark".
+      Jarvis "İlginç bir seçim" der → "premium".
 
       Bu, "proaktif gözlem" yeteneğidir — Jarvis sadece komut beklemez,
       ORTAMI OKUR ve DOĞAL ANLAR yakalar.
@@ -178,36 +156,24 @@ automation:
       Görüntü buluta gönderilmez. Sadece "hareket tipi" bilgisi HA'a gelir.
 
     trigger:
-      # -------------------------------------------------------------------------
-      # Tetikleyici: Kamera "ilginç hareket" algıladığında
-      # -------------------------------------------------------------------------
       # facial_memory_and_vector_db.py, kamera görüntüsünde "ilginç" hareket
       # algıladığında MQTT'ye "jarvis/camera/observation" publish eder.
-      # Örnek payload: {"type": "looking_at_book", "confidence": 0.85}
       - platform: mqtt
         topic: "jarvis/camera/observation"
         id: camera_observation
 
     condition:
-      # Koşul 1: Proaktif mod aktif
       - condition: state
         entity_id: input_boolean.jarvis_proactive_mode
         state: "on"
-
-      # Koşul 2: Misafir var (patron yalnız değil)
       - condition: state
         entity_id: binary_sensor.room_presence
         state: "on"
-
-      # Koşul 3: Premium mod kapalı (intimacy/film'de konuşma)
       - condition: state
         entity_id: input_boolean.intimacy_sync_active
         state: "off"
 
     action:
-      # -------------------------------------------------------------------------
-      # AKSİYON: Hareket tipine göre proaktif yorum
-      # -------------------------------------------------------------------------
       - variables:
           observation_type: "{{ trigger.payload_json.type | default('unknown') }}"
 
@@ -217,72 +183,72 @@ automation:
               - condition: template
                 value_template: "{{ observation_type == 'looking_at_book' }}"
             sequence:
-              - service: tts.speak
-                target:
-                  entity_id: tts.jarvis_voice
+              - service: mqtt.publish
                 data:
-                  message: >
+                  topic: "jarvis/voice/speak"
+                  payload: >
                     {{ [
                       "İlginç bir seçim. O yazarın diğer eserlerini de tavsiye ederim.",
                       "Güzel bir kitap. Umarım sayfalar sizi sürükler.",
                       "Okuma bir yolculuktur. Nereye gideceğinizi asla bilemezsiniz."
-                    ] | random }}
+                    ] | random | to_json }}
+                  retain: false
 
           # Tabloyu/resmi inceliyor → Sanat yorumu
           - conditions:
               - condition: template
                 value_template: "{{ observation_type == 'looking_at_art' }}"
             sequence:
-              - service: tts.speak
-                target:
-                  entity_id: tts.jarvis_voice
+              - service: mqtt.publish
                 data:
-                  message: >
+                  topic: "jarvis/voice/speak"
+                  payload: >
                     {{ [
                       "Sanat, göründüğünden daha fazlasını söyler. Ne görüyorsunuz?",
                       "Her tabloda bir hikaye gizlidir. Bazen izleyici de hikayenin parçasıdır.",
                       "Güzel, değil mi? Sanatın gücü, sessizliğinde yatar."
-                    ] | random }}
+                    ] | random | to_json }}
+                  retain: false
 
           # Şaşkınlık ifadesi → Merak yorumu
           - conditions:
               - condition: template
                 value_template: "{{ observation_type == 'surprised' }}"
             sequence:
-              - service: tts.speak
-                target:
-                  entity_id: tts.jarvis_voice
+              - service: mqtt.publish
                 data:
-                  message: >
+                  topic: "jarvis/voice/speak"
+                  payload: >
                     {{ [
                       "Bir şey mi dikkat çekti? Merak, zekanın en güzel halidir.",
                       "Şaşkınlık, keşfin başlangıcıdır. Ne buldunuz?",
                       "O ifade... umarım iyi bir sürprizdir."
-                    ] | random }}
+                    ] | random | to_json }}
+                  retain: false
 
           # Telefonla oynuyor → Hafif alaycı yorum
           - conditions:
               - condition: template
                 value_template: "{{ observation_type == 'looking_at_phone' }}"
             sequence:
-              - service: tts.speak
-                target:
-                  entity_id: tts.jarvis_voice
+              - service: mqtt.publish
                 data:
-                  message: >
+                  topic: "jarvis/voice/speak"
+                  payload: >
                     {{ [
                       "Telefon mu, yoksa oda mı daha ilginç? Cevabı biliyorum.",
                       "Ekranlar bazen en güzel anları kaçırırlar. Ama kimim ki yargılayan.",
                       "O küçük kutuda her şey var... ama bu odada da bir şeyler var."
-                    ] | random }}
+                    ] | random | to_json }}
+                  retain: false
 
         # Bilinmeyen hareket → Genel zarif yorum
         default:
-          - service: tts.speak
-            target:
-              entity_id: tts.jarvis_voice
+          - service: mqtt.publish
             data:
-              message: "Bir şey mi dikkat çekti, efendim?"
+              topic: "jarvis/voice/speak"
+              payload: '"Bir şey mi dikkat çekti, efendim?"'
+              retain: false
 
   # ===========================================================================
   # SENARYO 3: Misafir Girişi → Proaktif Karşılama (Yüz Tanıma ile)
@@ -297,12 +263,7 @@ automation:
       Misafir odaya girer → kamera yüzü tanır → Jarvis "Ah, Ayşe!" der →
       "hatırlandığını" hisseder → "5 yıldızlı otel" deneyimi.
 
-      Bu, "premium hospitality" hissinin zirvesidir.
-
     trigger:
-      # -------------------------------------------------------------------------
-      # Tetikleyici: facial_memory_and_vector_db.py'den "bilinen yüz" bildirimi
-      # -------------------------------------------------------------------------
       # MQTT topic: jarvis/face/detected
       # Payload: {"type": "known_face", "name": "Ayşe", "last_visit": "2026-07-15",
       #           "conversation_summary": "Interstellar konuştuk, latte içti",
@@ -312,15 +273,11 @@ automation:
         id: known_face
 
     condition:
-      # Proaktif mod aktif
       - condition: state
         entity_id: input_boolean.jarvis_proactive_mode
         state: "on"
 
     action:
-      # -------------------------------------------------------------------------
-      # AKSİYON: Misafiri ismiyle karşıla + geçmiş hatırla
-      # -------------------------------------------------------------------------
       - variables:
           guest_name: "{{ trigger.payload_json.name | default('Misafir') }}"
           last_visit: "{{ trigger.payload_json.last_visit | default('') }}"
@@ -328,33 +285,28 @@ automation:
           favorite_coffee: "{{ trigger.payload_json.favorite_coffee | default('') }}"
 
       # 🎭 Duygu profili: "charming" (sıcak, davetkar)
-      # zero_latency_voice_pipeline.py'de set_emotion("charming") çağrılır
+      # minimax_realtime_orchestrator.py MQTT "jarvis/voice/emotion" dinler
       - service: mqtt.publish
         data:
           topic: "jarvis/voice/emotion"
           payload: "charming"
           retain: false
 
-      # Jarvis karşılama konuşması
-      - service: tts.speak
-        target:
-          entity_id: tts.jarvis_voice
+      # Jarvis karşılama konuşması (MiniMax Speech 2.8 Turbo)
+      - service: mqtt.publish
         data:
-          message: >
+          topic: "jarvis/voice/speak"
+          payload: >
             {% if favorite_coffee and conversation_summary %}
-              Tekrar hoş geldiniz, {{ guest_name }}. Son ziyaretinizde {{ favorite_coffee }}
-              içmiştiniz ve {{ conversation_summary }}. Yine {{ favorite_coffee }} mi,
-              yoksa bugün farklı bir macera mı?
+              {{ ("Tekrar hoş geldiniz, " ~ guest_name ~ ". Son ziyaretinizde " ~ favorite_coffee ~ " içmiştiniz ve " ~ conversation_summary ~ ". Yine " ~ favorite_coffee ~ " mi, yoksa bugün farklı bir macera mı?") | to_json }}
             {% elif favorite_coffee %}
-              Tekrar hoş geldiniz, {{ guest_name }}. Yine {{ favorite_coffee }} ister misiniz?
+              {{ ("Tekrar hoş geldiniz, " ~ guest_name ~ ". Yine " ~ favorite_coffee ~ " ister misiniz?") | to_json }}
             {% else %}
-              Tekrar hoş geldiniz, {{ guest_name }}. Sizi görmek güzel.
+              {{ ("Tekrar hoş geldiniz, " ~ guest_name ~ ". Sizi görmek güzel.") | to_json }}
             {% endif %}
+          retain: false
 
-      # -------------------------------------------------------------------------
       # Opsiyonel: Misafir için otomatik hospitality
-      # -------------------------------------------------------------------------
-      # Eğer misafirin favori kahvesi varsa, barista_mode'u otomatik başlat
       - choose:
           - conditions:
               - condition: template

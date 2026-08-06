@@ -158,7 +158,7 @@ automation:
       # daha "premium" ve "sinematik" hissettirir. Misafir, bir asistanla değil
       # bir "Jarvis" ile etkileşimde olduğunu hisseder.
       #
-      # TTS motoru: OpenAI TTS (jarvis_core üzerinden) veya HA yerleşik TTS.
+      # TTS motoru: MiniMax Speech 2.8 Turbo (jarvis_core üzerinden) veya HA yerleşik TTS.
       # media_player.jarvis_speaker: Odadaki akıllı hoparlör (ESP32-S3 veya Echo)
       - delay:
           seconds: 2 # Işıkların oturması için kısa bekleme

@@ -30,13 +30,13 @@ input_boolean:
 # SCRIPT: AGI Chat'e Mesaj Gönder
 # -----------------------------------------------------------------------------
 # Bu script, kullanıcının chat'ten yazdığı mesajı alır ve
-# multi_model_orchestrator.py'ye (MiniMax Speech 2.8 Turbo / DeepSeek V4-Pro) gönderir.
+# hybrid_brain_and_memory_manager.py'ye (DeepSeek V4-Pro) gönderir.
 #
 # 🤖 AGENTIC MANTIK:
 # Kullanıcı "Bize cyberpunk ortamı yap" yazar →
 # 1. Mesaj MQTT'ye publish: jarvis/agi/chat_input
-# 2. multi_model_orchestrator.py dinler → IntentClassifier → en uygun model
-# 3. MiniMax Speech 2.8 Turbo: "cyberpunk" → HA_ACTION JSON ÜRETİR
+# 2. hybrid_brain_and_memory_manager.py dinler → DeepSeek V4-Pro → en uygun cevap
+# 3. DeepSeek V4-Pro: "cyberpunk" → HA_ACTION JSON ÜRETİR
 # 4. agentic_home_assistant_api.py → HA REST API → oda değişir
 # 5. Cevap MQTT'ye: jarvis/agi/chat_output → chat'te göster
 # -----------------------------------------------------------------------------
@@ -58,7 +58,7 @@ script:
         required: false
     sequence:
       # -------------------------------------------------------------------------
-      # Adım 1: Mesajı MQTT'ye gönder → multi_model_orchestrator.py dinler
+      # Adım 1: Mesajı MQTT'ye gönder → hybrid_brain_and_memory_manager.py dinler
       # -------------------------------------------------------------------------
       - service: mqtt.publish
         data:
@@ -83,7 +83,7 @@ script:
       # -------------------------------------------------------------------------
       # Adım 2: Orchestrator cevabını bekle (MQTT dinleyici ayrı otomasyonda)
       # -------------------------------------------------------------------------
-      # multi_model_orchestrator.py, cevabı jarvis/agi/chat_output'a publish eder.
+      # hybrid_brain_and_memory_manager.py, cevabı jarvis/agi/chat_output'a publish eder.
       # Aşağıdaki otomasyon (agi_chat_receive) bu cevabı yakalar ve gösterir.
 
 # -----------------------------------------------------------------------------
@@ -93,7 +93,7 @@ automation:
   - id: agi_chat_receive
     alias: "AGI Chat — Cevap Al ve Göster"
     description: >
-      multi_model_orchestrator.py'nin cevabını MQTT'den alır ve
+      hybrid_brain_and_memory_manager.py'nin cevabını MQTT'den alır ve
       chat arayüzünde gösterir. Eğer cevap HA_ACTION içeriyorsa,
       agentic_home_assistant_api.py zaten çalıştırmıştır.
 

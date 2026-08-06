@@ -275,8 +275,8 @@ views:
                   title: Jarvis AGI Chat
                   content:
                     type: custom:openai-conversation-card
-                    # Extended OpenAI Conversation chat arayüzü
-                    # Kullanıcı yazılı komut verir → MiniMax Speech 2.8 Turbo/DeepSeek V4-Pro yanıtlar
+                    # Extended OpenAI Conversation chat arayüzü (DeepSeek V4-Pro, OpenAI-uyumlu API)
+                    # Kullanıcı yazılı komut verir → DeepSeek V4-Pro yanıtlar
                     # Fotoğraf atabilir → "Bunu kalori takibime ekle"
 
 # -----------------------------------------------------------------------------

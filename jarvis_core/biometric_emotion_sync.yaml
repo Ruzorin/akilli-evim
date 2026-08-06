@@ -1,17 +1,19 @@
 ﻿# =============================================================================
 # jarvis_core 3.0 — Biometric Emotion Sync (Duygu Algılama)
 # =============================================================================
-# 2026 Sürümü — Radar tabanlı biyometrik duygu analizi + proaktif müdahale
+# 2026 Sürümü — Akıllı saat biyometrik verisi + kamera mikro-ifadeleri + proaktif müdahale
 #
 # 🧠 "DUYGU ALGILAMA" MANTIĞI:
 # =============================================================================
-# 2026'da mmWave radar (LD2410/LD2450) sadece "varlık" algılamaz —
-# kalp atış hızı (BPM) ve nefes alışverişi (soluk/dk) ölçer.
+# Biyometrik veriler iki kaynaktan gelir:
+#   1. Akıllı saat (Apple Health / Google Fit) → kalp atış hızı (BPM), nefes (uyku analizi)
+#   2. Kamera → Qwen-VL Max ile yüz mikro-ifadeleri (micro-expressions)
 #
-# Bu veriler + kamera mikro-ifadeleri (micro-expressions) birleştirilip
-# DeepSeek V4-Pro'in devasa bağlam penceresine (2M token) gönderilir.
+# ⚠️ ÖNEMLİ: LD2410/LD2450 mmWave radar sadece varlık/hareket algılar.
+# Kalp atışı ve nefes ölçümü YAPAMAZ. Bu veriler akıllı saatten gelir.
+# (LD6002 60GHz radar kalp/nefes ölçebilir, ancak bu modülde akıllı saat tercih edilmiştir.)
 #
-# DeepSeek V4-Pro, kullanıcının duygusal durumunu analiz eder:
+# Bu veriler DeepSeek V4-Pro'e gönderilir ve kullanıcının duygusal durumu analiz edilir:
 #   - Stresli mi? (yüksek kalp atışı + düzensiz nefes)
 #   - Rahatlamış mı? (düşük kalp atışı + düzenli nefes)
 #   - Üzgün mü? (yüz mikro-ifadeleri: kaş çatma, dudak bükme)
@@ -45,10 +47,9 @@ input_select:
     icon: mdi:emoticon-outline
 
 # -----------------------------------------------------------------------------
-# INPUT NUMBER — Biyometrik veriler (AKILLI SAAT — LD2450 kalp/nefes ÖLÇMEZ)
+# INPUT NUMBER — Biyometrik veriler (AKILLI SAAT — radar kalp/nefes ÖLÇMEZ)
 # -----------------------------------------------------------------------------
-# ⚠️ ÖNEMLİ DÜZELTME:
-# LD2450/LD2410 mmWave radar sadece varlık/hareket algılar.
+# ⚠️ LD2450/LD2410 mmWave radar sadece varlık/hareket algılar.
 # Kalp atışı ve nefes ölçümü YAPAMAZ. Bu veriler akıllı saatten gelir:
 #   - Apple Health / Google Fit → HA webhook → sensor.resting_hr
 #   - Apple Health / Google Fit → HA webhook → sensor.breath_rate
@@ -64,8 +65,6 @@ input_number:
     unit_of_measurement: "BPM"
     icon: mdi:heart-pulse
 
-  # Nefes ölçümü akıllı saatten (uyku analizi sırasında) gelir
-  # LD2450/LD2410 nefes ölçemez — sadece varlık/hareket
   jarvis_breath_rate:
     name: "User Breath Rate (per min) — Akıllı Saat"
     min: 5
@@ -94,9 +93,9 @@ input_boolean:
     initial: on
 
 # -----------------------------------------------------------------------------
-# SENSOR — Biyometrik veriler (AKILLI SAAT — LD2450 kalp/nefes ÖLÇMEZ)
+# SENSOR — Biyometrik veriler (AKILLI SAAT — radar kalp/nefes ÖLÇMEZ)
 # -----------------------------------------------------------------------------
-# ⚠️ DÜZELTME: LD2450/LD2410 mmWave radar sadece varlık/hareket algılar.
+# ⚠️ LD2450/LD2410 mmWave radar sadece varlık/hareket algılar.
 # Kalp atışı ve nefes ölçümü YAPAMAZ. Bu veriler akıllı saatten gelir:
 #   - Apple Health / Google Fit → HA webhook → sensor.resting_hr (nabız)
 #   - Apple Health / Google Fit → HA webhook → sensor.breath_rate (nefes)
@@ -124,10 +123,6 @@ template:
         unique_id: "computed_stress_score"
         unit_of_measurement: "/10"
         icon: mdi:gauge
-        # Stres skoru hesaplama:
-        # - Yüksek kalp atışı (>80) → yüksek stres
-        # - Düşük kalp atışı (<60) → düşük stres (rahat)
-        # - LD2410 aktivite seviyesi yüksek + nabız yüksek → çok stresli
         state: >
           {% set hr = states('sensor.resting_hr') | float(0) %}
           {% set activity = states('sensor.bed_activity_level') | float(0) %}
@@ -153,23 +148,19 @@ automation:
       verisi ve kameradan mikro-ifadeler toplanır. Bu veriler DeepSeek V4-Pro'ya
       gönderilir ve kullanıcının duygu durumu belirlenir.
 
-      ⚠️ DÜZELTME: LD2450/LD2410 radar kalp atışı ve nefes ÖLÇMEZ.
+      ⚠️ LD2450/LD2410 radar kalp atışı ve nefes ÖLÇMEZ.
       Sadece varlık/hareket algılar. Kalp atışı akıllı saatten gelir.
       Radar (LD2410) sadece "odada biri var mı?" ve "aktivite seviyesi" için.
 
     trigger:
-      # 2 dakikada bir biyometrik analiz
       - platform: time_pattern
         minutes: "/2"
         id: biometric_interval
 
     condition:
-      # Emotion sync aktif olmalı
       - condition: state
         entity_id: input_boolean.jarvis_emotion_sync_active
         state: "on"
-
-      # Odada biri olmalı
       - condition: state
         entity_id: binary_sensor.room_presence
         state: "on"
@@ -178,16 +169,12 @@ automation:
       # -------------------------------------------------------------------------
       # AKSİYON 1: Akıllı saat biyometrik verisini al (radar DEĞİL)
       # -------------------------------------------------------------------------
-      # ⚠️ Kalp atışı ve nefes akıllı saatten (Apple Health/Google Fit) gelir.
-      # LD2410 radar sadece varlık (binary_sensor.room_presence) ve
-      # aktivite (sensor.bed_activity_level) için kullanılır.
       - variables:
           heart_rate: "{{ states('sensor.resting_hr') | float(0) }}"
           breath_rate: "{{ states('sensor.breath_rate') | float(0) }}"
           stress_score: "{{ states('sensor.computed_stress_score') | float(0) }}"
           activity_level: "{{ states('sensor.bed_activity_level') | float(0) }}"
 
-      # input_number'ları güncelle
       - service: input_number.set_value
         target:
           entity_id: input_number.jarvis_heart_rate
@@ -211,21 +198,22 @@ automation:
       # -------------------------------------------------------------------------
       # Kamera → Qwen-VL Max → yüz ifadesi analizi
       # "Bu kişinin yüz ifadesi ne? Üzgün, mutlu, nötr, stresli?"
-      # Bu, radar verisiyle birleştirilir.
-      # (Gerçek implementasyonda REST command ile vision_frame_analyzer.py çağrılır)
+      # Bu, akıllı saat verisiyle birleştirilir.
+      # (Gerçek implementasyonda hybrid_brain_and_memory_manager.py üzerinden
+      #  Qwen-VL API çağrılır)
 
       # -------------------------------------------------------------------------
       # AKSİYON 3: DeepSeek V4-Pro'e biyometrik + ifade verisi gönder
       # -------------------------------------------------------------------------
-      # DeepSeek V4-Pro'in 2M token bağlam penceresi tüm sensör verisini alır:
+      # DeepSeek V4-Pro tüm sensör verisini alır:
       # - Kalp atışı: 75 BPM
       # - Nefes: 14/dk
       # - Stres skoru: 3.2/10
       # - Yatak aktivitesi: 0/100 (hareketsiz)
       # - Yüz ifadesi: "hafif kaş çatma, dudak bükme"
-      # → Gemini: "Kullanıcı üzgün/stresli. Rahatlatıcı ortam öner."
+      # → DeepSeek: "Kullanıcı üzgün/stresli. Rahatlatıcı ortam öner."
       #
-      # Bu, multi_model_orchestrator.py üzerinden DeepSeek V4-Pro'e gönderilir.
+      # Bu, hybrid_brain_and_memory_manager.py üzerinden DeepSeek V4-Pro'e gönderilir.
       - service: mqtt.publish
         data:
           topic: "jarvis/biometric/analysis_request"
@@ -262,22 +250,16 @@ automation:
         - Enerjik müzik
 
     trigger:
-      # Duygu durumu değiştiğinde
       - platform: state
         entity_id: input_select.jarvis_user_emotion
         id: emotion_change
 
     condition:
-      # Emotion sync aktif
       - condition: state
         entity_id: input_boolean.jarvis_emotion_sync_active
         state: "on"
-
-      # Yeni duygu "unknown" değil
       - condition: template
         value_template: "{{ trigger.to_state.state != 'unknown' }}"
-
-      # Duygu gerçekten değişti
       - condition: template
         value_template: "{{ trigger.from_state.state != trigger.to_state.state }}"
 
@@ -293,17 +275,15 @@ automation:
               - condition: template
                 value_template: "{{ emotion == 'sad' }}"
             sequence:
-              # Işıkları sıcak amber, loş
               - service: light.turn_on
                 target:
                   entity_id: light.wled_ambient
                 data:
-                  rgb_color: [191, 128, 0] # Sıcak amber
-                  brightness: 80 # Loş
+                  rgb_color: [191, 128, 0]
+                  brightness: 80
                   effect: "Breathe"
-                  transition: 10 # Yavaş geçiş — "sakinleş"
+                  transition: 10
 
-              # Rahatlatıcı müzik (fade-in %15)
               - service: input_select.select_option
                 target:
                   entity_id: input_select.spatial_audio_mood
@@ -313,7 +293,6 @@ automation:
                 data:
                   target_volume: 0.15
 
-              # Difüzör — sandalağacı (topraklayıcı, sakinleştirici)
               - service: switch.turn_on
                 target:
                   entity_id: switch.smart_diffuser_power
@@ -323,19 +302,19 @@ automation:
                 target:
                   entity_id: light.diffuser_led
 
-              # Jarvis nazik sohbet başlat (proaktif)
+              # MiniMax Speech 2.8 Turbo üzerinden proaktif konuşma
               - delay:
-                  seconds: 5 # Ortamın oturması için bekle
-              - service: tts.speak
-                target:
-                  entity_id: tts.jarvis_voice
+                  seconds: 5
+              - service: mqtt.publish
                 data:
-                  message: >
+                  topic: "jarvis/voice/speak"
+                  payload: >
                     {{ [
                       "Efendim, biraz gergin görünüyorsunuz. Her şey yolunda mı?",
                       "Sessizliğiniz farklı. Bir şey mi var?",
                       "Oramı sakinleştiriyorum. Bazen en iyi ilaç sessizliktir."
-                    ] | random }}
+                    ] | random | to_json }}
+                  retain: false
 
           # -------------------------------------------------------------------------
           # STRESLİ → Serin klima + lavanta difüzör + loş ışık
@@ -344,7 +323,6 @@ automation:
               - condition: template
                 value_template: "{{ emotion == 'stressed' }}"
             sequence:
-              # Klima serin (20°C)
               - service: climate.set_temperature
                 target:
                   entity_id: climate.room_ac
@@ -357,7 +335,6 @@ automation:
                 data:
                   fan_mode: quiet
 
-              # Işıklar loş amber
               - service: light.turn_on
                 target:
                   entity_id: light.wled_ambient
@@ -367,7 +344,6 @@ automation:
                   effect: "Breathe"
                   transition: 10
 
-              # Difüzör — lavanta (sakinleştirici)
               - service: switch.turn_on
                 target:
                   entity_id: switch.smart_diffuser_power
@@ -377,7 +353,6 @@ automation:
                 target:
                   entity_id: light.diffuser_led
 
-              # Sakinleştirici müzik
               - service: input_select.select_option
                 target:
                   entity_id: input_select.spatial_audio_mood
@@ -387,14 +362,13 @@ automation:
                 data:
                   target_volume: 0.10
 
-              # Jarvis kısa, nazik
               - delay:
                   seconds: 3
-              - service: tts.speak
-                target:
-                  entity_id: tts.jarvis_voice
+              - service: mqtt.publish
                 data:
-                  message: "Oramı sakinleştiriyorum, efendim. Derin bir nefes."
+                  topic: "jarvis/voice/speak"
+                  payload: '"Oramı sakinleştiriyorum, efendim. Derin bir nefes."'
+                  retain: false
 
           # -------------------------------------------------------------------------
           # YORGUN → Sıcak ışık + sakin müzik + klima rahat
@@ -407,7 +381,7 @@ automation:
                 target:
                   entity_id: light.wled_ambient
                 data:
-                  rgb_color: [255, 170, 85] # Sıcak beyaz
+                  rgb_color: [255, 170, 85]
                   brightness: 100
                   effect: "Breathe"
                   transition: 10
@@ -419,11 +393,11 @@ automation:
               - service: script.spatial_play_mood
                 data:
                   target_volume: 0.10
-              - service: tts.speak
-                target:
-                  entity_id: tts.jarvis_voice
+              - service: mqtt.publish
                 data:
-                  message: "Yorgun görünüyorsunuz, efendim. Dinlenin. Ben buradayım."
+                  topic: "jarvis/voice/speak"
+                  payload: '"Yorgun görünüyorsunuz, efendim. Dinlenin. Ben buradayım."'
+                  retain: false
 
           # -------------------------------------------------------------------------
           # MUTLU/HEYECANLI → Biraz daha parlak + enerjik
@@ -436,30 +410,27 @@ automation:
                 target:
                   entity_id: light.wled_ambient
                 data:
-                  rgb_color: [255, 215, 0] # Altın sarısı
+                  rgb_color: [255, 215, 0]
                   brightness: 150
                   effect: "Breathe"
                   transition: 5
-              # Jarvis kısa espri (sadece happy ise)
               - condition: template
                 value_template: "{{ emotion == 'happy' }}"
-              - service: tts.speak
-                target:
-                  entity_id: tts.jarvis_voice
+              - service: mqtt.publish
                 data:
-                  message: >
+                  topic: "jarvis/voice/speak"
+                  payload: >
                     {{ [
                       "İyi hissediyorsunuz. Belli oluyor, efendim.",
                       "Bu enerji güzel. Neşe bulaşıcıdır.",
                       "Gülümsemenizi görebiliyorum. Bugün güzel bir gün."
-                    ] | random }}
+                    ] | random | to_json }}
+                  retain: false
 
         # -------------------------------------------------------------------------
         # RAHATLAMIŞ / NÖTR → Müdahale etme (sessiz işleyiş)
         # -------------------------------------------------------------------------
         default:
-          # Kullanıcı rahat → hiçbir şey yapma
-          # "Sessiz işleyiş" — Jarvis gereksiz müdahale etmez
           - delay:
               milliseconds: 100
 
@@ -487,17 +458,15 @@ automation:
         state: "on"
 
     action:
-      # Acil sakinleştirme
       - service: light.turn_on
         target:
           entity_id: light.wled_ambient
         data:
-          rgb_color: [100, 50, 0] # Çok koyu, çok sıcak amber
-          brightness: 40 # Çok loş
+          rgb_color: [100, 50, 0]
+          brightness: 40
           effect: "Breathe"
-          transition: 15 # Çok yavaş geçiş
+          transition: 15
 
-      # Klima serin
       - service: climate.set_temperature
         target:
           entity_id: climate.room_ac
@@ -510,7 +479,6 @@ automation:
         data:
           fan_mode: quiet
 
-      # Sakinleştirici müzik
       - service: input_select.select_option
         target:
           entity_id: input_select.spatial_audio_mood
@@ -518,9 +486,8 @@ automation:
           option: "sleep_ambient"
       - service: script.spatial_play_mood
         data:
-          target_volume: 0.08 # Çok kısık
+          target_volume: 0.08
 
-      # Difüzör — lavanta
       - service: switch.turn_on
         target:
           entity_id: switch.smart_diffuser_power
@@ -530,17 +497,17 @@ automation:
         target:
           entity_id: light.diffuser_led
 
-      # Jarvis sakinleştirici konuşma
+      # MiniMax Speech 2.8 Turbo üzerinden sakinleştirici konuşma
       - delay:
           seconds: 3
-      - service: tts.speak
-        target:
-          entity_id: tts.jarvis_voice
+      - service: mqtt.publish
         data:
-          message: "Efendim, derin bir nefes alın. Yavaşça. Dört sayın, tutun, yedi sayın, bırakın. Ben buradayım."
+          topic: "jarvis/voice/speak"
+          payload: '"Efendim, derin bir nefes alın. Yavaşça. Dört sayın, tutun, yedi sayın, bırakın. Ben buradayım."'
+          retain: false
 
       # Mobil bildirim (opsiyonel)
       - service: notify.mobile_app
         data:
-          title: "🧘 Stres Algılandı"
+          title: "Stres Algılandı"
           message: "Yüksek stres tespit edildi. Sakinleştirici ortam aktif. Derin nefes alın."

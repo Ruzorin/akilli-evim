@@ -153,7 +153,7 @@ Koku duyusu, beş duyu içinde **hipotalamus ve amigdalaya doğrudan bağlanan**
 
 ### "Güzel Koku" Değil — "Senin Kokun"
 
-Sıradan bir difüzör "güzel koku" yayar. Ama Tony Stark'ın Jarvis'i "güzel" ile yetinmez.
+Sıradan bir difüzör "güzel koku" yayar. Ama Jarvis "güzel" ile yetinmez.
 Jarvis, kullanıcının **imza parfümünün alt notalarını** difüzöre yükler.
 
 | Kullanıcının Parfümü | Alt Notalar | Difüzör Esans Karışımı |
@@ -194,7 +194,7 @@ Jarvis, kullanıcının **imza parfümünün alt notalarını** difüzöre yükl
 | **Pavlov etkisi** | Yok | Koku = o kişi = güven = rahatlama |
 | **Sonuç** | Misafir "misafir" hisseder | Misafir "ev sahibinin alanında, güvende" hisseder |
 
-> **Tony Stark İlkesi:** "Bir odaya girdiğinde, koku seni karşılamalı. Ve o koku, senin kim olduğunu anlatmalı. Misafir, senin kokunu aldığı an, senin alanında olduğunu kabul eder. Bu, kelimelerle kurulamayacak bir dominasyondur."
+> **Premium İlke:** "Bir odaya girdiğinde, koku seni karşılamalı. Ve o koku, senin kim olduğunu anlatmalı. Misafir, senin kokunu aldığı an, senin alanında olduğunu kabul eder. Bu, kelimelerle kurulamayacak bir dominasyondur."
 
 ### Uygulama
 

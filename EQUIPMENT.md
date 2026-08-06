@@ -32,7 +32,7 @@
 | 7 | Qwen-VL API | **Qwen-VL Max** (görüntü analizi) | — | ~$2/ay | Kamera/vision analizi — ucuz |
 | 8 | (Yazılım) | Voice Cloning referans ses (10 sn WAV) | — | $0 | Tek seferlik klonlama, sonra sınırsız |
 | 9 | (Yazılım) | Prompt Caching (hafıza) | — | $0 | DeepSeek özet → MiniMax prompt cache → bedava hafıza |
-| 10 | LangGraph 2026 | Agentic Framework | — | $0 | Açık kaynak agent graph (pip install langgraph) |
+| 10 | (Yazılım) | Hybrid Brain Manager (Python) | — | $0 | Açık kaynak — DeepSeek + Qwen-VL orkestrasyonu |
 | 9 | Python Sunucu | Raspberry Pi 4 (4GB) | 1 | ~$55 | jarvis_core Python + ChromaDB çalıştırır |
 | 10 | Kondansatör | 100nF | 1 | ~$0.1 | INMP441 VDD filtresi |
 
@@ -196,7 +196,7 @@
 | 4 | Akıllı Priz (Ocak) | Shelly Plug s | 1 | ~$15 | Ocak güç izleme (güvenlik) |
 | 5 | Zigbee Buton (Mutfak) | Sonoff ZBMINI / Tuya | 1 | ~$10 | Mutfak tezgahı yanında |
 
-> Not: OpenAI Qwen-VL Max API (Modül 1 ile paylaşımlı).
+> Not: Qwen-VL Max API (Modül 1 ile paylaşımlı).
 
 ---
 
@@ -385,9 +385,9 @@
 | **Esans Yağları** | 3 | ~$45 |
 | **Kahve & Sunum** | — | ~$60 |
 | **Kablo & Direnç & Kondansatör** | — | ~$20 |
-| **API Abonelikleri** (OpenAI, MiniMax Voice Cloning, Spotify) | — | ~$25/ay |
+| **API Abonelikleri** (MiniMax, DeepSeek, Qwen-VL, Spotify) | — | ~$15/ay |
 | **TOPLAM (Tek Seferlik)** | — | **~$920** |
-| **TOPLAM (Aylık)** | — | **~$35/ay** |
+| **TOPLAM (Aylık)** | — | **~$15/ay** |
 
 > **Not:** Fiyatlar yaklaşık değerlerdir. Bazı bileşenler modüller arasında paylaşımlıdır (hoparlörler, API'ler, akıllı prizler). Gerçek maliyet, mevcut donanıma ve seçilen markalara göre değişir.
 
@@ -401,7 +401,7 @@
 3. Raspberry Pi 4 (jarvis_core Python)
 4. Sonoff ZBMINI × 2 (gizli butonlar)
 5. TTP223 + ESP32 (kapasitif dokunma)
-6. OpenAI + MiniMax Voice Cloning API abonelikleri
+6. MiniMax + DeepSeek + Qwen-VL API abonelikleri
 
 ### Faz 2 (Atmosfer — Işık + Ses + Koku)
 7. ESP32 + INMP441 + WS2812B (audio reactive WLED)
@@ -427,7 +427,7 @@
 
 ## 🎨 Kablo Gizleme ve Estetik Montaj Malzemeleri
 
-> **"Tony Stark / Premium Lounge" teması için KRİTİK.**
+> **"Premium Lounge" teması için KRİTİK.**
 > WLED şeridinin, kameranın veya radarın kablosu duvardan siyah/kırmızı şekilde sarkarsa, misafirin gözünde lüks algısı anında "öğrenci işi kablo karmaşasına" döner. Tüm kablolar görünmez olmalıdır.
 
 | # | Bileşen | Model / Tip | Adet | Fiyat (≈) | Not |

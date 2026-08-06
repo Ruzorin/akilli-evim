@@ -5,8 +5,8 @@
  2026 Sürümü — Sensor Fusion + Agentic Takvim Esnetme
 
  Bu modül, iki veri kaynağını birleştirir (Sensor Fusion):
-   1. Yatak altı radar (LD2450) → kalp atışı, nefes, uyku evreleri
-   2. Akıllı saat (Apple Health / Google Fit) → uyku süresi, adım, nabız
+   1. Akıllı saat (Apple Health / Google Fit) → uyku süresi, uyku evreleri, adım, nabız
+   2. LD2410 radar (yatak altı) → sadece varlık/hareket (kalp/nefes ÖLÇMEZ)
 
  Birleştirilmiş veri → DeepSeek V4-Pro → "kullanıcı yorgun mu?" analizi
  → Yorgunsa + takvimde esnetilebilir etkinlik varsa → AGENTIC takvim değişikliği
@@ -56,7 +56,7 @@ class LifeOSConfig:
     GOOGLE_OAUTH_TOKEN: str = "YOUR_GOOGLE_OAUTH_TOKEN"
 
     # DeepSeek V4-Pro API (duygu/uyku analizi)
-    GEMINI_API_KEY: str = "YOUR_GEMINI_API_KEY"
+    DEEPSEEK_API_KEY: str = "YOUR_DEEPSEEK_API_KEY"
 
     # MQTT
     MQTT_BROKER: str = "gl-mt3000.local"

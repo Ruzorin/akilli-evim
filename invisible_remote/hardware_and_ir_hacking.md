@@ -7,9 +7,9 @@
 
 ## 🎮 Sensory Design: Neden Plastik Kumandalardan Kurtulmalıyız?
 
-### "Tony Stark" İlkesi
+### "Görünmez Kumanda" İlkesi
 
-Tony Stark'ın odasında hiçbir plastik kumanda yoktur. Her şey sesle, jestle veya otomatik olarak çalışır. Bir misafir odaya girdiğinde:
+Premium bir odada hiçbir plastik kumanda yoktur. Her şey sesle, jestle veya otomatik olarak çalışır. Bir misafir odaya girdiğinde:
 
 ```
   ❌ STANDART ODA (Plastik Kumandalar)        ✅ PREMIUM ODA (Görünmez Kumanda)
@@ -20,7 +20,7 @@ Tony Stark'ın odasında hiçbir plastik kumanda yoktur. Her şey sesle, jestle 
   │  └──────┘  └──────┘         │           │  → Klima sessizce 22°C'ye    │
   │  Masada dağınık plastik     │           │    ayarlanır                 │
   │  kumandalar...              │           │                              │
-  │  "Otel odası" değil,        │           │  "Tony Stark odası"          │
+  │  "Otel odası" değil,        │           │  "Premium teknoloji odası"   │
   │  "öğrenci yurdu" hissi      │           │  "Premium lounge" hissi       │
   └──────────────────────────────┘           └──────────────────────────────┘
 ```

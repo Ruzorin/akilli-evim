@@ -17,8 +17,8 @@
  - Müzikten AYRI olarak çalar — "duyulmaz ama hissedilir"
  - Sürücü "uzay gemisi sürüyor" hissi → "God Mode"
 
- "Tony Stark'ın aracı bir uzay gemisi gibi ses çıkarır."
- Gerçek motor sesi + fütüristik hum = "Iron Man cockpit" deneyimi.
+ "Premium bir araç bir uzay gemisi gibi ses çıkarır."
+ Gerçek motor sesi + fütüristik hum = "sci-fi cockpit" deneyimi.
 
  GEREKLİ KÜTÜPHANELER (2026):
    pip install httpx asyncio numpy sounddevice
@@ -85,8 +85,8 @@ class SciFiSoundspaceAugmenter:
     Sürücü gaz bırakır → RPM düşer → hum idle frekansına döner.
     Müzikten AYRI olarak çalar — "duyulmaz ama hissedilir".
 
-    "Tony Stark'ın aracı bir uzay gemisi gibi ses çıkarır."
-    Gerçek motor sesi + fütüristik hum = "Iron Man cockpit" deneyimi.
+    "Premium bir araç bir uzay gemisi gibi ses çıkarır."
+    Gerçek motor sesi + fütüristik hum = "sci-fi cockpit" deneyimi.
     Sürücü "God Mode" hisseder — araç bir araç değil, bir uzay gemisi.
 
     Ses üretimi:

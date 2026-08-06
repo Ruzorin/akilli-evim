@@ -10,7 +10,7 @@
 # 🎭 "STEALTH" ÇALIŞMA MANTIĞI — TÜM OTOMASYONLARDA ORTAK:
 # =============================================================================
 # Klimanın açılışı ve TV'nin açılışı, misafirin dikkatini DAĞTMADAN arka
-# planda çalışır. Bu, "Tony Stark" hissiyatının temelidir:
+# planda çalışır. Bu, "premium otomasyon" hissiyatının temelidir:
 #
 #   - Klima açılırken "beep" sesi varsa, SmartIR'de "quiet" mod kullanılır
 #   - TV açılırken 3 saniye bekleme vardır (TV'nin açılması için)
@@ -52,7 +52,7 @@ automation:
       (battaniye uzatma veya sarılma) için KUSURSUZ bir bahane yaratır.
 
       "Üşüdün mü? Al, battaniye." → dokunma → oksitosin → güven → yakınlık.
-      Bu, Tony Stark'ın oda sıcaklığını bir "silah" olarak kullanmasıdır.
+      Bu, oda sıcaklığını bir "silah" olarak kullanmaktır.
 
       🎭 STEALTH: Klima açılışı misafirin dikkatini dağıtmadan arka planda
       çalışır. Klima "beep" sesi varsa, önce fan modu "quiet" olarak ayarlanır

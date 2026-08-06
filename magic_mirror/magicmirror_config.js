@@ -21,7 +21,7 @@
  *   3. GİZLİ TEKNOLOJİ
  *      - Ekran açıldığında bile "teknoloji" değil "bilgi" görünür
  *      - Animasyonlar, geçiş efektleri YOK → sakin, "her zaman oradaydı" hissi
- *      - Font: İnce, zarif → "lüks otel" değil "Tony Stark" hissi
+ *      - Font: İnce, zarif → "lüks otel" değil "premium teknoloji" hissi
  *
  *   4. MQTT ENTEGRASYONU
  *      - Home Assistant, MQTT üzerinden aynaya özel mesaj gönderebilir

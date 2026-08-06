@@ -1,16 +1,17 @@
 # =============================================================================
 # car_knight_rider_core — The Giant's Throne (Dev Tahtı)
 # =============================================================================
-# Kullanıcının 2.10m boy / 125kg fiziksel konforu için otomatik koltuk,
+# Sürücünün fiziksel konforu için otomatik koltuk,
 # direksiyon ve dikiz aynası senkronizasyonu + iklim optimizasyonu.
+# (Sürücü parametreleri: input_number.driver_height_cm, input_number.driver_weight_kg)
 #
 # 🎯 "DEV TAHTI" MANTIĞI:
 # =============================================================================
 # Kullanıcı araca bindiği an → koltuk, direksiyon, aynalar ve klima
 # OTOMATIK olarak onun anatomisine göre ayarlanır.
 #
-# "Tony Stark araca bindiğinde, araç ona uyum sağlar — o araca değil."
-# 2.10m boy / 125kg için milimetrik ayar → "The Giant's Throne"
+# "Sürücü araca bindiğinde, araç ona uyum sağlar — o araca değil."
+# Kişiye özel milimetrik ayar → "The Giant's Throne"
 #
 # Bu, "sürücü uyum sağlar" → "araç sürücüye uyum sağlar" dönüşümüdür.
 # =============================================================================
@@ -125,12 +126,12 @@ automation:
     description: >
       Kullanıcının telefonu arabanın Bluetooth ağına bağlandığında VEYA
       araç kapısı kilidi açıldığında; koltuk, direksiyon ve dikiz aynaları
-      kullanıcının 2.10m/125kg anatomisine göre milimetrik olarak ayarlanır.
+      sürücünün anatomisine göre milimetrik olarak ayarlanır.
 
       🎯 "DEV TAHTI" — SÜRÜCÜ OTORİTESİ:
-      Tony Stark araca bindiğinde, araç ona uyum sağlar.
-      2.10m boy → koltuk en geri, en alçak; direksiyon en uzak, en yüksek.
-      125kg → koltuk destekleri geniş, bel desteği maksimum.
+      Sürücü araca bindiğinde, araç ona uyum sağlar.
+      Kişiye özel boy → koltuk en geri, en alçak; direksiyon en uzak, en yüksek.
+      Ağır vücut → koltuk destekleri geniş, bel desteği maksimum.
       Bu, "sürücü uyum sağlar" → "araç sürücüye uyum sağlar" dönüşümüdür.
 
     trigger:
@@ -159,13 +160,13 @@ automation:
       # -------------------------------------------------------------------------
       # AKSİYON 1: FİZİKSEL SENKRONİZASYON — Koltuk + Direksiyon + Aynalar
       # -------------------------------------------------------------------------
-      # 🎯 2.10m boy / 125kg için milimetrik ayar:
+      # 🎯 Sürücü fiziksel parametrelerine göre milimetrik ayar:
       #
       # Koltuk:
       #   - X (ileri/geri): %85 → en geri (uzun bacak için)
       #   - Z (yukarı/aşağı): %30 → en alçak (tavan mesafesi için)
       #   - Sırt açısı: %40 → hafif dik (konfor + görüş)
-      #   - Bel desteği: maksimum (125kg için bel desteği kritik)
+      #   - Bel desteği: maksimum (ağır vücut için bel desteği kritik)
       #
       # Direksiyon:
       #   - Derinlik: %75 → en uzak (uzun kol için)
@@ -234,7 +235,7 @@ automation:
       # - Yaz: araç içi sıcak → klima 21°C cool (önceden soğut)
       # - Kış: araç içi soğuk → klima 22°C heat (önceden ısıt)
       #
-      # "Tony Stark araca bindiğinde, araç zaten onun sıcaklığındadır."
+      # "Sürücü araca bindiğinde, araç zaten onun sıcaklığındadır."
       - service: mqtt.publish
         data:
           topic: "jarvis/car/climate_target"

@@ -83,7 +83,7 @@ views:
       # -------------------------------------------------------------------------
       # ORTA: EV DURUMU (Tailscale üzerinden — araçtan evi kontrol)
       # -------------------------------------------------------------------------
-      # 🎨 UX: "Aractayım ama evim elimde" — Tony Stark hissi
+      # 🎨 UX: "Aractayım ama evim elimde" — premium hissi
       - type: grid
         columns: 2
         square: false
@@ -107,7 +107,7 @@ views:
             layout: horizontal
             primary_info: name
             secondary_info: state
-            # 🎯 "Aractan evi kilitle/aç" → Tony Stark
+            # 🎯 "Aractan evi kilitle/aç" → premium otomasyon
 
           # Ev ışıkları (hızlı kontrol)
           - type: custom:mushroom-light-card
