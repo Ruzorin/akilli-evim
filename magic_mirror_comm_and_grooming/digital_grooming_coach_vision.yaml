@@ -1,4 +1,4 @@
-﻿# =============================================================================
+# =============================================================================
 # magic_mirror_comm_and_grooming — Dijital Stil Koçu (Qwen-VL Max)
 # =============================================================================
 # Kullanıcı aynanın karşısına geçip "Jarvis, kombin nasıl?" dediğinde:
@@ -145,6 +145,7 @@ automation:
         target:
           entity_id: tts.jarvis_voice
         data:
+          media_player_entity_id: media_player.jarvis_speaker
           message: "{{ trigger.payload_json.text | default('Harika görünüyorsunuz, efendim.') }}"
 
       # Magic Mirror'a da stil önerisi göster (opsiyonel)

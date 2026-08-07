@@ -147,6 +147,7 @@ automation:
         target:
           entity_id: tts.jarvis_voice
         data:
+          media_player_entity_id: media_player.jarvis_speaker
           message: >
             {{ [
               "Date modu aktif. Atmosfer hazır, efendim.",
@@ -214,4 +215,5 @@ automation:
         target:
           entity_id: tts.jarvis_voice
         data:
+          media_player_entity_id: media_player.jarvis_speaker
           message: "Date modu kapatıldı. Normale döndü, efendim."

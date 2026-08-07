@@ -95,6 +95,7 @@ automation:
         target:
           entity_id: tts.jarvis_voice
         data:
+          media_player_entity_id: media_player.jarvis_speaker
           message: "Heating cycle started. The machine is warming up."
 
   # ===========================================================================
@@ -173,6 +174,7 @@ automation:
                 target:
                   entity_id: tts.jarvis_voice
                 data:
+                  media_player_entity_id: media_player.jarvis_speaker
                   message: "The water is at optimal temperature. Your espresso is ready to brew."
 
               # -------------------------------------------------------------------------

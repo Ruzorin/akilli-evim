@@ -1,4 +1,4 @@
-﻿# =============================================================================
+# =============================================================================
 # jarvis_core — Master Orchestration Intents (NLP Niyet Senaryoları)
 # =============================================================================
 # Bu dosya, Jarvis'in doğal dil işleme (NLP) ile diğer modülleri nasıl
@@ -137,6 +137,7 @@ script:
         target:
           entity_id: tts.jarvis_voice
         data:
+          media_player_entity_id: media_player.jarvis_speaker
           message: "İhmal etmedim, efendim. Misafiriniz için her şey hazırlanıyor."
 
       # -------------------------------------------------------------------------
@@ -219,6 +220,7 @@ script:
         target:
           entity_id: tts.jarvis_voice
         data:
+          media_player_entity_id: media_player.jarvis_speaker
           message: "As you wish."
 
       # -------------------------------------------------------------------------
@@ -303,6 +305,7 @@ script:
                 target:
                   entity_id: tts.jarvis_voice
                 data:
+                  media_player_entity_id: media_player.jarvis_speaker
                   message: "Anlaşıldı, efendim."
 
           # "SILENT" — Hiç konuşma (sadece eyleme geç)
@@ -322,6 +325,7 @@ script:
                 target:
                   entity_id: tts.jarvis_voice
                 data:
+                  media_player_entity_id: media_player.jarvis_speaker
                   message: "Elbette."
 
 # -----------------------------------------------------------------------------

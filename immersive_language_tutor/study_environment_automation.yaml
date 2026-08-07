@@ -261,6 +261,7 @@ automation:
                 target:
                   entity_id: tts.jarvis_voice
                 data:
+                  media_player_entity_id: media_player.jarvis_speaker
                   message: "Bienvenue. Aujourd'hui, nous parlons en français. Pas de turc. Prêt? Commence par te présenter."
 
           # İngilizce açılış
@@ -273,6 +274,7 @@ automation:
                 target:
                   entity_id: tts.jarvis_voice
                 data:
+                  media_player_entity_id: media_player.jarvis_speaker
                   message: "Welcome. Today, we speak only English. No Turkish. Ready? Start by introducing yourself."
 
   # ===========================================================================
@@ -375,10 +377,12 @@ automation:
                 target:
                   entity_id: tts.jarvis_voice
                 data:
+                  media_player_entity_id: media_player.jarvis_speaker
                   message: "Good session. Two hours is enough. Rest your mind. We continue tomorrow."
         default:
           - service: tts.speak
             target:
               entity_id: tts.jarvis_voice
             data:
+              media_player_entity_id: media_player.jarvis_speaker
               message: "Session ended. Well done. Take a break."

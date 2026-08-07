@@ -1,4 +1,4 @@
-﻿# =============================================================================
+# =============================================================================
 # holistic_life_os — Rutin ve Tıbbi Takip Otomasyonları
 # =============================================================================
 # Bu dosya 3 senaryo için otomasyon tanımlar:
@@ -139,6 +139,7 @@ automation:
                 target:
                   entity_id: tts.jarvis_voice
                 data:
+                  media_player_entity_id: media_player.jarvis_speaker
                   message: >
                     Good morning. You have an important event today:
                     {{ states('sensor.todays_important_event') }}.
@@ -204,6 +205,7 @@ automation:
         target:
           entity_id: tts.jarvis_voice
         data:
+          media_player_entity_id: media_player.jarvis_speaker
           message: >
             Efendim, yarın {{ state_attr('sensor.todays_important_event', 'start_time')[:5] }}
             'de önemli bir görüşmeniz var: {{ states('sensor.todays_important_event') }}.
@@ -341,6 +343,7 @@ automation:
         target:
           entity_id: tts.jarvis_voice
         data:
+          media_player_entity_id: media_player.jarvis_speaker
           message: >
             Yemek analiz edildi. Günlük kalori takibinize eklendi.
             Bugünkü toplam: {{ states('input_number.daily_calories') }} kcal.

@@ -1,23 +1,19 @@
 # intimacy_sync_mode - ESP32 + MPU6050 Ivmeölçer Yapılandırması
-# Yatak iskeletine monte edilen sensör ile fiziksel ritim algılama
-
-esphome:
-  name: intimacy-sync-sensor
-  platform: ESP32
-  board: esp32dev
-
-wifi:
-  ssid: "GL-MT3000"
-  password: "YOUR_WIFI_PASSWORD"
-
-mqtt:
-  broker: "gl-mt3000.local"
-  port: 1883
-
-i2c:
-  sda: 21
-  scl: 22
-  scan: true
-
-# MPU6050 ivmeölçer ve ritim algılama mantığı
-# TODO: sensor (MPU6050) + custom_component (rhythm detection) eklenecek
+#
+# ⚠️ Bu dosya bir stub'tır. Gerçek ESPHome konfigürasyonu:
+#   → bed_sensor_esphome.yaml
+#
+# bed_sensor_esphome.yaml dosyası şunları içerir:
+#   - MPU6050 ivmeölçer (I2C: SDA 21, SCL 22, 100kHz)
+#   - C++ lambda ile ritim algılama algoritması (RMS pencere)
+#   - Activity Level sensörü (0-100, 2 saniyede bir güncellenir)
+#   - Global değişkenler: rms_window, rms_sum, rms_count, activity_level
+#   - MQTT discovery ile HA entegrasyonu
+#
+# ESP32 pin kullanımı:
+#   GPIO 21 → I2C SDA (MPU6050)
+#   GPIO 22 → I2C SCL (MPU6050)
+#
+# Home Assistant entegrasyonu:
+#   intimacy_automation.yaml → activity level'a göre otomasyon
+#   main.py → ek sensör filtreleme ve HA REST API

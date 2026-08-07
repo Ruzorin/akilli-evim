@@ -112,7 +112,7 @@ class SentryMotionTriggerDaemon:
         self._last_trigger_time = 0
 
         # MQTT client (HA'a durum bildirimi)
-        self.mqtt_client = mqtt.Client(client_id="sentry_daemon")
+        self.mqtt_client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION1, client_id="sentry_daemon")
         try:
             self.mqtt_client.connect(self.config.MQTT_BROKER, self.config.MQTT_PORT)
             self.mqtt_client.loop_start()

@@ -1,4 +1,4 @@
-﻿# =============================================================================
+# =============================================================================
 # jarvis_body_sync_medical — Anti-VSS Lighting Protocol (Nöro-Optik)
 # =============================================================================
 # Visual Snow Syndrome (VSS) için nörolojik olarak optimize edilmiş
@@ -140,6 +140,7 @@ automation:
         target:
           entity_id: tts.jarvis_voice
         data:
+          media_player_entity_id: media_player.jarvis_speaker
           message: "Nöro-optik aydınlatma modu aktif. Işıklar gözlerinizi korumak için ayarlandı."
 
   # ===========================================================================
@@ -184,6 +185,7 @@ automation:
                 target:
                   entity_id: tts.jarvis_voice
                 data:
+                  media_player_entity_id: media_player.jarvis_speaker
                   message: "Uyarı: Flaş efekti VSS modu nedeniyle engellendi."
 
 # -----------------------------------------------------------------------------

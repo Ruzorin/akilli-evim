@@ -1,17 +1,61 @@
 # audio_reactive_wled - ESP32 WLED Ses Reaktif Yapılandırması
-
-esphome:
-  name: audio-reactive-wled
-  platform: ESP32
-  board: esp32dev
-
-wifi:
-  ssid: "GL-MT3000"
-  password: "YOUR_WIFI_PASSWORD"
-
-mqtt:
-  broker: "gl-mt3000.local"
-  port: 1883
-
-# I2S mikrofon ve WLED entegrasyonu
-# TODO: i2s_audio ve light bileşenleri eklenecek
+#
+# ⚠️ ÖNEMLİ: Bu modül ESPHome DEĞIL, Sound Reactive WLED firmware kullanır!
+# https://github.com/atuline/WLED — ESP32 için optimize edilmiş ses reaktif WLED fork'u.
+#
+# ESP32'ye WLED firmware yüklendikten sonra, I2S mikrofon ayarları
+# WLED Web UI → Usermod → Audio Reactive bölümünden yapılır.
+# Bu dosya, WLED firmware'ın I2S konfigürasyonunu dokümante eder.
+#
+# ═══════════════════════════════════════════════════════════════════════════
+# INMP441 I2S Mikrofon → ESP32 Pin Bağlantıları (WLED Firmware)
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# WLED Web UI → Config → Usermod → Audio Reactive ayarları:
+#
+#   I2S SD  (Data In):  GPIO 32
+#   I2S WS  (Word Sel): GPIO 15
+#   I2S SCK (Bit Clock): GPIO 14
+#   I2S Sample Rate:     22050 Hz (WLED varsayılan)
+#   I2S Data Bit Width:  32-bit (INMP441 24-bit ama 32-bit slot)
+#   Audio Input:         I2S (Digital microphone)
+#   AGC (Auto Gain):     On (otomatik kazanç kontrolü)
+#   Sound Sync UDP Port: 11988 (WLED varsayılan)
+#
+# ═══════════════════════════════════════════════════════════════════════════
+# WLED Firmware Kurulumu
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# 1. https://install.wled.me/ sitesine git
+# 2. "Sound Reactive WLED" (atuline fork) seç
+# 3. ESP32'yi USB ile bağla ve flash'la
+# 4. ESP32 WiFi ağına bağlan (WLED-XXXX)
+# 5. WLED Web UI'ye gir (http://4.3.2.1 veya mDNS: wled.local)
+# 6. WiFi ağına (GL-MT3000) bağlan
+# 7. Config → Usermod → Audio Reactive → I2S pinlerini yukarıdaki gibi ayarla
+#
+# ═══════════════════════════════════════════════════════════════════════════
+# WLED MQTT Entegrasyonu (Home Assistant)
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# WLED Web UI → Config → Sync Setup → MQTT:
+#   MQTT Broker:  gl-mt3000.local
+#   MQTT Port:    1883
+#   MQTT Topic:   wled/audio_reactive
+#
+# HA'da WLED entegrasyonu otomatik keşfedilir (MQTT discovery).
+# Preset'ler wled_api_presets.json dosyasında tanımlıdır.
+# HA otomasyonları (audio_wled_automation.yaml) MQTT üzerinden preset değiştirir.
+#
+# ═══════════════════════════════════════════════════════════════════════════
+# LED Strip Bağlantısı
+# ═══════════════════════════════════════════════════════════════════════════
+#
+#   ESP32 GPIO 2  → LED Strip DIN (WS2812B / SK6812)
+#   ESP32 5V      → LED Strip VCC (harici güç kaynağı önerilir)
+#   ESP32 GND     → LED Strip GND
+#   LED Sayısı:    60 (2m strip, 30 LED/m)
+#   Max Current:   2000mA (WLED Web UI → LED Preferences → Current Limit)
+#
+# ⚠️ 60 LED × 60mA = 3.6A — ESP32'nin 5V pin'i YETMEZ!
+#    Harici 5V/4A güç kaynağı kullan, GND'leri ortakla.

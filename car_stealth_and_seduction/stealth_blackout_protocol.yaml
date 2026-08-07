@@ -132,6 +132,7 @@ automation:
         target:
           entity_id: tts.jarvis_voice
         data:
+          media_player_entity_id: media_player.jarvis_speaker
           message: "Blackout aktif, efendim. Sadece yol."
 
   # ===========================================================================
@@ -190,4 +191,5 @@ automation:
         target:
           entity_id: tts.jarvis_voice
         data:
+          media_player_entity_id: media_player.jarvis_speaker
           message: "Blackout kapatıldı. Normale döndü, efendim."

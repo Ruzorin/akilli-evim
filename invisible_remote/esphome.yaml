@@ -1,17 +1,31 @@
-# invisible_remote - ESP32 IR Blaster Yapılandırması
-
-esphome:
-  name: invisible-remote
-  platform: ESP32
-  board: esp32dev
-
-wifi:
-  ssid: "GL-MT3000"
-  password: "YOUR_WIFI_PASSWORD"
-
-mqtt:
-  broker: "gl-mt3000.local"
-  port: 1883
-
-# IR transmitter ve Broadlink entegrasyonu
-# TODO: remote_transmitter bileşeni eklenecek
+# invisible_remote - IR Blaster Yapılandırması
+#
+# ⚠️ Bu modül ESPHome KULLANMAZ! Broadlink RM4 Mini (ticari WiFi IR blaster) kullanır.
+# ESPHome esphome.yaml dosyası bu modül için geçerli değildir.
+#
+# ═══════════════════════════════════════════════════════════════════════════
+# Broadlink RM4 Mini Kurulumu
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# 1. Broadlink RM4 Mini'yi prize tak
+# 2. Broadlink Intehome app ile WiFi'a (GL-MT3000) bağlan
+# 3. Home Assistant → Settings → Integrations → Broadlink (otomatik keşif)
+# 4. SmartIR custom component yükle:
+#    HACS → Integrations → SmartIR
+#    https://github.com/smartHomeHub/SmartIR
+#
+# ═══════════════════════════════════════════════════════════════════════════
+# HA Entegrasyonu
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# - smartir_climate_media.yaml → SmartIR klima ve medya kontrolü
+# - stealth_automations.yaml → sesli komut ve NFC tetiklemeli otomasyonlar
+# - HA'da Broadlink entegrasyonu → remote.send_packet servisi
+#
+# IR cihazlar:
+#   - Klima (AC): SmartIR climate controller
+#   - TV/Monitör: SmartIR media controller
+#
+# Broadlink entity: remote.broadlink_rm4_mini
+# SmartIR climate: climate.ac
+# SmartIR media: media_player.tv

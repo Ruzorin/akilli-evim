@@ -39,7 +39,7 @@ class ExpertModel:
     """Eski model enum — artık kullanılmıyor."""
     MINIMAX_REALTIME = "minimax-speech-2.8-turbo"
     DEEPSEEK = "deepseek-v4-pro"
-    QWEN_VL = "qwen-vl-max"
+    QWEN_VL = "qwen-vl-max-latest"
 
 
 # Bu dosya deprecated'tir. Aktif kod için:

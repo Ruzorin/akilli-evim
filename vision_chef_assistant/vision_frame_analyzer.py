@@ -60,7 +60,7 @@ class VisionChefConfig:
     # Qwen-VL Max API (DashScope — OpenAI-uyumlu format)
     QWEN_VL_API_KEY: str = "YOUR_QWEN_VL_API_KEY"
     QWEN_VL_BASE_URL: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-    VISION_MODEL: str = "qwen-vl-max"  # Hızlı ve ekonomik vision modeli
+    VISION_MODEL: str = "qwen-vl-max-latest"  # En güncel Qwen-VL Max modeli
     MAX_TOKENS: int = 200  # Kısa cevaplar (şef yorumu max 2-3 cümle)
 
     # Analiz Modu

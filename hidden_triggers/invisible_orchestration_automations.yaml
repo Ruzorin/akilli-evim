@@ -224,6 +224,7 @@ automation:
                 target:
                   entity_id: tts.jarvis_voice
                 data:
+                  media_player_entity_id: media_player.jarvis_speaker
                   message: "All systems deactivated. Welcome back to reality."
 
   # ===========================================================================

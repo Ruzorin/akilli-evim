@@ -132,7 +132,7 @@ class ADASHMI(QMainWindow):
             self.classes = [line.strip() for line in f.readlines()]
 
         # MQTT client (HA köprüsü)
-        self.mqtt_client = mqtt.Client()
+        self.mqtt_client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION1)
         try:
             self.mqtt_client.connect(self.config.MQTT_BROKER, self.config.MQTT_PORT)
             self.mqtt_client.loop_start()

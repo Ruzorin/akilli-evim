@@ -33,7 +33,7 @@
 esphome:
   name: underbed-radar
   friendly_name: "Underbed Radar & Lighting"
-  platform: ESP32
+  min_version: 2025.6.0
   board: esp32dev
 
 # -----------------------------------------------------------------------------

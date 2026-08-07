@@ -193,6 +193,7 @@ automation:
         target:
           entity_id: tts.jarvis_voice
         data:
+          media_player_entity_id: media_player.jarvis_speaker
           message: "Intimacy modu aktif. Işıklar, koku ve müzik senkronize ediliyor."
 
   # ===========================================================================
@@ -395,10 +396,12 @@ automation:
                 target:
                   entity_id: tts.jarvis_voice
                 data:
+                  media_player_entity_id: media_player.jarvis_speaker
                   message: "Intimacy modu otomatik olarak kapatıldı. İyi geceler."
         default:
           - service: tts.speak
             target:
               entity_id: tts.jarvis_voice
             data:
+              media_player_entity_id: media_player.jarvis_speaker
               message: "Intimacy modu kapatıldı."

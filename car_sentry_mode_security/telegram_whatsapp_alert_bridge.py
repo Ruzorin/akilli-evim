@@ -262,7 +262,7 @@ class TelegramWhatsAppAlertBridge:
         """
         import paho.mqtt.client as mqtt
 
-        client = mqtt.Client()
+        client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION1)
         client.connect(self.config.MQTT_BROKER, self.config.MQTT_PORT)
 
         payload = json.dumps({

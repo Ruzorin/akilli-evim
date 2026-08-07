@@ -57,7 +57,8 @@ openai_conversation:
   base_url: "https://api.deepseek.com/v1"
 
   # Kullanılacak model — DeepSeek V4-Pro (ağır zeka, doğal dil işleme)
-  model: "deepseek-chat"
+  # deepseek-chat adı 24 Temmuz 2026'da emekliye ayrıldı, deepseek-v4-pro kullan
+  model: "deepseek-v4-pro"
 
   # Sıcaklık (temperature) — 0.7 = yaratıcı ama tutarlı
   # Düşük (0.2) = robotik, her zaman aynı cevap

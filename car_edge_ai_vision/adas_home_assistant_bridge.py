@@ -100,7 +100,7 @@ class ADASHomeAssistantBridge:
         self.config = config or ADASBridgeConfig()
 
         # MQTT client
-        self.client = mqtt.Client(client_id="adas_bridge")
+        self.client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION1, client_id="adas_bridge")
         self.client.on_connect = self._on_connect
         self.client.on_message = self._on_message
 

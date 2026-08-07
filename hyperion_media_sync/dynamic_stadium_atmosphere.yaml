@@ -279,6 +279,7 @@ automation:
         target:
           entity_id: tts.jarvis_voice
         data:
+          media_player_entity_id: media_player.jarvis_speaker
           message: >
             {% set team = states('input_select.stadium_team') %}
             {% if team == 'galatasaray' %}
@@ -385,10 +386,12 @@ automation:
                 target:
                   entity_id: tts.jarvis_voice
                 data:
+                  media_player_entity_id: media_player.jarvis_speaker
                   message: "Maç bitti. Oda dinlenme moduna geçiyor. İyi seyirlerdi, efendim."
         default:
           - service: tts.speak
             target:
               entity_id: tts.jarvis_voice
             data:
+              media_player_entity_id: media_player.jarvis_speaker
               message: "Stadyum modu kapatıldı. Dinlenme zamanı."

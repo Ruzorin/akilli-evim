@@ -252,6 +252,7 @@ automation:
         target:
           entity_id: tts.jarvis_voice
         data:
+          media_player_entity_id: media_player.jarvis_speaker
           message: >
             {{ [
               "Hoş geldiniz, efendim. Tahtınız hazır.",
@@ -288,6 +289,7 @@ automation:
         target:
           entity_id: tts.jarvis_voice
         data:
+          media_player_entity_id: media_player.jarvis_speaker
           message: "Araç kapatıldı. Eve dönüş için hazırlık başladı, efendim."
 
       # Eve 15 dk mesafedeyse → evi hazırla

@@ -1,4 +1,4 @@
-﻿# =============================================================================
+# =============================================================================
 # vision_chef_assistant — Mutfak Otomasyonları (Etkileşim Senaryoları)
 # =============================================================================
 # Bu dosya 3 senaryo için otomasyon tanımlar:
@@ -150,6 +150,7 @@ automation:
         target:
           entity_id: tts.jarvis_voice
         data:
+          media_player_entity_id: media_player.jarvis_speaker
           message: "{{ trigger.payload_json.text }}"
 
   # ===========================================================================
@@ -221,6 +222,7 @@ automation:
         target:
           entity_id: tts.jarvis_voice
         data:
+          media_player_entity_id: media_player.jarvis_speaker
           message: >
             {% if trigger.id == 'chef_warning' %}
               {{ trigger.payload_json.text }}

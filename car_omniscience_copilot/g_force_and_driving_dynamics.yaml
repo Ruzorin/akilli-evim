@@ -125,6 +125,7 @@ automation:
         target:
           entity_id: tts.jarvis_voice
         data:
+          media_player_entity_id: media_player.jarvis_speaker
           message: >
             {{ [
               "Viraj biraz sert efendim, yavaşlayalım.",
@@ -182,6 +183,7 @@ automation:
         target:
           entity_id: tts.jarvis_voice
         data:
+          media_player_entity_id: media_player.jarvis_speaker
           message: >
             {% set friction = states('sensor.road_friction_coefficient') | float(0.85) %}
             {% if friction < 0.2 %}
@@ -237,6 +239,7 @@ automation:
         target:
           entity_id: tts.jarvis_voice
         data:
+          media_player_entity_id: media_player.jarvis_speaker
           message: "Agresif fren tespit edildi. Bu ağırlıkla fren mesafesi uzun. Önünüzü kontrol edin."
 
       # ABS + çekiş kontrolü → maksimum

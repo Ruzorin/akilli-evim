@@ -378,6 +378,7 @@ automation:
         target:
           entity_id: tts.jarvis_voice
         data:
+          media_player_entity_id: media_player.jarvis_speaker
           message: >
             Good morning. The weather outside is {{ states('weather.home.attributes.temperature') | default('24') }} degrees.
             Your espresso machine is pre-heated and ready.
@@ -451,4 +452,5 @@ automation:
         target:
           entity_id: tts.jarvis_voice
         data:
+          media_player_entity_id: media_player.jarvis_speaker
           message: "Acknowledged. I will wake you at {{ wake_hour }} o'clock tomorrow."

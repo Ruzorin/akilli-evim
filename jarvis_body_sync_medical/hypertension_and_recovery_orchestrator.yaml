@@ -146,6 +146,7 @@ automation:
         target:
           entity_id: tts.jarvis_voice
         data:
+          media_player_entity_id: media_player.jarvis_speaker
           message: >
             Tansiyonunuz yüksek: {{ states('sensor.blood_pressure_systolic') | int }}/{{ states('sensor.blood_pressure_diastolic') | int }} mmHg.
             Kahve makinesini geçici olarak kapattım. Odanızı serinlettim ve rahatlatıcı koku açtım.
@@ -212,6 +213,7 @@ automation:
         target:
           entity_id: tts.jarvis_voice
         data:
+          media_player_entity_id: media_player.jarvis_speaker
           message: >
             Kritik tansiyon: {{ states('sensor.blood_pressure_systolic') | int }}/{{ states('sensor.blood_pressure_diastolic') | int }} mmHg.
             Tüm stimülanları kapattım. Lütfen oturun ve dinlenin.
@@ -297,6 +299,7 @@ automation:
         target:
           entity_id: tts.jarvis_voice
         data:
+          media_player_entity_id: media_player.jarvis_speaker
           message: >
             Biyometrik brifing: Tansiyonunuz {{ states('sensor.blood_pressure_systolic') | int }}/{{ states('sensor.blood_pressure_diastolic') | int }}.
             Dün gece {{ states('sensor.sleep_hours') | float(0) | round(1) }} saat uyudunuz, derin uyku {{ states('sensor.deep_sleep_hours') | float(0) | round(1) }} saat.

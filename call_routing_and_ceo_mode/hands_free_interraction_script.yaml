@@ -103,6 +103,7 @@ script:
         target:
           entity_id: tts.jarvis_voice
         data:
+          media_player_entity_id: media_player.jarvis_speaker
           message: "Görüşme odaya aktarıldı, efendim. Eller serbest."
 
   # ===========================================================================
@@ -245,6 +246,7 @@ script:
         target:
           entity_id: tts.jarvis_voice
         data:
+          media_player_entity_id: media_player.jarvis_speaker
           message: "Görüşme sona erdi. Atmosfer geri döndü, efendim."
 
 # -----------------------------------------------------------------------------

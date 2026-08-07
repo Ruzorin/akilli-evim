@@ -54,9 +54,10 @@ class HybridBrainConfig:
     DEEPSEEK_MODEL: str = "deepseek-v4-pro"  # En gelişmiş DeepSeek modeli
 
     # Qwen-VL API (görüntü analizi — vision)
+    # OpenAI-uyumlu DashScope endpoint (modern format)
     QWEN_API_KEY: str = "YOUR_QWEN_API_KEY"
-    QWEN_URL: str = "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation"
-    QWEN_MODEL: str = "qwen-vl-max"
+    QWEN_URL: str = "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
+    QWEN_MODEL: str = "qwen-vl-max-latest"
 
     # Hafıza saklama
     MEMORY_DIR: str = "jarvis_memory/daily_summaries"  # Lokal JSON dosyaları
@@ -307,23 +308,29 @@ class HybridBrainMemoryManager:
             },
             json={
                 "model": self.config.QWEN_MODEL,
-                "input": {
-                    "messages": [
-                        {
-                            "role": "user",
-                            "content": [
-                                {"image": f"data:image/jpeg;base64,{image_base64}"},
-                                {"text": prompt}
-                            ]
-                        }
-                    ]
-                }
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:image/jpeg;base64,{image_base64}"
+                                }
+                            },
+                            {
+                                "type": "text",
+                                "text": prompt
+                            }
+                        ]
+                    }
+                ]
             }
         )
 
         if response.status_code == 200:
             result = response.json()
-            answer = result["output"]["choices"][0]["message"]["content"]
+            answer = result["choices"][0]["message"]["content"]
             self.log.info(f"✅ Qwen-VL yanıtı: {len(answer)} karakter")
             return answer
         else:

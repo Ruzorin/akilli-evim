@@ -58,9 +58,10 @@ class MiniMaxConfig:
     GROUP_ID: str = "YOUR_MINIMAX_GROUP_ID"
 
     # WebSocket endpoint (Speech 2.8 Turbo)
-    WS_URL: str = "wss://api.minimaxi.com/v1/realtime/speech2speech"
+    # Uluslararası endpoint: api.minimax.io (Çin: api.minimaxi.com)
+    WS_URL: str = "wss://api.minimax.io/v1/realtime/speech2speech"
     # Alternatif: REST API
-    REST_URL: str = "https://api.minimaxi.com/v1/t2a_v2"
+    REST_URL: str = "https://api.minimax.io/v1/t2a_v2"
 
     # Voice Cloning
     VOICE_CLONE_REFERENCE: str = "assets/jarvis_voice_reference.wav"  # 10 sn referans
