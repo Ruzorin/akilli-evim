@@ -385,32 +385,34 @@ Bu proje, fiziksel bir Raspberry Pi / PC sunucusu gerektirmez. Sistem **ucuz bir
 
 ## 🤖 Dijital ve Fiziksel Ajan Modülleri (Modül 27-30 — Fiziksel-Dijital Köprü)
 
+> Jarvis artık sadece ses ve ekrandan ibaret değil. Bilgisayarda sizin için iş yapan bir dijital ajanı, masada başını sallayan fiziksel bir lambası ve masada dans eden bir robot köpeği var. Bu dört modül, fiziksel ve dijital dünyaları birbirine bağlar.
+
 ### 27. `openclaw_digital_sandbox` — OpenClaw Dijital Ajan ve Zero Trust Sandbox 🖥️
 
-- **OpenClaw v2026.4.15:** Açık kaynak otonom dijital ajan (MIT lisans). browser-use + shell + file ops. Docker sandbox içinde çalışır
-- **7 Katmanlı Zero Trust Sandbox:** (1) Docker non-root container, (2) seccomp profile, (3) Landlock kernel FS jail, (4) network namespace allowlist, (5) skill audit (banned patterns), (6) memory hygiene (redact + 30-day wipe), (7) approval system (MQTT → HA → mobile)
-- **Fiziksel-Dijital Senkron:** Görev tamam → Lamba (Modül 29) başını sallar + yeşil ışık + ses. Görev hata → Lamba sallar + kırmızı ışık. Onay gerek → Lamba bakar + kehribar + mobil bildirim
-- **VSS Otonom Ekran Kalkanı:** Windows WMI / Linux brightnessctl / macOS osascript ile parlaklık, Night Light (3400K), dark mode otomatik ayarı. Lamba ile MQTT senkron
+- **Jarvis'in Dijital Elleri:** OpenClaw, Jarvis'in bilgisayarda sizin için iş yapan dijital ajanı. Tarayıcıda gezinir, dosya okur, shell komutları çalıştırır. "Bana uçuş ara" → OpenClaw tarayıcıyı açar, siteleri gezer, sonuçları getirir
+- **Zero Trust Güvenlik (7 Katman):** OpenClaw hiçbir zaman serbest çalışmaz. Docker konteyner içinde, root yetkisi olmadan, dosya sistemi kilitli, ağ kısıtlı. Tehlikeli komutlar otomatik engellenir. Önemli işlerde mobil onay ister — "Bu işlem için onayınız gerekli"
+- **Fiziksel Lamba ile Senkron:** OpenClaw bir görevi bitirdiğinde masadaki robotik lamba (Modül 29) başını sallar ve yeşil ışık yanar. Görev hata alırsa lamba sallanır ve kırmızı yanar. Onay beklerken lamba size bakar ve kehribar renk yanar. "Dijital ajanınız fiziksel olarak size haber verir"
+- **VSS Ekran Kalkanı:** Visual Snow Syndrome için ekran parlaklığı, Night Light (3400K) ve dark mode otomatik ayarlar. Lamba ile senkron çalışır — lamba kehribar yanarsa ekran da sıcak renge döner
 
 ### 28. `multicooker_chef_automation` — Multicooker Chef ve Vision-Cooker Orkestrasyonu 🍳
 
-- **Xiaomi Mi Smart Multi Cooker 3L:** `chunmi.cooker.normal4` — Xiaomi Miot Auto (`miot_local: true`) ile yerel LAN kontrolü. Çin bulutundan tamamen izole (router `iptables` ile block)
-- **Vision-Cooker Kapalı Döngü:** Modül 13 (Qwen-VL Max) tezgaha bakar → malzeme tanır → tarif önerir → kullanıcı onayı → multicooker başlatır. 6 tarif profili (domates çorbası 100°C, tavuk-pirinç 105°C, vb.)
-- **Pişirme Bildirim Senaryosu:** Pişirme başladı → WLED turuncu + MiniMax ses. İlerleme → 10 dk ışık pattern + 20 dk ses cooldown. Bitti → WLED yeşil + "yemeğiniz hazır" + mobil aksiyonlar (kapat/sıcak tut). Sıcak tutma → WLED amber
+- **Çin Bulutundan Koparılmış Tencere:** Piyasadaki bir Xiaomi akıllı tencere alınır, Çin bulutuna bağlantısı router seviyesinde kesilir. Artık sadece sizin yerel ağınızda, Home Assistant üzerinden çalışır. "Xiaomi'nin sunucuları habersizce veri toplamaz"
+- **Gözle Pişir (Vision-Cooker):** Modül 13'ün kamerası (Qwen-VL Max) tezgaha bakar, malzemeleri tanır. "Domates, soğan, sarımsak görüyorum → domates çorbası öneririm" der. Siz onayladığınızda tencere otomatik başlar, doğru sıcaklık ve süreyi ayarlar. "Kamera görür, beyin düşünür, tencere pişirir"
+- **Sesli ve Işıklı Pişirme Bildirimi:** Pişirme başlayınca WLED ışıklar turuncu yanar ve Jarvis "Pişirme başladı" der. Pişirme bittiğinde ışıklar yeşile döner, Jarvis "Yemeğiniz hazır" der ve telefonunuza bildirim gelir. Tek dokunuşla kapatır veya sıcak tutmaya alırsınız. "Mutfakta yalnız değilsiniz"
 
 ### 29. `embodied_jarvis_avatar` — Embodied Jarvis Avatar (5-DOF Robotik Lamba) 💡
 
-- **Autonomous OS (edge_body_only):** Beyin Cloud VPS'de, Pi sadece "gövde" (HAL aktif, runtime kapalı). DEVICE.md/SOUL.md/SAFETY.md kontratı. PCA9685 I2C PWM driver ile MG996R × 3 + SG90 × 2 servo
-- **5-DOF Robotik Kol:** BCN3D Moveo açık kaynak tasarım. Inverse kinematics ile hedefe yönelme. Yumuşak hareket (60°/sec). E-STOP güvenliği
-- **Postür Kalkanı (VSS):** MediaPipe Pose ile servikal açı analizi (kullanıcı 210cm). Tech Neck (15°+) → lamba hedefe bakar + kehribar pulse + sesli uyarı. Severe (25°+) → daha güçlü müdahale. Düzeldi → başını sallar + yeşil ışık
-- **Fiziksel-Dijital Köprü:** OpenClaw (Modül 27) görev tamam → lamba başını sallar. Kame (Modül 30) dans → lamba ritim takip eder
+- **Jarvis'in Fiziksel Yüzü:** 3D yazıcı ile basılan 5 eksenli robotik bir masa lambası. Autonomous OS (açık kaynak robot işletim sistemi) ile çalışır. Beyin bulut VPS'de, Raspberry Pi sadece "gövde" — komutları alır ve servo motorları hareket ettirir. "Jarvis artık sadece ses değil, hareket eden bir fiziksel varlık"
+- **Sana Bakar, Seni İzler:** Lamba size doğru dönebilir, size bakabilir, başını sallayabilir. Inverse kinematics ile yumuşak ve doğal hareketler. Acil durumlarda E-STOP ile anında durur
+- **Postür Kalkanı (VSS):** Kullanıcı 210cm, Visual Snow Syndrome'lu. MediaPipe Pose ile boyun açısı sürekli ölçülür. Boyun 15°+ öne eğilirse ("Tech Neck") lamba size döner, kehribar ışıkla nabız atar ve Jarvis "Postürünüzü düzeltin" der. 25°+ ise daha güçlü uyarı. Düzeltince lamba başını sallar ve yeşil yanar. "Lambanız aynı zamanda postür koçunuz"
+- **Dijital Ajan ile Konuşur:** OpenClaw (Modül 27) bir iş bitirdiğinde lamba başını sallar. Kame (Modül 30) dans ettiğinde lamba ritme ayak uydurur. "Fiziksel ve dijital ajanlar birbiriyle konuşur"
 
 ### 30. `desktop_pet_kame` — Desktop Pet Kame32 (Dört Bacaklı Robot) 🐕
 
-- **Kame32 (Güncel Versiyon):** BQ Innovation Lab açık kaynak tasarım. ESP32 DevKit V1 + 8× SG90/MG90S. Paralelgram mekanizması — ayak her zaman zemine dik. Kamera/mikrofon YOK — tüm zeka Jarvis'ten MQTT ile gelir
-- **Audio-Reactive Dans:** Modül 10 (WLED INMP441) BPM analizi → MQTT `kame/command/dance` → Kame32 beat'e göre çömel/kalk/ayak vur/spin
-- **Eye of Sauron Otonom Şarj:** Tapo C200 RTSP → OpenCV HSV renk filtreleme → Kame konum tespiti → hata vektörü → MQTT komut → park → doğrula (closed-loop, max 20 adım). Batarya %20 → otonom park
-- **Wingman Karşılama:** Misafir geldi → 6 faz: kehribar ışık + Kame32 kalk + 3 adım + reverans + sesli karşılama + geri dön. Misafir gitti → uyku. Gece 23:00 → uyku, sabah 08:00 → uyan
+- **Jarvis'in Robot Köpeği:** Masada yaşayan, 3D basılmış, dört bacaklı bir robot. ESP32 + 8 ucuz servo motor (SG90/MG90S). Kamera ve mikrofonu YOK — tüm zekası Jarvis'ten MQTT ile gelir. "Köpeğin gözleri ve kulakları Jarvis'in kamerası ve mikrofonu"
+- **Müziğe Dans Eder:** Modül 10'un mikrofonu (WLED INMP441) müziğin ritmini (BPM) analiz eder. Ritmi Kame'ye MQTT ile gönderir. Kame müziğin beat'ine göre çömelir, kalkar, ayak vurur, döner. "Müzik çalınca masanızdaki köpek dans eder"
+- **Eye of Sauron — Otonom Şarj:** Kame'nin bataryası %20'ye düşünce, Tapo C200 kamera (Modül 13) OpenCV ile Kame'yi masada bulur. Kame'ye adım adım yürüme komutları gönderir, şarj pad'ine park eder. "Köpek kendi kendine şarja gider"
+- **Wingman Karşılama:** Misafir geldiğinde (Modül 2 NFC veya Modül 13 yüz tanıma) Kame ayağa kalkar, 3 adım yürür, reverans yapar ve Jarvis sesli olarak karşılar. Misafir gidince uyku moduna geçer. Gece 23:00'da uyur, sabah 08:00'da uyanır. "Size gelen misafiri önce köpeğiniz karşılar"
 
 ---
 
