@@ -1,0 +1,334 @@
+# =============================================================================
+# embodied_jarvis_avatar — Postür Kalkanı Otomasyon Senaryosu
+# =============================================================================
+# Bu otomasyon, Jarvis'in fiziksel lambasının postür koruma senaryosudur.
+#
+# 🦴 MANTIK:
+# 1. Pi'de MediaPipe Pose → servikal açı hesapla (yerel, 2 FPS)
+# 2. Açı > 15° (Tech Neck) → MQTT → HA → otomasyon tetiklenir
+# 3. Lamba fiziksel olarak kullanıcıya "uzanır" (motion.aim)
+# 4. LED halka kehribar titre (VSS dostu)
+# 5. MiniMax'ten "Postürünüzü düzeltin" sesli uyarı
+# 6. 30 sn boyunca bozuksa → uyar (ani değil, sürekli)
+#
+# 🎯 VSS BAĞLAMI:
+# Kullanıcı 210 cm boyunda, VSS ile mücadele ediyor.
+# Tech Neck = baş öne kayar → servikal yük artar → VSS semptomları alevlenir.
+# Lamba "fiziksel olarak müdahale eder" — sadece sesli uyarı değil,
+# kafa modülünü kullanıcıya uzatarak "dikkat çeker".
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# INPUT BOOLEAN: Postür Kalkanı aktif/pasif
+# -----------------------------------------------------------------------------
+input_boolean:
+  jarvis_posture_shield_active:
+    name: "Postür Kalkanı Aktif"
+    icon: mdi:shield-account
+    initial: true
+
+  jarvis_posture_shield_quiet_mode:
+    name: "Sessiz Mod (sadece fiziksel, ses yok)"
+    icon: mdi:volume-off
+    initial: false
+
+# -----------------------------------------------------------------------------
+# INPUT NUMBER: Eşik değerleri (HA UI'dan ayarlanabilir)
+# -----------------------------------------------------------------------------
+input_number:
+  jarvis_posture_tech_neck_threshold:
+    name: "Tech Neck Eşiği (°)"
+    min: 10
+    max: 25
+    step: 1
+    initial: 15
+    icon: mdi:angle-acute
+
+  jarvis_posture_severe_threshold:
+    name: "Ciddi Postür Eşiği (°)"
+    min: 20
+    max: 40
+    step: 1
+    initial: 25
+    icon: mdi:angle-obtuse
+
+  jarvis_posture_sustained_duration:
+    name: "Sürekli Bozukluk Süresi (sn)"
+    min: 10
+    max: 120
+    step: 5
+    initial: 30
+    icon: mdi:timer-outline
+
+# -----------------------------------------------------------------------------
+# SENSOR: Pi'den gelen postür açısı (MQTT discovery)
+# -----------------------------------------------------------------------------
+mqtt:
+  sensor:
+    - name: "Jarvis Lamp Posture Angle"
+      state_topic: "jarvis/lamp/posture/angle"
+      value_template: "{{ value_json.angle }}"
+      unit_of_measurement: "°"
+      icon: mdi:human
+      device_class: angle
+
+    - name: "Jarvis Lamp Posture Severity"
+      state_topic: "jarvis/lamp/posture/angle"
+      value_template: "{{ value_json.severity }}"
+      icon: mdi:alert-circle
+
+    - name: "Jarvis Lamp Posture Sustained"
+      state_topic: "jarvis/lamp/posture/angle"
+      value_template: "{{ value_json.sustained_seconds }}"
+      unit_of_measurement: "s"
+      icon: mdi:timer
+
+  binary_sensor:
+    - name: "Jarvis Lamp Tech Neck"
+      state_topic: "jarvis/lamp/posture/angle"
+      value_template: "{{ value_json.severity == 'tech_neck' }}"
+      payload_on: true
+      payload_off: false
+      device_class: problem
+
+    - name: "Jarvis Lamp Severe Posture"
+      state_topic: "jarvis/lamp/posture/angle"
+      value_template: "{{ value_json.severity == 'severe' }}"
+      payload_on: true
+      payload_off: false
+      device_class: problem
+
+# -----------------------------------------------------------------------------
+# OTOMASYON 1: Tech Neck Tespiti → Fiziksel Müdahale
+# -----------------------------------------------------------------------------
+automation:
+  - id: "jarvis_posture_shield_tech_neck"
+    alias: "Postür Kalkanı — Tech Neck Müdahalesi"
+    description: >
+      Lamba, kullanıcı Tech Neck yaptığında fiziksel olarak
+      kullanıcıya uzanır, kehribar titre ve sesli uyarı verir.
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.jarvis_lamp_tech_neck
+        to: "on"
+        for:
+          seconds: "{{ states('input_number.jarvis_posture_sustained_duration') | int(30) }}"
+    condition:
+      - condition: state
+        entity_id: input_boolean.jarvis_posture_shield_active
+        state: "on"
+    action:
+      # 1. Lamba kullanıcıya fiziksel olarak "uzan"
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/lamp/motion/command"
+          payload: >
+            {
+              "skill": "aim",
+              "x": 0.3,
+              "y": 0.0,
+              "z": 0.5,
+              "comment": "Kullanıcıya uzan — Tech Neck müdahalesi"
+            }
+
+      # 2. LED halka kehribar titre (VSS dostu)
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/lamp/light/command"
+          payload: >
+            {
+              "effect": "amber_pulse",
+              "brightness": 60,
+              "speed": 0.5,
+              "comment": "Kehribar titre — VSS dostu uyarı"
+            }
+
+      # 3. Sesli uyarı (sessiz mod kapalıysa)
+      - choose:
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.jarvis_posture_shield_quiet_mode
+                state: "off"
+            sequence:
+              - service: tts.speak
+                target:
+                  entity_id: tts.minimax_speech
+                data:
+                  media_player_entity_id: media_player.jarvis_speaker
+                  message: "Postürünüzü düzeltin efendim. Omurganızı koruyun."
+
+      # 4. HA dashboard'ta bildirim
+      - service: persistent_notification.create
+        data:
+          title: "🦴 Postür Kalkanı"
+          message: >
+            Tech Neck tespit edildi ({{ states('sensor.jarvis_lamp_posture_angle') }}°).
+            Lamba fiziksel müdahalede bulundu.
+
+      # 5. 10 sn bekle, sonra lambayı park pozisyonuna döndür
+      - delay:
+          seconds: 10
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/lamp/motion/command"
+          payload: '{"skill": "home"}'
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/lamp/light/command"
+          payload: '{"effect": "off"}'
+
+    mode: single
+    max_exceeded: silent
+
+  # ---------------------------------------------------------------------------
+  # OTOMASYON 2: Ciddi Postür → Güçlü Müdahale
+  # ---------------------------------------------------------------------------
+  - id: "jarvis_posture_shield_severe"
+    alias: "Postür Kalkanı — Ciddi Postür Müdahalesi"
+    description: >
+      Ciddi postür bozukluğu (25°+) — lamba daha yakın uzanır,
+      LED daha yoğun titre ve güçlü uyarı.
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.jarvis_lamp_severe_posture
+        to: "on"
+        for:
+          seconds: 15
+    condition:
+      - condition: state
+        entity_id: input_boolean.jarvis_posture_shield_active
+        state: "on"
+    action:
+      # 1. Lamba daha yakın uzan (20cm)
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/lamp/motion/command"
+          payload: >
+            {
+              "skill": "aim",
+              "x": 0.2,
+              "y": 0.0,
+              "z": 0.45,
+              "comment": "Daha yakın — ciddi postür müdahalesi"
+            }
+
+      # 2. LED kehribar daha yoğun titre
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/lamp/light/command"
+          payload: >
+            {
+              "effect": "amber_pulse",
+              "brightness": 80,
+              "speed": 1.0,
+              "comment": "Yoğun kehribar — ciddi uyarı"
+            }
+
+      # 3. Güçlü sesli uyarı
+      - choose:
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.jarvis_posture_shield_quiet_mode
+                state: "off"
+            sequence:
+              - service: tts.speak
+                target:
+                  entity_id: tts.minimax_speech
+                data:
+                  media_player_entity_id: media_player.jarvis_speaker
+                  message: >
+                    Efendim, omurganız ciddi şekilde eğilmiş. 
+                    Lütfen dik oturun — skolyoz riski taşıyorsunuz.
+
+      # 4. Mobil bildirim
+      - service: notify.mobile_app
+        data:
+          title: "🚨 Postür Kalkanı — Ciddi"
+          message: >
+            Servikal açı {{ states('sensor.jarvis_lamp_posture_angle') }}°.
+            Dik oturun — uzun süreli Tech Neck skolyozu alevlendirir.
+
+      # 5. 15 sn bekle, park et
+      - delay:
+          seconds: 15
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/lamp/motion/command"
+          payload: '{"skill": "home"}'
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/lamp/light/command"
+          payload: '{"effect": "off"}'
+
+    mode: single
+    max_exceeded: silent
+
+  # ---------------------------------------------------------------------------
+  # OTOMASYON 3: Postür düzeldi → Teşvik
+  # ---------------------------------------------------------------------------
+  - id: "jarvis_posture_shield_recovered"
+    alias: "Postür Kalkanı — Postür Düzeldi"
+    description: >
+      Kullanıcı postürünü düzelttiğinde lamba nazik bir "onay" hareketi yapar.
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.jarvis_lamp_tech_neck
+        to: "off"
+        for:
+          seconds: 5
+    condition:
+      - condition: state
+        entity_id: input_boolean.jarvis_posture_shield_active
+        state: "on"
+    action:
+      # Lamba hafif "baş sallama" hareketi (onay)
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/lamp/motion/command"
+          payload: '{"skill": "nod", "comment": "Onay — postür düzeldi"}'
+      # LED hafif yeşil parıltı
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/lamp/light/command"
+          payload: '{"effect": "soft_green_glow", "brightness": 30, "duration": 3}'
+      # Kısa teşvik
+      - choose:
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.jarvis_posture_shield_quiet_mode
+                state: "off"
+            sequence:
+              - service: tts.speak
+                target:
+                  entity_id: tts.minimax_speech
+                data:
+                  media_player_entity_id: media_player.jarvis_speaker
+                  message: "Teşekkürler efendim."
+
+    mode: single
+    max_exceeded: silent
+
+  # ---------------------------------------------------------------------------
+  # OTOMASYON 4: Gece Sessiz Saat → Sessiz Mod
+  # ---------------------------------------------------------------------------
+  - id: "jarvis_posture_shield_night_quiet"
+    alias: "Postür Kalkanı — Gece Sessiz Modu"
+    trigger:
+      - platform: time
+        at: "00:00:00"
+    action:
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.jarvis_posture_shield_quiet_mode
+    mode: single
+
+  - id: "jarvis_posture_shield_morning_unquiet"
+    alias: "Postür Kalkanı — Sabah Sessiz Modu Kapat"
+    trigger:
+      - platform: time
+        at: "07:00:00"
+    action:
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.jarvis_posture_shield_quiet_mode
+    mode: single

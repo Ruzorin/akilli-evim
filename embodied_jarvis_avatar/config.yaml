@@ -1,0 +1,166 @@
+# =============================================================================
+# embodied_jarvis_avatar — Modül Konfigürasyonu
+# =============================================================================
+# Modül 29: Embodied Jarvis Avatar
+# Jarvis'in masadaki "fiziksel yüzü" — 5 eksenli robotik masa lambası
+# Autonomous OS tabanlı, beyin Cloud VPS'te, gövde Raspberry Pi 4'te
+# =============================================================================
+
+module:
+  name: "embodied_jarvis_avatar"
+  number: 29
+  description: >
+    Jarvis'in masadaki fiziksel yüzü. 5-DOF robotik masa lambası,
+    Autonomous OS ile çalışır. Beyin Cloud VPS'te (DeepSeek + MiniMax),
+    gövde Raspberry Pi 4'te (sensör/motor HAL). Postür Kalkanı ile
+    210 cm kullanıcının Tech Neck'ini fiziksel olarak düzeltir.
+
+# =============================================================================
+# DONANIM
+# =============================================================================
+hardware:
+  # Ana işlemci
+  sbc: "raspberry_pi_4_4gb"
+
+  # Servo motorlar
+  servos:
+    base: "MG996R" # Metal dişli, 11kg-cm tork
+    shoulder: "MG996R"
+    elbow: "MG996R"
+    wrist_pitch: "SG90" # Hafif, 1.8kg-cm
+    wrist_roll: "SG90"
+
+  # Servo sürücü
+  servo_driver: "PCA9685" # 16-kanal I2C PWM
+  servo_driver_address: "0x40"
+  servo_pwm_frequency: 50 # 50Hz
+
+  # Sensörler
+  camera: "raspberry_pi_camera_v2" # 5MP, 1080p, CSI-2
+  microphone: "INMP441" # I2S dijital mikrofon
+  speaker_amp: "MAX98357A" # I2S amplifikatör
+  speaker: "4ohm_3w"
+
+  # LED
+  led_ring: "WS2812B_12led_144mm" # 12 LED, kehribar ifade ışığı
+
+  # 3D baskı
+  arm_design: "BCN3D_Moveo_5dof" # Açık kaynak robot kol
+  filament: "PLA_PETG"
+
+# =============================================================================
+# AĞ
+# =============================================================================
+network:
+  vpn: "tailscale"
+  protocol: "mqtt"
+  broker: "100.x.x.x" # Cloud VPS Tailscale IP
+  port: 1883
+
+  # Pi → Cloud (sensör verisi)
+  publish_topics:
+    posture: "jarvis/lamp/posture/angle"
+    camera: "jarvis/lamp/camera/frame"
+    audio_input: "jarvis/lamp/audio/input"
+    presence: "jarvis/lamp/presence"
+    status: "jarvis/lamp/status"
+
+  # Cloud → Pi (komutlar)
+  subscribe_topics:
+    motion: "jarvis/lamp/motion/command"
+    light: "jarvis/lamp/light/command"
+    audio_output: "jarvis/lamp/audio/output"
+    estop: "jarvis/lamp/safety/estop"
+
+# =============================================================================
+# AUTONOMOUS OS
+# =============================================================================
+autonomous_os:
+  repo: "https://github.com/autonomous-ai/autonomous-os.git"
+  mode: "edge_body_only" # Beyin Cloud'da, Pi sadece gövde
+  runtime: false # Agentic runtime DISABLE
+  hal: true # HAL aktif (sensör/motor)
+
+  # Cihaz tanımı
+  device_id: "jarvis-lamp"
+  device_type: "desk_robot"
+  device_md: "DEVICE.md"
+  soul_md: "SOUL.md"
+  safety_md: "SAFETY.md"
+
+  # Motion driver (özel — MG996R + PCA9685)
+  motion_driver: "pca9685"
+  motion_driver_file: "embodied_lamp_driver.py"
+
+# =============================================================================
+# POSTÜR KALKANI (VSS KORUMASI)
+# =============================================================================
+posture_shield:
+  enabled: true
+
+  # Kullanıcı profili
+  user_height_cm: 210
+  user_condition: "visual_snow_syndrome"
+  user_risk: "skolyoz"
+
+  # MediaPipe Pose
+  analysis_fps: 2 # 2 FPS (Pi 4'te yeterli)
+  model_complexity: 1 # MediaPipe Pose model
+  min_detection_confidence: 0.5
+  min_tracking_confidence: 0.5
+
+  # Servikal açı eşikleri
+  tech_neck_threshold: 15.0 # 15° öne → Tech Neck
+  severe_threshold: 25.0 # 25° öne → Ciddi
+  sustained_duration_sec: 30 # 30 sn boyunca bozuksa → uyar
+
+  # Cooldown
+  alert_cooldown_sec: 120 # 2 dk (sürekli uyarı yapma)
+
+  # VSS dostu ışık
+  warning_color:
+    r: 255
+    g: 191
+    b: 0 # Kehribar (amber)
+  warning_brightness: 60 # %60 (VSS için — parlak değil)
+  warning_pulse_speed: 0.5 # 0.5Hz (yavaş titre — VSS tetikleme)
+
+  # Gece sessiz saat
+  quiet_hours_start: "00:00"
+  quiet_hours_end: "07:00"
+
+# =============================================================================
+# AI SERVİSLERİ (Cloud VPS'te)
+# =============================================================================
+ai:
+  brain: "deepseek-v4-pro" # Metin analizi (Cloud VPS)
+  voice: "minimax_speech_2.8_turbo" # Sesli iletişim (Cloud VPS)
+  vision: "qwen_vl_max_latest" # Görüntü analizi (Cloud VPS)
+  runtime: "openclaw" # Agentic runtime (Cloud VPS)
+
+# =============================================================================
+# GÜVENLIK (SAFETY.md ile uyumlu)
+# =============================================================================
+safety:
+  # Servo açı sınırları
+  servo_limits:
+    base: [0, 180]
+    shoulder: [30, 150]
+    elbow: [0, 135]
+    wrist_pitch: [0, 180]
+    wrist_roll: [0, 180]
+
+  # Hareket hızı
+  max_speed_deg_per_sec: 60
+
+  # E-STOP
+  estop_watchdog_timeout: 30 # 30 sn MQTT kesilirse → E-STOP
+
+  # Işık sınırları (VSS)
+  max_brightness: 80
+  night_brightness: 15
+  max_pulse_hz: 2 # VSS için — hızlı titreşim yasak
+
+  # Ses sınırları
+  max_volume: 65
+  night_volume: 30
