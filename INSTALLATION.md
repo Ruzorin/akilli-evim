@@ -1203,6 +1203,252 @@
 4. USB-C/Micro-USB kabloları düz başlı seç (mobilya altında az yer kaplar)
 ```
 
+---
+
+## Faz 12: Modül 27 — OpenClaw Digital Sandbox (Dijital Ajan)
+
+> Tamamen VPS üzerinde, donanım gerektirmez. Sadece Docker ve yazılım.
+
+### Adım 1: Docker Kurulumu (VPS)
+```bash
+# VPS'e SSH ile bağlan
+ssh root@vps-ip
+
+# Docker zaten kurulu (HA için), OpenClaw için yeni konteyner
+docker pull ghcr.io/openclaw/openclaw:latest
+
+# Mealie (tarif veritabanı) — aynı Docker network
+docker compose up -d  # docker-compose.yaml içinde mealie servisi
+# Mealie: http://localhost:9925
+# API docs: http://localhost:9925/docs
+```
+
+### Adım 2: OpenClaw Konfigürasyonu
+```bash
+# OpenClaw sandbox konteyner başlat
+docker run -d --name openclaw \
+  --network=homeassistant_default \
+  -e MEALIE_URL=http://mealie:9925 \
+  -e DEEPSEEK_API_KEY=$DEEPSEEK_API_KEY \
+  -e MQTT_BROKER=gl-mt3000.local \
+  openclaw:latest
+
+# Zero Trust sandbox ayarları (7 katman)
+# → sandbox_and_security.md dosyasına bakın
+```
+
+### Adım 3: Mealie İlk Kurulum
+```
+1. Tarayıcıda http://localhost:9925 aç
+2. İlk kullanıcı oluştur (jarvis@local)
+3. API token al → .env dosyasına kaydet
+4. Test: bir tarif URL'i yapıştır → scrape test
+```
+
+---
+
+## Faz 13: Modül 28 — Multicooker Chef Automation (Akıllı Tencere)
+
+### Adım 1: Xiaomi Tencereyi Yerel Ağa Bağla
+```
+1. Xiaomi Mi Home app ile tencereyi WiFi'a bağla (ilk kurulum)
+2. GL-MT3000 ağına bağlanmasını sağla (SSID: GL-MT3000)
+3. Mi Home app'ten cihaz token'ını al (gerekirse)
+```
+
+### Adım 2: HA'ya Xiaomi Miot Auto Ekle
+```yaml
+# configuration.yaml
+xiaomi_miot:
+  - name: "Smart Multicooker"
+    host: 192.168.1.108  # Tencere IP (GL-MT3000 DHCP)
+    token: "YOUR_DEVICE_TOKEN"
+    miot_local: true      # YEREL LAN modu
+    miot_cloud: false     # Çin bulutu KAPALI
+    check_lan: true
+```
+
+### Adım 3: Router İzolasyon (Çin Bulutu Kapat)
+```bash
+# GL-MT3000 SSH
+ssh root@gl-mt3000.local
+
+# Tencere IP'sini internetten kes
+iptables -A FORWARD -s 192.168.1.108 -j DROP
+# Kaydet
+/etc/init.d/firewall restart
+```
+
+### Adım 4: Mealie + Vision-Cooker Otomasyonlarını Yükle
+```bash
+# HA'ya YAML dosyalarını kopyala
+cp vision_cooker_orchestration.yaml /config/packages/
+cp cooking_notification_automation.yaml /config/packages/
+cp mealie_macro_orchestrator.py /config/python_scripts/
+
+# HA yeniden başlat
+ha core restart
+```
+
+---
+
+## Faz 14: Modül 29 — Embodied Jarvis Avatar (5-DOF Lamba)
+
+### Adım 1: 3D Baskı
+```
+1. BCN3D Moveo STL dosyalarını indir
+2. PLA filament ile 3D yazıcıda bas (~6 saat)
+3. Parçaları zımparala (pürüzsüz yüzey)
+4. F693ZZ rulmanları yerleştir (eklemlerde)
+```
+
+### Adım 2: Donanım Montajı
+```
+1. PCA9685'i Raspberry Pi 4'e I2C ile bağla:
+   Pi SDA (GPIO2) → PCA9685 SDA
+   Pi SCL (GPIO3) → PCA9685 SCL
+   Pi 3.3V → PCA9685 VCC (lojik)
+   5V 4A Adaptör → PCA9685 V+ (servo güç)
+
+2. 5 servo'yu PCA9685'e bağla:
+   Kanal 0: MG996R (omuz) — turuncu/kahve
+   Kanal 1: MG996R (dirsek) — sarı
+   Kanal 2: MG996R (bas dönüş) — yeşil
+   Kanal 3: SG90 (bilek) — mavi
+   Kanal 4: SG90 (kafa) — mor
+
+3. WS2812 NeoPixel Ring'i Pi GPIO18'e bağla (SPI)
+
+4. INMP441 mikrofonu I2S'e bağla (Modül 1 ile paylaşımlı)
+```
+
+### Adım 3: Autonomous OS Kurulumu
+```bash
+# Pi 4'te
+git clone https://github.com/autonomous-ai/autonomous-os.git
+cd autonomous-os
+
+# Edge body mode (beyin bulut, gövde yerel)
+export AUTONOMOUS_MODE=edge_body_only
+export MQTT_BROKER=gl-mt3000.local
+
+# DEVICE.md, SOUL.md, SAFETY.md dosyalarını kopyala
+cp /config/embodied_jarvis_avatar/DEVICE.md ./config/
+cp /config/embodied_jarvis_avatar/SOUL.md ./config/
+cp /config/embodied_jarvis_avatar/SAFETY.md ./config/
+
+# PCA9685 driver'ı kaydet
+python3 embodied_lamp_driver.py
+
+# systemd servis olarak kaydet
+sudo systemctl enable embodied-lamp
+sudo systemctl start embodied-lamp
+```
+
+### Adım 4: Postür Kalkanı
+```bash
+# Posture shield daemon
+python3 posture_shield_daemon.py &
+
+# Test: öne eğil → lamba size dönmeli + kehribar pulse
+```
+
+---
+
+## Faz 15: Modül 30 — Desktop Pet Kame32 (Robot Evcil Hayvan)
+
+### Adım 1: 3D Baskı ve Montaj
+```
+1. Kame32 STL dosyalarını indir (Thingiverse #1265766)
+2. PLA filament ile 3D yazıcıda bas (~4 saat)
+3. F693ZZ rulmanları yerleştir (8 adet, eklemlerde)
+4. 8 SG90 servo'ları monte et (4 bacak × 2 servo)
+5. Paralelgram mekanizmasını kontrol et (ayak zemine dik)
+```
+
+### Adım 2: ESP32 Firmware Yükle
+```bash
+# Arduino IDE
+# Board: ESP32 DevKit V1
+# Library: ESP32Servo, PubSubClient, ArduinoJson
+
+# kame_esp32_firmware.ino dosyasını aç
+# WiFi SSID ve şifreyi gir (GL-MT3000)
+# MQTT broker adresini gir (gl-mt3000.local)
+# Upload → ESP32'ye yükle
+
+# Test: MQTT'ten "kame/command/stand" gönder → Kame dik durmalı
+```
+
+### Adım 3: Qi Şarj Pedi Kurulumu
+```
+1. Qi verici pad'i masa üstüne sabitle (çift taraflı bant)
+2. 5V/2A USB adaptörü Qi pad'e bağla
+3. Qi alıcı coil'i Kame'nin altına yapıştır
+4. TP4056 + 2S LiPo'yu Kame'nin gövdesine yerleştir
+5. Voltage divider (10kΩ + 4.7kΩ) → GPIO34 (batarya ölçüm)
+```
+
+### Adım 4: Eye of Sauron Kalibrasyonu (Otonom Park)
+
+> **Kritik adım:** Kame'nin Qi şarj pedine Tapo C200 kamerası ile
+> nasıl hizalanacağının kalibrasyonu.
+
+```bash
+# 1. Tapo C200'ü masa üstüne monte et (Kame'yi yukarıdan görecek)
+#    Kamera → GL-MT3000 → RTSP stream
+
+# 2. Kame'nin üstüne parlak renkli bir çıkartma yapıştır (HSV filtre için)
+#    Önerilen: neon yeşil veya neon pembe (OpenCV HSV'de kolay algılanır)
+
+# 3. Kalibrasyon script'ini çalıştır
+python3 eye_of_sauron_parking.py --calibrate
+
+# 4. Kame'yi Qi pad'in yanına koy (manuel)
+#    Script Kame'nin HSV renk aralığını otomatik tespit eder
+#    → "HSV range: H[35-85], S[100-255], V[100-255]" gibi çıktı verir
+
+# 5. Kame'yi Qi pad'den ~30cm uzağa koy
+#    Script otonom park testini başlatır:
+#    → Kamera görüntüsü → OpenCV Kame konumu → hata vektörü
+#    → MQTT "kame/command/move" → Kame yürür
+#    → Kamera tekrar görüntü → konum kontrolü
+#    → Max 20 adımda Qi pad'e park
+
+# 6. Başarı kriteri:
+#    → Kame Qi pad üzerinde duruyor mu? (kamera ile doğrula)
+#    → Batarya şarj oluyor mu? (GPIO34 ADC değer artıyor mu?)
+#    → 10 denemenin kaçı başarılı? (>=8/10 olmalı)
+
+# 7. Başarısızsa:
+#    → Yürüme adım sayısını artır (max 30)
+#    → HSV renk aralığını daralt
+#    → Qi pad çevresine görsel işaret koy (OpenCV referans noktası)
+```
+
+### Adım 5: Audio-Reactive Dans Testi
+```
+1. Müzik çal (Spotify)
+2. Modül 10 (WLED) BPM tespiti → MQTT "kame/command/dance"
+3. Kame beat'e göre çömel/kalk/ayak vur/spin
+4. Müzik dur → Kame çömel (uyku modu)
+```
+
+### Adım 6: Wingman Karşılama Testi
+```
+1. Misafir kapıya yaklaştır (NFC tag veya yüz tanıma)
+2. Otomasyon tetiklenir:
+   → Kame ayağa kalkar
+   → 3 adım yürür
+   → Reverans yapar (bow)
+   → Jarvis sesli karşılar
+   → Kame geri döner
+3. Gece 23:00 → Kame uyku moduna geçer
+4. Sabah 08:00 → Kame uyanır
+```
+
+---
+
 ### Adım 5: Modül Bazlı Kablo Gizleme Kontrol Listesi
 
 | Modül | Kablo Gizleme Yöntemi |

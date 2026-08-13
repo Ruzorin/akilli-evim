@@ -369,24 +369,100 @@
 
 ---
 
+## 🖥️ Modül 27: OpenClaw Digital Sandbox
+
+> Donanım YOK — tamamen VPS üzerinde Docker. Sadece yazılım.
+
+| # | Bileşen | Model / Tip | Adet | Fiyat (≈) | Not |
+|---|---|---|---|---|---|
+| 1 | Dijital Ajan | OpenClaw v2026.4.15 (MIT, açık kaynak) | 1 | $0 | browser-use + shell + file ops |
+| 2 | Tarayıcı Otomasyon | browser-use (Playwright) | 1 | $0 | AI-native, headless mode |
+| 3 | Docker Sandbox | Docker CE (VPS üzerinde) | 1 | $0 | Zero Trust 7 katman |
+| 4 | Mealie (tarif DB) | Mealie 3.13+ (Docker) | 1 | $0 | Açık kaynak tarif yöneticisi, REST API |
+
+> **Modül 27 donanım maliyeti: $0** (tamamen yazılım, VPS üzerinde)
+
+---
+
+## 🍳 Modül 28: Multicooker Chef Automation
+
+| # | Bileşen | Model / Tip | Adet | Fiyat (≈) | Not |
+|---|---|---|---|---|---|
+| 1 | Akıllı Tencere | Xiaomi Mi Smart Multi Cooker 3L | 1 | ~$45 | chunmi.cooker.normal4, 700W, 3L |
+| 2 | (Alternatif) | Tuya Smart Multicooker | 1 | ~$25 | Bütçe alternatifi |
+| 3 | Router İzolasyon | GL-MT3000 iptables (mevcut) | — | $0 | Çin bulutu kapatma |
+| 4 | Mealie Docker | (Modül 27 ile paylaşımlı) | — | $0 | Aynı Docker instance |
+
+> **Modül 28 donanım maliyeti: ~$45** (Xiaomi tencere tek seferlik)
+
+---
+
+## 💡 Modül 29: Embodied Jarvis Avatar
+
+| # | Bileşen | Model / Tip | Adet | Fiyat (≈) | Not |
+|---|---|---|---|---|---|
+| 1 | Mikrodenetleyici | Raspberry Pi 4 (4GB) | 1 | ~$55 | Modül 1 ile paylaşımlı (jarvis_core + Lamp body) |
+| 2 | Servo Sürücü | PCA9685 (I2C, 16 kanal PWM) | 1 | ~$5 | 5 servo + yedek kanallar |
+| 3 | Servo Motor (Ana) | MG996R (11kg-cm, metal dişli) | 3 | ~$6/adet | Omuz + dirsek + bas dönüş |
+| 4 | Servo Motor (Uç) | SG90 (1.8kg-cm) | 2 | ~$2/adet | Bilek + kafa |
+| 5 | Güç Kaynağı | 5V 4A (20W) adaptör | 1 | ~$8 | Servo + Pi güç |
+| 6 | 3D Baskı | PLA Filament 500g | 1 | ~$6 | BCN3D Moveo parçaları |
+| 7 | Rulman | F693ZZ (3x8x4mm) | 4 | ~$1/adet | Eklemlerde sürtünme azaltma |
+| 8 | Vidalar | M2/M3 vida + somun seti | 1 | ~$3 | Montaj |
+| 9 | Jumper Kablo | Dişi-dişi jumper (I2C + servo) | 20 | ~$3 | PCA9685 ↔ Pi ↔ servo |
+| 10 | Kondansatör | 1000µF/16V | 1 | ~$0.5 | Servo güç dalgalanması |
+| 11 | WS2812 LED | NeoPixel Ring (16 LED) | 1 | ~$3 | Lamba göz ifadesi |
+| 12 | INMP441 | I2S Mikrofon | 1 | ~$5 | Modül 1 ile paylaşımlı (ses) |
+
+> **Modül 29 donanım maliyeti: ~$105** (Pi 4 paylaşımlı sayılmazsa ~$50)
+
+---
+
+## 🐕 Modül 30: Desktop Pet Kame
+
+| # | Bileşen | Model / Tip | Adet | Fiyat (≈) | Not |
+|---|---|---|---|---|---|
+| 1 | Mikrodenetleyici | ESP32 DevKit V1 (38 pin) | 1 | ~$5 | Dual-core 240MHz, WiFi |
+| 2 | Servo Motor | SG90 (1.8kg-cm) | 8 | ~$1.5/adet | 4 bacak × 2 servo (Kame32) |
+| 3 | LiPo Batarya | 2S 7.4V 1000mAh | 1 | ~$8 | Kame güç kaynağı |
+| 4 | Şarj Modülü | TP4056 (koruma dahil) | 1 | ~$1 | LiPo şarj koruması |
+| 5 | Kondansatör | 1000µF/16V | 1 | ~$0.5 | Servo güç dalgalanması |
+| 6 | Qi Verici Pad | 5W Qi kablosuz şarj verici | 1 | ~$3 | Masa üstüne sabit |
+| 7 | Qi Alıcı Coil | 5W Qi kablosuz şarj alıcı | 1 | ~$2 | Kame'nin altına yapıştır |
+| 8 | USB Adaptör | 5V/2A (Qi pad güç) | 1 | ~$4 | Qi pad güç kaynağı |
+| 9 | Slide Switch | Aç/kapa anahtarı | 1 | ~$0.5 | Güç anahtarı |
+| 10 | Direnç | 10kΩ + 4.7kΩ (voltage divider) | 1 set | ~$0.3 | LiPo → ESP32 ADC |
+| 11 | 3D Baskı | PLA Filament 500g | 1 | ~$6 | Kame gövde parçaları |
+| 12 | Rulman | F693ZZ (3x8x4mm) | 8 | ~$1/adet | Eklemlerde sürtünme |
+| 13 | Vidalar | M2/M3 vida + somun seti | 1 | ~$3 | Montaj |
+| 14 | Jumper Kablo | Dişi-dişi jumper | 15 | ~$2 | ESP32 ↔ servo bağlantı |
+
+> **Modül 30 donanım maliyeti: ~$45** (SG90 ile, MG90S ile ~$55)
+
+---
+
 ##  Toplam Maliyet Özeti
 
 | Kategori | Adet | Toplam Fiyat (≈) |
 |---|---|---|
 | **Genel Altyapı** (VPS, yönlendirici, Zigbee dongle) | — | ~$120 + $10/ay |
-| **Mikrodenetleyiciler** (ESP32 × 5, Pi Zero, Pi 4) | 7 | ~$95 |
+| **Mikrodenetleyiciler** (ESP32 × 6, Pi Zero, Pi 4) | 8 | ~$100 |
 | **Sensörler** (LD2410, MPU6050, TTP223, INMP441 × 2) | 6 | ~$25 |
 | **Hoparlörler** (Echo Dot × 2) | 2 | ~$50 |
 | **Kameralar** (Tapo C200 × 2) | 2 | ~$50 |
 | **Akıllı Prizler** (Shelly × 4) | 4 | ~$60 |
-| **LED & Aydınlatma** (WLED, COB, projeksiyon) | — | ~$80 |
+| **LED & Aydınlatma** (WLED, COB, projeksiyon, NeoPixel) | — | ~$83 |
 | **Perde & Difüzör & Broadlink** | 3 | ~$135 |
 | **Magic Mirror** (akrilik + LCD + Pi Zero) | — | ~$180 |
 | **Esans Yağları** | 3 | ~$45 |
 | **Kahve & Sunum** | — | ~$60 |
-| **Kablo & Direnç & Kondansatör** | — | ~$20 |
+| **Kablo & Direnç & Kondansatör** | — | ~$23 |
+| **Modül 27 (OpenClaw)** | — | $0 (yazılım) |
+| **Modül 28 (Multicooker)** | 1 | ~$45 (Xiaomi tencere) |
+| **Modül 29 (Lamba)** | — | ~$105 (servo + sürücü + 3D) |
+| **Modül 30 (Kame)** | — | ~$45 (ESP32 + 8 servo + Qi + 3D) |
 | **API Abonelikleri** (MiniMax, DeepSeek, Qwen-VL, Spotify) | — | ~$15/ay |
-| **TOPLAM (Tek Seferlik)** | — | **~$920** |
+| **TOPLAM (Tek Seferlik)** | — | **~$1.115** |
 | **TOPLAM (Aylık)** | — | **~$15/ay** |
 
 > **Not:** Fiyatlar yaklaşık değerlerdir. Bazı bileşenler modüller arasında paylaşımlıdır (hoparlörler, API'ler, akıllı prizler). Gerçek maliyet, mevcut donanıma ve seçilen markalara göre değişir.
@@ -422,6 +498,27 @@
 18. Broadlink RM4 Mini (IR kumanda)
 19. Two-way mirror akrilik + LCD + Pi Zero (akıllı ayna)
 20. **Kablo gizleme malzemeleri** (aşağıdaki tabloya bakın)
+
+### Faz 12 (Dijital Ajan — OpenClaw + Mealie)
+21. (Yazılım) OpenClaw v2026.4.15 + browser-use (Docker, VPS)
+22. (Yazılım) Mealie 3.13+ (Docker, VPS) — tarif veritabanı
+
+### Faz 13 (Akıllı Mutfak — Multicooker)
+23. Xiaomi Mi Smart Multi Cooker 3L (~$45)
+
+### Faz 14 (Fiziksel Avatar — Lamba)
+24. PCA9685 I2C PWM sürücü (~$5)
+25. MG996R servo × 3 (~$6/adet) + SG90 servo × 2 (~$2/adet)
+26. 5V 4A güç adaptörü (~$8)
+27. PLA filament 500g (~$6) + F693ZZ rulman × 4 (~$1/adet)
+28. WS2812 NeoPixel Ring 16 LED (~$3)
+
+### Faz 15 (Robot Evcil Hayvan — Kame32)
+29. ESP32 DevKit V1 (~$5)
+30. SG90 servo × 8 (~$1.5/adet)
+31. 2S LiPo 1000mAh + TP4056 (~$9)
+32. Qi şarj verici + alıcı (~$5) + 5V/2A adaptör (~$4)
+33. PLA filament 500g (~$6) + F693ZZ rulman × 8 (~$1/adet)
 
 ---
 

@@ -485,4 +485,111 @@
 
 ---
 
+## 🖥️ Modül 27: OpenClaw Digital Sandbox
+
+### Dijital Ajan Framework'ü
+
+| | Önerilen | Alternatif 1 | Alternatif 2 |
+|---|---|---|---|
+| **Model** | OpenClaw v2026.4.15 | AutoGPT | Open Interpreter |
+| **Fiyat** | $0 (açık kaynak, MIT) | $0 (açık kaynak) | $0 (açık kaynak) |
+| **Neden önerilen?** | browser-use + shell + file ops, Docker sandbox, 250k+ GitHub stars, MIT lisans, aktif geliştirme, skill sistemi | İyi ama tarayıcı otomasyonu zayıf, Docker sandbox yok, daha az esnek | İyi ama güvenlik sandbox'ı yok, root yetkisi istiyor, production için riskli |
+
+### Tarayıcı Otomasyon Kütüphanesi
+
+| | Önerilen | Alternatif 1 | Alternatif 2 |
+|---|---|---|---|
+| **Model** | browser-use (Playwright) | Selenium | Puppeteer |
+| **Fiyat** | $0 | $0 | $0 |
+| **Neden önerilen?** | AI-native (LLM ile tarayıcı kontrolü), Playwright tabanlı (hızlı), 79k+ stars, headless mode (ekranda pencere AÇILMAZ) | Yavaş, AI entegrasyonu yok, manuel selector gerekir | Node.js only, Python desteği yok, AI entegrasyonu yok |
+
+---
+
+## 🍳 Modül 28: Multicooker Chef Automation
+
+### Akıllı Tencere
+
+| | Önerilen | Alternatif 1 | Alternatif 2 |
+|---|---|---|---|
+| **Model** | Xiaomi Mi Smart Multi Cooker 3L | Tuya Smart Multicooker | Thermomix TM6 |
+| **Fiyat** | ~$45 (~1.500₺) | ~$25 (~800₺) | ~$3.000 (~100.000₺) |
+| **HA Entegrasyonu** | Xiaomi Miot Auto (`miot_local: true`) | Tuya Local (HACS) | Cookidoo (kapalı, abonelik) |
+| **Yerel Kontrol** | ✅ LAN mode | ✅ Local key | ❌ Bulut zorunlu |
+| **Neden önerilen?** | Ucuz, Miot Auto ile tam yerel kontrol, 3L yurt için yeterli, Çin bulutu kapatılabilir. Mealie ile Thermomix'e rakip | En ucuz ama Tuya bulutu daha zor kapatılır, bazı modellerde local key almak zor | 100.000₺ + abonelik! Kapalı Cookidoo ekosistemi, makro hesabı YOK, görüntü tanıma YOK, sesli kontrol YOK. Açık kaynak Mealie + Xiaomi ile aynı fonksiyonlar ~3.000₺'ye karşılanır |
+
+### Tarif Yöneticisi
+
+| | Önerilen | Alternatif 1 | Alternatif 2 |
+|---|---|---|---|
+| **Model** | Mealie (açık kaynak) | Tandoor Recipes | Paprika App |
+| **Fiyat** | $0 (self-hosted) | $0 (self-hosted) | ~$5 (tek seferlik) |
+| **Neden önerilen?** | REST API (FastAPI + Swagger), URL scrape, yemek planı, alışveriş listesi, webhook, Docker. DeepSeek ile makro orkestrasyonu. Thermomix Cookidoo'ya açık kaynak rakip | İyi ama API'si daha az olgun, URL scrape zayıf, topluluk küçük | Mobil app iyi ama self-host değil, API yok, otomasyon imkansız |
+
+---
+
+## 💡 Modül 29: Embodied Jarvis Avatar
+
+### Servo Motor Sürücüsü (5-DOF Lamba)
+
+| | Önerilen | Alternatif 1 | Alternatif 2 |
+|---|---|---|---|
+| **Model** | PCA9685 (I2C, 16 kanal) | Adafruit PWM HAT | ESP32 donanımsal PWM (LEDC) |
+| **Fiyat** | ~$5 | ~$20 | $0 (ESP32 dahili) |
+| **Kanal** | 16 PWM | 16 PWM | 16 (LEDC) |
+| **Neden önerilen?** | I2C ile sadece 2 pin (SDA+SCL), 16 kanal (8 servo + 8 yedek), 5V/6V harici güç, çok ucuz, her yerde bulunur, Adafruit kütüphanesi | İyi ama PCA9685'in 4 katı fiyat, aynı çip, sadece form factor farklı | Ücretsiz ama 8 servo için 8 GPIO pin gerekir, I2C yok, güç yönetimi zor, titreşim riski |
+
+### Servo Motor (Lamba Eklemleri)
+
+| | Önerilen (Ana eklemler) | Önerilen (Uç eklemler) | Alternatif |
+|---|---|---|---|
+| **Model** | MG996R (3 adet — omuz/dirsek) | SG90 (2 adet — bilek/kafa) | DS3218 (20kg-cm) |
+| **Fiyat** | ~$6/adet | ~$2/adet | ~$15/adet |
+| **Tork** | 11kg-cm (4.8V) / 13kg-cm (6V) | 1.8kg-cm | 20kg-cm |
+| **Neden önerilen?** | Lambanın ana ağırlığını taşır (gövde + dirsek), metal dişli (dayanıklı), 5-DOF için ideal tork. Ucuz ve her yerde bulunur | Uç eklemler (bilek, kafa) için hafif ve ucuz. Ana eklemlerde MG996R yeterli, SG90 burada iş görür | Çok güçlü ama lamba için overkill. Ağır (60g), pahalı, güç tüketimi yüksek. Lamba 5kg değil, 500g |
+
+### Robot İşletim Sistemi
+
+| | Önerilen | Alternatif 1 | Alternatif 2 |
+|---|---|---|---|
+| **Model** | Autonomous OS (autonomous-ai/autonomous-os) | ROS 2 (Humble) | Custom Python |
+| **Fiyat** | $0 (açık kaynak) | $0 (açık kaynak) | $0 |
+| **Neden önerilen?** | Fiziksel AI ajanları için tasarlanmış, DEVICE.md/SOUL.md/SAFETY.md kontratı, edge_body_only mode (beyin bulut, gövde yerel), HAL katmanı, skill sistemi | Endüstri standardı ama robot kollar için fazla karmaşık, lamba için overkill, öğrenme eğrisi dik | Esnek ama güvenlik yok, HAL yok, her şeyi sıfırdan yazmak gerekir, bakım zor |
+
+---
+
+## 🐕 Modül 30: Desktop Pet Kame
+
+### Servo Motor (Kame Bacakları)
+
+| | Önerilen | Alternatif 1 | Alternatif 2 |
+|---|---|---|---|
+| **Model** | SG90 (1.8kg-cm) | MG90S (2.2kg-cm, metal dişli) | MG996R (11kg-cm) |
+| **Fiyat** | ~$1.5/adet | ~$2/adet | ~$6/adet |
+| **Tork** | 1.8kg-cm | 2.2kg-cm | 11kg-cm |
+| **Ağırlık** | 9g | 12g | 55g |
+| **Neden önerilen?** | En ucuz, en hafif, her robotçuda bulunur. Kame hafif bir robot (~200g), 8× SG90 yeterli tork verir. Kame32 güncel tasarım SG90 için optimize edilmiştir | Metal dişli (daha dayanıklı), biraz daha tork. Kame'nin paralelgram mekanizması için ideal. Sadece ~$0.5/adet fark | Çok güçlü ama Kame için AĞIR (55g × 8 = 440g sadece servo). Kame'nin plastik parçaları bükülür. Overkill ve pahalı |
+
+> **Dost acı söyler:** Kame'nin orijinal tasarımı pahalı Turnigy servolar gerektiriyordu. Kame32 güncel versiyonu tamamen SG90/MG90S'e göre yeniden tasarlandı. MG996R kullanmak "daha güçlü olsun" düşüncesiyle mantıklı görünebilir ama Kame'nin PLA parçaları MG996R'nin torkuna dayanmaz — parçalar çatlar. Hafif robot = hafif servo.
+
+### Şarj Sistemi (Otonom Park)
+
+| | Önerilen | Alternatif 1 | Alternatif 2 |
+|---|---|---|---|
+| **Model** | Qi Kablosuz Şarj (5W) | Pinli Temas Şarjı | Manyetik (MagSafe benzeri) |
+| **Fiyat** | ~$5 (verici + alıcı) | ~$2 (pogo pin) | ~$8 (mıknatıs + pin) |
+| **Hizalama toleransı** | ±5mm (çok toleranslı) | ±1mm (çok hassas) | ±3mm (orta) |
+| **Neden önerilen?** | Kablosuz — Kame park ettiğinde temas gerekmez. ±5mm hizalama toleransı Eye of Sauron (OpenCV) park hassasiyetiyle uyumlu. Kame'nin altına Qi alıcı coil yapıştırılır, masa üstüne Qi verici pad. Hiçbir pin kırılmaz | Ucuz ama ±1mm hassas hizalama gerekir — Kame'nin yürüme hassasiyeti bu kadar iyi değil. Pogo pin'ler zamanla oksitlenir, bükülür, kırılır. Yurt odası için pratik değil | İyi ama mıknatıs Kame'nin servo'larını etkileyebilir, manyetik alan ESP32'yi bozabilir. Karmaşık montaj |
+
+> **Dost acı söyler:** Pinli şarj "daha verimli" görünebilir (%90 vs %75) ama Kame bir robot kol değil — yürüyen bir robot. Yürüme her seferinde ±2-3mm farklı durur. Pinli şarj = 10 denemede 1'i tutar. Qi = 10 denemede 10'u tutar. Verimlilik değil, GÜVENİLİRLİLİK önemli.
+
+### Kontrol Kartı
+
+| | Önerilen | Alternatif 1 | Alternatif 2 |
+|---|---|---|---|
+| **Model** | ESP32 DevKit V1 (38 pin) | ESP8266 NodeMCU v3 | Raspberry Pi Pico W |
+| **Fiyat** | ~$5 | ~$3 | ~$4 |
+| **Neden önerilen?** | Dual-core 240MHz, donanımsal FPU, 16 PWM kanalı, WiFi dahili, boot-safe pin'ler bol. Kame32 güncel tasarım ESP32 için optimize edilmiştir. ESP32Servo kütüphanesi ile 8 servo sorunsuz | Ucuz ama tek core 80MHz, FPU yok, sadece 4 PWM pin (8 servo için yetersiz), boot strapping pin sorunları. Kame32 zaten ESP8266'dan ESP32'ye yükseltildi | İyi ama WLED/ESPHome firmware yok, topluluk desteği az, servo kütüphanesi sınırlı |
+
+---
+
 *Bu dosya, her ekipman için "neden bu?" sorusunu yanıtlar. Yeni alternatifler bulundukça güncellenir.*
