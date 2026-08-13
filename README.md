@@ -391,6 +391,7 @@ Bu proje, fiziksel bir Raspberry Pi / PC sunucusu gerektirmez. Sistem **ucuz bir
 
 - **Jarvis'in Dijital Elleri:** OpenClaw, Jarvis'in bilgisayarda sizin için iş yapan dijital ajanı. Tarayıcıda gezinir, dosya okur, shell komutları çalıştırır. "Bana uçuş ara" → OpenClaw tarayıcıyı açar, siteleri gezer, sonuçları getirir
 - **Gerçek Dünya Siparişleri:** Sesli veya yazılı komutla günlük işleri otomatik halleder. "Yemeksepeti'den lahmacun söyle" → tarayıcıyı açar, restoranı bulur, siparişi verir. "İstanbul-Ankara otobüs bileti al" → sitesi açar, koltuk seçer, bileti alır. "Marketten süt ve ekmek sipariş et" → sepete ekler, teslimat saatini seçer. "Jarvis'e söyle, o halleder"
+- **Otonom Tarif Avcısı (Mealie Recipe Hunter):** "Bana tarif bul" dediğinizde OpenClaw arka planda çalışır — ekranda pencere açmadan. Browser MCP ile 10+ kaynak tarar, Context7 MCP ile her tarifin protein oranı ve malzeme kalitesini doğrular, çöp tarifleri eler. Doğrulanan tarifleri Mealie (Modül 28) veritabanına otomatik kaydeder. İşlem bitince Lamba (Modül 29) başını sallar ve yeşil yanar. "Siz konuşurken, o arka planda tarif avlar"
 - **Zero Trust Güvenlik (7 Katman):** OpenClaw hiçbir zaman serbest çalışmaz. Docker konteyner içinde, root yetkisi olmadan, dosya sistemi kilitli, ağ kısıtlı. Tehlikeli komutlar otomatik engellenir. Önemli işlerde mobil onay ister — "Bu işlem için onayınız gerekli"
 - **Fiziksel Lamba ile Senkron:** OpenClaw bir görevi bitirdiğinde masadaki robotik lamba (Modül 29) başını sallar ve yeşil ışık yanar. Görev hata alırsa lamba sallanır ve kırmızı yanar. Onay beklerken lamba size bakar ve kehribar renk yanar. "Dijital ajanınız fiziksel olarak size haber verir"
 
@@ -599,6 +600,8 @@ akilli-evim/
 │   ├── sandbox_and_security.md
 │   ├── digital_physical_sync.yaml
 │   ├── vss_screen_shield.py
+│   ├── openclaw_recipe_hunter_prompt.md  ← Otonom tarif avcısı sistem prompt'u
+│   ├── mealie_recipe_hunter.py           ← Browser MCP + Context7 + Mealie API tarif avı
 │   └── config.yaml
 ├── multicooker_chef_automation/    ← Modül 28: Mealie + Multicooker Chef
 │   ├── hardware_and_local_isolation.md  ← Mealie Docker + Thermomix rakip + Xiaomi/Tuya izolasyon
