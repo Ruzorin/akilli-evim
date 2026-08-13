@@ -51,7 +51,7 @@ Bu projede modüller, fonksiyonel amaçlarını net bir şekilde yansıtan tekni
 - **Fiziksel Avatarlar:** 5-DOF robotik masa lambası (Autonomous OS — Jarvis'in fiziksel yüzü) + Kame32 dört bacaklı robot evcil hayvan (ESP32 — Jarvis'in fiziksel evcil hayvanı). Kamera/mikrofon YOK — tüm zeka Jarvis'ten MQTT ile gelir
 - **Dijital Ajan (OpenClaw):** Zero Trust Docker sandbox içinde otonom tarayıcı/masaüstü ajanı. Fiziksel lamba ile MQTT senkron — görev tamam → lamba başını sallar, hata → sallar
 - **Akıllı Mutfak:** Xiaomi/Tuya akıllı tencere (Çin bulutundan izole, yerel LAN) + Vision-Cooker kapalı döngü (Qwen-VL malzeme görür → tarif önerir → kullanıcı onayı → tencere pişirir → sesli/ışıklı bildirim)
-- **VSS Kalkanı:** Visual Snow Syndrome için postür koruması (MediaPipe Pose), anti-mavi ışık protokolü, ekran parlaklık/renk sıcaklığı otonom ayarı
+- **Vücut Sağlığı Kalkanı:** Postür koruması (MediaPipe Pose), anti-mavi ışık protokolü, ekran parlaklık/renk sıcaklığı otonom ayarı
 
 ---
 
@@ -398,9 +398,9 @@ Bu proje, fiziksel bir Raspberry Pi / PC sunucusu gerektirmez. Sistem **ucuz bir
 
 - **Thermomix'e Açık Kaynak Rakip:** 100.000₺'lik Thermomix'in kapalı Cookidoo ekosistemi yerine, Mealie (açık kaynak tarif yöneticisi) + Xiaomi akıllı tencere (~3.000₺) ile aynı fonksiyonları fazlasıyla karşılar. Üstelik makro hesabı, görüntü tanıma ve sesli kontrol Thermomix'te YOK. "Açık kaynak, kapalı sisteme karşı"
 - **Mealie Tarif Kütüphanesi:** Bir tarif sitesinin URL'ini yapıştırırsınız → Mealie otomatik malzeme, talimat ve besin değerlerini çıkarıp veritabanına kaydeder. Tüm tarifler sizin sunucunuzda, hiçbir bulut bağımlılığı yok. "Tarif sitenizin URL'ini yapıştırın, gerisini Mealie halleder"
-- **Sporcu Makro Orkestrasyonu:** DeepSeek, kilonuzu ve hedefinizi (bulk/cut/maintenance) alır, günlük protein/karb/yağ hedeflerinizi hesaplar. Mealie'deki tarifleri bu hedeflere göre dinamik olarak ölçekler — "85kg'sınız ve bakım modundasınız, bu tarifi 2 porsiyona çıkarıyorum, 540 kalori 45g protein" der. "Sporcu beslenmesi artık otomatik"
+- **Sporcu Makro Orkestrasyonu:** DeepSeek, kilonuzu ve hedefinizi (bulk/cut/maintenance) alır, günlük protein/karb/yağ hedeflerinizi hesaplar. Mealie'deki tarifleri bu hedeflere göre dinamik olarak ölçekler — "125kg'sınız ve bakım modundasınız, bu tarifi 3 porsiyona çıkarıyorum, 810 kalori 68g protein" der. "Sporcu beslenmesi artık otomatik"
 - **Gözle Pişir (Vision-to-Cook):** Modül 13'ün kamerası (Qwen-VL Max) tezgaha bakar, malzemeleri tanır. Mealie'deki tariflerle eşleştirir, size önerir. Onayladığınızda tencere otomatik başlar. "Kamera görür, Mealie eşleştirir, DeepSeek ölçekler, tencere pişirir"
-- **VSS Dostu Bildirim:** Pişirme başlayınca WLED ışıklar pürüzsüz geçişle turuncu yanar (strobe YASAK, sadece kehribar/yeşil). Lamba (Modül 29) tencereye eğilir. Pişirme bittiğinde Lamba başını sallar ve yeşil yanar. Jarvis "Yemeğiniz hazır" der. "Gözünüzü rahatsız etmeden haber verir"
+- **VSS Dostu Bildirim:** Pişirme başlayınca WLED ışıklar pürüzsüz geçişle turuncu yanar (strobe YASAK, sadece kehribar/yeşil). Lamba (Modül 29) tencereye eğilir. Pişirme bittiğinde Lamba başını sallar ve yeşil yanar. Jarvis "Yemeğiniz hazır" der
 
 ### 29. `embodied_jarvis_avatar` — Embodied Jarvis Avatar (5-DOF Robotik Lamba) 💡
 
