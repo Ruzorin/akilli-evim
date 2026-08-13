@@ -21,11 +21,11 @@ Bu proje, bir yaşam alanını ve aracı; sesli komutlarla yönetilebilen, sens�
 - **Agentic Framework:** Statik intent'ler YOK — AI dinamik karar verir, HA REST API'yi doğrudan manipüle eder
 
 ### Maliyet Karşılaştırması
-| Eski (OpenAI) | Yeni (MiniMax + DeepSeek) |
+| Eski (OpenAI / Google) | Yeni (MiniMax + DeepSeek + Qwen) |
 |---|---|
-| MiniMax Realtime API ~$50-100/ay | MiniMax Speech 2.8 Turbo ~$10/ay |
-| MiniMax Voice Cloning ~$5/ay | Voice Cloning dahil (ekstra $0) |
-| Qwen-VL Max ~$10/ay | Qwen-VL ~$2/ay |
+| GPT-4o Realtime API ~$50-100/ay | MiniMax Speech 2.8 Turbo ~$10/ay |
+| OpenAI TTS Voice ~$5/ay | Voice Cloning dahil (ekstra $0) |
+| Gemini Vision (Görüntü) ~$10/ay | Qwen-VL Max ~$2/ay |
 | Toplam: ~$65-115/ay | **Toplam: ~$12-15/ay** |
 
 ### Donanım Katmanı
@@ -48,6 +48,10 @@ Bu projede modüller, fonksiyonel amaçlarını net bir şekilde yansıtan tekni
 - **Duyusal Senkronizasyon:** Fiziksel ritmi algılayan ivmeölçer ile ışık nabzı, ses, iklim ve koku senkronizasyonu
 - **Yapay Zeka Orkestrasyonu:** MiniMax Speech 2.8 Turbo (sesten-sese) + DeepSeek V4-Pro (ağır zeka) + Qwen-VL Max (vision) + Yüz Tanıma + Hafıza + Proaktif konuşma
 - **Mutfak Şefi:** Qwen-VL Max ile tezgah analizi, tarif önerisi, güvenlik uyarısı, karizmatik şef kişiliği
+- **Fiziksel Avatarlar:** 5-DOF robotik masa lambası (Autonomous OS — Jarvis'in fiziksel yüzü) + Kame32 dört bacaklı robot evcil hayvan (ESP32 — Jarvis'in fiziksel evcil hayvanı). Kamera/mikrofon YOK — tüm zeka Jarvis'ten MQTT ile gelir
+- **Dijital Ajan (OpenClaw):** Zero Trust Docker sandbox içinde otonom tarayıcı/masaüstü ajanı. Fiziksel lamba ile MQTT senkron — görev tamam → lamba başını sallar, hata → sallar
+- **Akıllı Mutfak:** Xiaomi/Tuya akıllı tencere (Çin bulutundan izole, yerel LAN) + Vision-Cooker kapalı döngü (Qwen-VL malzeme görür → tarif önerir → kullanıcı onayı → tencere pişirir → sesli/ışıklı bildirim)
+- **VSS Kalkanı:** Visual Snow Syndrome için postür koruması (MediaPipe Pose), anti-mavi ışık protokolü, ekran parlaklık/renk sıcaklığı otonom ayarı
 
 ---
 
@@ -72,17 +76,18 @@ Bu projede modüller, fonksiyonel amaçlarını net bir şekilde yansıtan tekni
 │  └───────────┬──────────────────────┬───────────────────────┘   │
 │              │                      │                            │
 │     ┌────────┴────────┐   ┌────────┴─────────┐                  │
-│     │  ESP32/ESP8266   │   │  Zigbee Ağı      │                  │
-│     │  (ESPHome)       │   │  (Sensörler,     │                  │
-│     │  - WLED Audio    │   │   Prizler,       │                  │
-│     │  - LD2410 Radar  │   │   Perdeler,      │                  │
-│     │  - MPU6050       │   │   Butonlar)      │                  │
-│     │  - TTP223 Touch  │   │                  │                  │
+│     │  ESP32 (ESPHome) │   │  Zigbee Ağı      │                  │
+│     │  - WLED Audio    │   │  (Sensörler,     │                  │
+│     │  - LD2410 Radar  │   │   Prizler,       │                  │
+│     │  - MPU6050       │   │   Perdeler,      │                  │
+│     │  - TTP223 Touch  │   │   Butonlar)      │                  │
 │     │  - INMP441 Mic   │   │                  │                  │
+│     │  - Kame32 (8srv) │   │                  │                  │
 │     └─────────────────┘   └──────────────────┘                  │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
 │  │ Raspberry Pi │  │ Tuya Proj.   │  │ Broadlink / Akıllı    │  │
 │  │ Zero (Ayna)  │  │ + Difüzör    │  │ Prizler / IP Kamera  │  │
+│  │ Pi 4 (Lamp)  │  │ + Multicooker│  │                      │  │
 │  └──────────────┘  └──────────────┘  └──────────────────────┘  │
 └────────────────────────────────────────────────────────────────┘
 ```
@@ -122,16 +127,17 @@ Bu proje, fiziksel bir Raspberry Pi / PC sunucusu gerektirmez. Sistem **ucuz bir
   │  └───────────┬──────────────────────┬──────────────────────┘ │
   │              │                      │                          │
   │     ┌────────┴────────┐   ┌────────┴─────────┐              │
-  │     │  ESP32/ESP8266   │   │  Zigbee Ağı      │              │
-  │     │  (ESPHome)       │   │  (Sensörler,     │              │
-  │     │  - WLED Audio    │   │   Prizler,       │              │
-  │     │  - LD2410 Radar  │   │   Perdeler,      │              │
-  │     │  - MPU6050       │   │   Butonlar)      │              │
-  │     │  - TTP223 Touch  │   │                  │              │
+  │     │  ESP32 (ESPHome) │   │  Zigbee Ağı      │              │
+  │     │  - WLED Audio    │   │  (Sensörler,     │              │
+  │     │  - LD2410 Radar  │   │   Prizler,       │              │
+  │     │  - MPU6050       │   │   Perdeler,      │              │
+  │     │  - TTP223 Touch  │   │   Butonlar)      │              │
   │     │  - INMP441 Mic   │   │                  │              │
+  │     │  - Kame32 (8srv) │   │                  │              │
   │     └─────────────────┘   └──────────────────┘              │
   │  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐  │
   │  │ Pi Zero (Ayna)│  │ Tuya Proj.   │  │ Broadlink/Prizler│  │
+  │  │ Pi 4 (Lamp)  │  │ + Multicooker│  │                  │  │
   │  └──────────────┘  └──────────────┘  └──────────────────┘  │
   └────────────────────────────────────────────────────────────┘
 ```
@@ -151,7 +157,7 @@ Bu proje, fiziksel bir Raspberry Pi / PC sunucusu gerektirmez. Sistem **ucuz bir
 
 ---
 
-## 📦 Modüller (20 Modül — 2026)
+## 📦 Modüller (30 Modül — 2026)
 
 ### 1. `jarvis_core` — Sistemin Beyni 🧠 (Core 3.0 — 2026 AGI)
 
@@ -377,6 +383,37 @@ Bu proje, fiziksel bir Raspberry Pi / PC sunucusu gerektirmez. Sistem **ucuz bir
 
 ---
 
+## 🤖 Dijital ve Fiziksel Ajan Modülleri (Modül 27-30 — Fiziksel-Dijital Köprü)
+
+### 27. `openclaw_digital_sandbox` — OpenClaw Dijital Ajan ve Zero Trust Sandbox 🖥️
+
+- **OpenClaw v2026.4.15:** Açık kaynak otonom dijital ajan (MIT lisans). browser-use + shell + file ops. Docker sandbox içinde çalışır
+- **7 Katmanlı Zero Trust Sandbox:** (1) Docker non-root container, (2) seccomp profile, (3) Landlock kernel FS jail, (4) network namespace allowlist, (5) skill audit (banned patterns), (6) memory hygiene (redact + 30-day wipe), (7) approval system (MQTT → HA → mobile)
+- **Fiziksel-Dijital Senkron:** Görev tamam → Lamba (Modül 29) başını sallar + yeşil ışık + ses. Görev hata → Lamba sallar + kırmızı ışık. Onay gerek → Lamba bakar + kehribar + mobil bildirim
+- **VSS Otonom Ekran Kalkanı:** Windows WMI / Linux brightnessctl / macOS osascript ile parlaklık, Night Light (3400K), dark mode otomatik ayarı. Lamba ile MQTT senkron
+
+### 28. `multicooker_chef_automation` — Multicooker Chef ve Vision-Cooker Orkestrasyonu 🍳
+
+- **Xiaomi Mi Smart Multi Cooker 3L:** `chunmi.cooker.normal4` — Xiaomi Miot Auto (`miot_local: true`) ile yerel LAN kontrolü. Çin bulutundan tamamen izole (router `iptables` ile block)
+- **Vision-Cooker Kapalı Döngü:** Modül 13 (Qwen-VL Max) tezgaha bakar → malzeme tanır → tarif önerir → kullanıcı onayı → multicooker başlatır. 6 tarif profili (domates çorbası 100°C, tavuk-pirinç 105°C, vb.)
+- **Pişirme Bildirim Senaryosu:** Pişirme başladı → WLED turuncu + MiniMax ses. İlerleme → 10 dk ışık pattern + 20 dk ses cooldown. Bitti → WLED yeşil + "yemeğiniz hazır" + mobil aksiyonlar (kapat/sıcak tut). Sıcak tutma → WLED amber
+
+### 29. `embodied_jarvis_avatar` — Embodied Jarvis Avatar (5-DOF Robotik Lamba) 💡
+
+- **Autonomous OS (edge_body_only):** Beyin Cloud VPS'de, Pi sadece "gövde" (HAL aktif, runtime kapalı). DEVICE.md/SOUL.md/SAFETY.md kontratı. PCA9685 I2C PWM driver ile MG996R × 3 + SG90 × 2 servo
+- **5-DOF Robotik Kol:** BCN3D Moveo açık kaynak tasarım. Inverse kinematics ile hedefe yönelme. Yumuşak hareket (60°/sec). E-STOP güvenliği
+- **Postür Kalkanı (VSS):** MediaPipe Pose ile servikal açı analizi (kullanıcı 210cm). Tech Neck (15°+) → lamba hedefe bakar + kehribar pulse + sesli uyarı. Severe (25°+) → daha güçlü müdahale. Düzeldi → başını sallar + yeşil ışık
+- **Fiziksel-Dijital Köprü:** OpenClaw (Modül 27) görev tamam → lamba başını sallar. Kame (Modül 30) dans → lamba ritim takip eder
+
+### 30. `desktop_pet_kame` — Desktop Pet Kame32 (Dört Bacaklı Robot) 🐕
+
+- **Kame32 (Güncel Versiyon):** BQ Innovation Lab açık kaynak tasarım. ESP32 DevKit V1 + 8× SG90/MG90S. Paralelgram mekanizması — ayak her zaman zemine dik. Kamera/mikrofon YOK — tüm zeka Jarvis'ten MQTT ile gelir
+- **Audio-Reactive Dans:** Modül 10 (WLED INMP441) BPM analizi → MQTT `kame/command/dance` → Kame32 beat'e göre çömel/kalk/ayak vur/spin
+- **Eye of Sauron Otonom Şarj:** Tapo C200 RTSP → OpenCV HSV renk filtreleme → Kame konum tespiti → hata vektörü → MQTT komut → park → doğrula (closed-loop, max 20 adım). Batarya %20 → otonom park
+- **Wingman Karşılama:** Misafir geldi → 6 faz: kehribar ışık + Kame32 kalk + 3 adım + reverans + sesli karşılama + geri dön. Misafir gitti → uyku. Gece 23:00 → uyku, sabah 08:00 → uyan
+
+---
+
 ## 🔗 Modüller Arası Haberleşme
 
 ### MQTT Topic Yapısı
@@ -405,7 +442,17 @@ jarvis/#
 └── jarvis/sensor/presence           → Varlık sensörü
 ├── jarvis/persona/switch            → Jarvis kişiliği değiştir (default/language_tutor)
 ├── jarvis/mirror/vocabulary         → Magic Mirror kelime modülü ON/OFF
-└── jarvis/chef/safety_mode          → Mutfak güvenlik modu
+├── jarvis/chef/safety_mode          → Mutfak güvenlik modu
+├── kame/command/move                → Kame32 yürü (dir, steps)
+├── kame/command/dance               → Kame32 dans (bpm, beat)
+├── kame/command/pose                → Kame32 poz ver (bow/wave/tilt)
+├── kame/status/battery              → Kame32 batarya %
+├── jarvis/lamp/motion/command       → Lamba (Modül 29) hareket komutu
+├── jarvis/lamp/posture/warning      → Lamba postür uyarısı (Tech Neck)
+├── openclaw/status/task             → OpenClaw (Modül 27) görev durumu
+├── openclaw/approval/request        → OpenClaw onay talebi
+├── multicooker/command             → Multicooker (Modül 28) pişirme komutu
+└── multicooker/status               → Multicooker pişirme durumu
 ```
 
 ### Haberleşme Protokolleri
@@ -599,14 +646,19 @@ akilli-evim/
 | Ses | MiniMax Voice Cloning (10 sn referans → Jarvis tonu), duygu kontrol (charming/sarcastic/intimate/authoritative) |
 | Hafıza | DeepSeek günlük özet → Prompt Caching → MiniMax System Prompt (bedava hafıza) |
 | Orkestrasyon | Home Assistant (Docker), Python 3.13, MQTT 5.0, Agentic HA REST API |
+| Dijital Ajan | **OpenClaw v2026.4.15** (browser-use + shell + file ops), **browser-use** (Playwright), Docker Zero Trust sandbox (7 katman) |
+| Fiziksel Avatar | **Autonomous OS** (autonomous-ai/autonomous-os — edge_body_only), **PCA9685** I2C PWM driver, MG996R + SG90 servo, inverse kinematics |
+| Robotik Evcil Hayvan | **Kame32** (ESP32 DevKit V1 + 8× SG90/MG90S), ESP32Servo kütüphanesi, paralelgram mekanizması, F693ZZ rulman |
+| Akıllı Mutfak | **Xiaomi Miot Auto** (`miot_local: true`), **Tuya Local**, router `iptables` ile Çin bulutu izolasyonu |
 | Ağ | Tailscale VPN, GL-MT3000 (Beryl AX), WiFi 6 |
-| Mikrodenetleyici | ESP32/ESP32-S3, ESPHome 2026 |
+| Mikrodenetleyici | ESP32/ESP32-S3 (ESPHome 2026), ESP32 DevKit V1 (Kame32 — Arduino IDE) |
 | Sensör | LD2410/LD2450 (mmWave radar — varlık/hareket), MPU6050 (ivmeölçer), TTP223 (kapasitif), INMP441 (I2S mic). ⚠️ Kalp atışı/nefes için akıllı saat (Apple Health/Google Fit) veya HLK-LD6002 (60GHz Vital Signs Radar) gerekir. LD2410/LD2450/LD2420/LD6001 kalp/nefes ÖLÇMEZ |
 | Kablosuz | Zigbee (Zigbee2MQTT), WiFi 6, IR (Broadlink) |
 | Görüntü | OpenCV 2026, MediaPipe Pose (postür analizi), face_recognition, ChromaDB (vektör DB), Hyperion.ng (ekran senk) |
 | Medya | Spotify Web API, WLED (Sound Reactive), Tuya, Hyperion (Ambilight) |
-| Gömülü | Raspberry Pi Zero 2 W (Magic Mirror), Raspberry Pi 4 (Jarvis Core + Hyperion), Nvidia Jetson Nano 4GB (Edge-AI ADAS) |
+| Gömülü | Raspberry Pi Zero 2 W (Magic Mirror), Raspberry Pi 4 (Jarvis Core + Hyperion + Autonomous OS Body), Nvidia Jetson Nano 4GB (Edge-AI ADAS) |
 | Sağlık | Apple Health / Google Fit (akıllı saat), CalDAV/Google Calendar, PyPDF2 (kan tahlili), Omron BLE (tansiyon), FL-41 Rose Tint (VSS aydınlatma) |
+| VSS Kalkanı | MediaPipe Pose (servikal açı), WLED anti-mavi ışık protokolü, Windows WMI / brightnessctl (ekran parlaklık), Night Light 3400K |
 | Maliyet | **~$12-15/ay** (MiniMax ~$10 + DeepSeek ~$2 + Qwen-VL ~$2) |
 
 ---
