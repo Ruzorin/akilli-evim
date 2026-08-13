@@ -1,8 +1,97 @@
-# multicooker_chef_automation — Donanım Seçimi ve Yerel İzolasyon
+# multicooker_chef_automation — Donanım, Mealie ve Yerel İzolasyon
 
 > **Modül 28: Multicooker Chef Automation**
-> Jarvis'in mutfaktaki "kasları" — ticari akıllı tencere, yerel ağda izole
-> Modül 13 (Vision Chef) görür → Modül 28 (Cooker) pişirir
+> Jarvis'in mutfaktaki "kasları" — Mealie (açık kaynak tarif yöneticisi) +
+> ticari akıllı tencere, yerel ağda izole
+> Thermomix/Cookidoo'ya açık kaynak rakibi
+> Modül 13 (Vision Chef) görür → Mealie eşleştirir → Modül 28 (Cooker) pişirir
+
+---
+
+## 🆚 Thermomix vs Jarvis + Mealie + Akıllı Tencere
+
+| Özellik | Thermomix TM6 (~100.000₺) | Jarvis + Mealie + Xiaomi (~3.000₺) |
+|---------|---------------------------|--------------------------------------|
+| **Tarif veritabanı** | Cookidoo (kapalı, abonelik) | Mealie (açık kaynak, ücretsiz) |
+| **Tarif ekleme** | Sadece Cookidoo'dan | Herhangi bir siteden URL scrape |
+| **Makro hesabı** | Yok (sabit tarifler) | DeepSeek → sporcu hedefine göre dinamik |
+| **Porsiyon ölçekleme** | Manuel | Otomatik (DeepSeek + Mealie API) |
+| **Görüntü tanıma** | Yok | Qwen-VL Max (Modül 13) tezgahı görür |
+| **Sesli kontrol** | Yok | MiniMax Speech 2.8 Turbo |
+| **Fiziksel bildirim** | Yok | Lamba (Modül 29) başını sallar |
+| **VSS koruması** | Yok | WLED strobe YASAK, pürüzsüz geçiş |
+| **Bulut bağımlılığı** | Cookidoo bulutu (zorunlu) | Yerel ağ (Çin bulutu kapalı) |
+| **Yemek planı** | Cookidoo takvimi | Mealie takvimi (REST API) |
+| **Alışveriş listesi** | Cookidoo | Mealie (otomatik oluşturma) |
+| **Toplam maliyet** | ~100.000₺ + abonelik | ~3.000₺ (tek seferlik) |
+
+> **Sonuç:** Thermomix'in 100.000₺'lik kapalı Cookidoo ekosistemi yerine,
+> Mealie (açık kaynak) + Xiaomi akıllı tencere (~3.000₺) ile aynı
+> fonksiyonları fazlasıyla karşılar. Üstelik makro hesabı, görüntü tanıma
+> ve sesli kontrol Thermomix'te YOK.
+
+---
+
+## 📚 Mealie — Açık Kaynak Tarif Yöneticisi
+
+### Nedir?
+
+Mealie, kendi sunucunuzda çalışan açık kaynak tarif yöneticisi ve yemek
+planlayıcısıdır. REST API (FastAPI + Swagger) ile tam kontrol sağlar.
+URL yapıştırarak herhangi bir siteden tarif scrape eder.
+
+| Özellik | Detay |
+|---------|-------|
+| **Kaynak** | https://github.com/mealie-recipes/mealie |
+| **Lisans** | AGPL-3.0 (açık kaynak) |
+| **Sürüm** | 3.13+ (2026) |
+| **API** | REST API (FastAPI + Swagger docs) |
+| **Veritabanı** | SQLite (varsayılan) veya PostgreSQL |
+| **Scrape** | URL yapıştır → otomatik malzeme/talimat/besin çıkarımı |
+| **Yemek Planı** | Takvim görünümü, haftalık/aylık plan |
+| **Alışveriş Listesi** | Yemek planından otomatik oluşturma |
+| **Webhook** | Yemek planı bildirimleri (3. parti servisler) |
+| **Çok Kullanıcı** | Household grupları (aile paylaşımı) |
+
+### Docker Kurulumu (VPS veya Pi)
+
+```yaml
+# docker-compose.yaml
+services:
+  mealie:
+    image: ghcr.io/mealie-recipes/mealie:latest
+    container_name: mealie
+    restart: always
+    volumes:
+      - ./volumes/mealie:/app/data/
+    ports:
+      - "9925:9000"
+    environment:
+      PUID: 1000
+      PGID: 1000
+      TZ: Europe/Istanbul
+      TOKEN_TIME: 87600  # 10 yıl token
+```
+
+```bash
+# Başlat
+docker compose up -d
+
+# API docs: http://localhost:9925/docs
+# UI: http://localhost:9925
+```
+
+### REST API Endpoint'leri
+
+| Endpoint | Metod | İşlev |
+|----------|-------|-------|
+| `/api/auth/token` | POST | Bearer token al (giriş) |
+| `/api/recipes/create/url` | POST | URL'den tarif scrape et |
+| `/api/recipes/{slug}` | GET | Tarif detayı (malzeme, talimat, besin) |
+| `/api/recipes/{slug}` | PUT | Tarif güncelle (porsiyon ölçekle) |
+| `/api/recipes` | GET | Tarif ara/listele |
+| `/api/households/mealplans` | POST | Yemek planı oluştur |
+| `/api/parser/ingredients` | POST | Malzeme parse (nlp/brute/openai) |
 
 ---
 

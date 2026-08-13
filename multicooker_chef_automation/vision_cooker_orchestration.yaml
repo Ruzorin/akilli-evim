@@ -1,16 +1,25 @@
 # =============================================================================
-# multicooker_chef_automation — Vision-Cooker Orkestrasyonu (Modül 13 + 28)
+# multicooker_chef_automation — Vision-Cooker + Mealie Orkestrasyonu
 # =============================================================================
 # Modül 13 (Vision Chef — Qwen-VL Max) tezgaha konan malzemeleri görür,
-# bir tarif oluşturur ve kullanıcının onayıyla pişirme profilini
-# (sıcaklık, süre, mod) doğrudan akıllı tencereye (Modül 28) iletir.
+# Mealie (açık kaynak tarif yöneticisi) veritabanında eşleştirir,
+# DeepSeek sporcu makro hedeflerine göre porsiyonu ölçekler ve
+# kullanıcının onayıyla pişirme profilini akıllı tencereye (Modül 28) iletir.
 #
-# 🍳 KAPALI DÖNGÜ (CLOSED-LOOP):
-# 1. Kamera → Qwen-VL Max → malzeme tespiti + tarif önerisi
-# 2. Jarvis → sesli tarif önerisi (MiniMax)
-# 3. Kullanıcı → "Pişir" onayı (sesli veya NFC)
-# 4. HA → Multicooker'a pişirme profili gönder (sıcaklık + süre + mod)
-# 5. Multicooker → pişirme başlar → WLED + sesli bildirim
+# 🍳 KAPALI DÖNGÜ (CLOSED-LOOP) — Vision-to-Cook:
+# 1. Kamera → Qwen-VL Max → malzeme tespiti
+# 2. Mealie API → malzemelere uygun tarif ara (REST API)
+# 3. DeepSeek → sporcu makro hedeflerine göre porsiyon ölçekle
+# 4. Jarvis → sesli tarif önerisi (MiniMax) + besin değerleri
+# 5. Kullanıcı → "Pişir" onayı (sesli veya NFC)
+# 6. HA → Multicooker'a pişirme profili gönder (sıcaklık + süre + mod)
+# 7. Multicooker → pişirme başlar → WLED + Lamba + sesli bildirim
+#
+# 📚 MEALIE ENTEGRASYONU:
+#   - URL yapıştır → Mealie scrape → tarif veritabanına kaydeder
+#   - DeepSeek → kilo/hedefe göre protein/karb/yağ hesaplar
+#   - Mealie API → tarif porsiyonunu dinamik ölçekler
+#   - Thermomix/Cookidoo'ya açık kaynak rakibi
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -228,6 +237,122 @@ automation:
     max_exceeded: silent
 
   # ---------------------------------------------------------------------------
+  # OTOMASYON: Mealie'den URL scrape → tarif ekle
+  # ---------------------------------------------------------------------------
+  - id: "jarvis_mealie_scrape_recipe"
+    alias: "Mealie — URL'den Tarif Scrape Et"
+    description: >
+      Kullanıcı "Bu tarifi kaydet" + URL dediğinde Mealie API'sine
+      scrape isteği gönderilir. Mealie otomatik malzeme, talimat ve
+      besin değerlerini çıkarır.
+    trigger:
+      - platform: conversation
+        command:
+          - "bu tarifi kaydet"
+          - "tarifi kaydet"
+          - "bu tarifi ekle"
+      # Webhook ile de tetiklenebilir (telefondan URL paylaşımı)
+      - platform: webhook
+        webhook_id: "mealie_scrape"
+    action:
+      # Mealie API'ye scrape isteği gönder (Python script çağır)
+      - service: shell_command.mealie_scrape_url
+        data:
+          url: "{{ trigger.data.url | default('') }}"
+
+      # Jarvis sesli onay
+      - service: tts.speak
+        target:
+          entity_id: tts.minimax_speech
+        data:
+          media_player_entity_id: media_player.jarvis_speaker
+          message: >
+            Tarifi kaydettim efendim. Mealie kütüphanesine eklendi.
+
+    mode: single
+    max_exceeded: silent
+
+  # ---------------------------------------------------------------------------
+  # OTOMASYON: Mealie tarif eşleştirme (Vision → Mealie search)
+  # ---------------------------------------------------------------------------
+  - id: "jarvis_mealie_match_ingredients"
+    alias: "Mealie — Malzemeleri Tariflerle Eşleştir"
+    description: >
+      Modül 13 (Qwen-VL) tezgahtaki malzemeleri tespit ettiğinde,
+      Mealie API'sinde bu malzemelere uygun tarif aranır.
+      DeepSeek makro hedeflerine göre porsiyon ölçeklenir.
+    trigger:
+      - platform: mqtt
+        topic: "jarvis/chef/ingredients_detected"
+    action:
+      # Mealie orchestrator'ı çağır (Python shell command)
+      - service: shell_command.mealie_vision_to_cook
+        data:
+          ingredients: "{{ trigger.payload_json.ingredients | join(',') }}"
+          goal: "{{ trigger.payload_json.goal | default('maintenance') }}"
+          weight: "{{ trigger.payload_json.weight | default(85) }}"
+
+      # Lamba (Modül 29) — tarif bulundu, kullanıcıya bak
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/lamp/motion/command"
+          payload: '{"action": "look_at_user", "color": "amber", "brightness": 40}'
+
+    mode: single
+    max_exceeded: silent
+
+  # ---------------------------------------------------------------------------
+  # OTOMASYON: Mealie tarif onayı → Lamba başını salla + pişir
+  # ---------------------------------------------------------------------------
+  - id: "jarvis_mealie_approval_cook"
+    alias: "Mealie — Tarif Onayı ve Pişirme Başlat"
+    description: >
+      Kullanıcı Mealie'den önerilen tarifi onayladığında (sesli "Pişir"
+      veya NFC), Lamba (Modül 29) başını sallar ve multicooker başlar.
+    trigger:
+      - platform: conversation
+        command:
+          - "pişir"
+          - "pişirmeye başla"
+          - "onaylıyorum"
+      - platform: mqtt
+        topic: "jarvis/chef/recipe_approved"
+    condition:
+      - condition: state
+        entity_id: input_boolean.jarvis_auto_cook_enabled
+        state: "on"
+    action:
+      # Lamba (Modül 29) — başını salla (onay)
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/lamp/motion/command"
+          payload: '{"action": "nod", "color": "green", "brightness": 50}'
+
+      # Multicooker'ı başlat
+      - service: switch.turn_on
+        target:
+          entity_id: switch.multicooker_power
+
+      - service: climate.set_hvac_mode
+        target:
+          entity_id: climate.smart_multicooker
+        data:
+          hvac_mode: "cook"
+
+      # Jarvis sesli onay + besin bilgisi
+      - service: tts.speak
+        target:
+          entity_id: tts.minimax_speech
+        data:
+          media_player_entity_id: media_player.jarvis_speaker
+          message: >
+            Elbette efendim. Tarifi pişiriyorum.
+            Besin değerleri telefonunuza gönderildi.
+
+    mode: single
+    max_exceeded: silent
+
+  # ---------------------------------------------------------------------------
   # OTOMASYON: Qwen-VL tarif önerisi → input_select güncelle
   # ---------------------------------------------------------------------------
   - id: "jarvis_cooker_vision_recipe_update"
@@ -258,3 +383,17 @@ automation:
 
     mode: single
     max_exceeded: silent
+
+# -----------------------------------------------------------------------------
+# SHELL COMMANDS: Mealie API çağrıları
+# -----------------------------------------------------------------------------
+shell_command:
+  mealie_scrape_url:
+    alias: "Mealie — URL Scrape"
+    command: "python3 /config/mealie_macro_orchestrator.py --scrape '{{ url }}'"
+    timeout: 30
+
+  mealie_vision_to_cook:
+    alias: "Mealie — Vision-to-Cook"
+    command: "python3 /config/mealie_macro_orchestrator.py --vision '{{ ingredients }}' --goal '{{ goal }}' --weight {{ weight }}"
+    timeout: 60

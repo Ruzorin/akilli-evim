@@ -118,7 +118,46 @@ cooking_profiles:
     estimated_time_min: 20
 
 # =============================================================================
-# BİLDİRİM SİSTEMİ
+# MEALIE ENTEGRASYONU (Açık Kaynak Tarif Yöneticisi)
+# =============================================================================
+mealie:
+  # Mealie Docker (yerel — Thermomix/Cookidoo rakibi)
+  url: "http://localhost:9925"
+  user: "jarvis@local"
+  password: "${MEALIE_PASSWORD}"
+  version: "3.13+"
+
+  # REST API endpoint'leri
+  api:
+    auth: "/api/auth/token"
+    scrape_url: "/api/recipes/create/url"
+    get_recipe: "/api/recipes/{slug}"
+    search: "/api/recipes"
+    update_recipe: "/api/recipes/{slug}"
+    meal_plan: "/api/households/mealplans"
+    parse_ingredients: "/api/parser/ingredients"
+
+  # Sporcu makro orkestrasyonu
+  macro_orchestration:
+    enabled: true
+    deepseek_model: "deepseek-chat"
+    athlete_weight_kg: 85
+    athlete_goal: "maintenance" # bulk / cut / maintenance
+    protein_per_kg: 2.0
+    calories_target: 2800
+    scale_dynamically: true # DeepSeek → porsiyon otomatik ölçekle
+
+  # Tarif scrape (URL yapıştır → Mealie kaydeder)
+  scrape:
+    enabled: true
+    supported_sites:
+      - "allrecipes.com"
+      - "yemek.com"
+      - "nefisyemektarifleri.com"
+      - "custom (herhangi bir schema.org/Recipe içeren site)"
+
+# =============================================================================
+# BİLDİRİM SİSTEMİ (VSS DOSTU)
 # =============================================================================
 notifications:
   # MiniMax Speech 2.8 Turbo
@@ -127,20 +166,47 @@ notifications:
     entity: "tts.minimax_speech"
     media_player: "media_player.jarvis_speaker"
 
-  # WLED ışık bildirimleri
+  # WLED ışık bildirimleri (VSS korumalı)
   wled:
+    vss_safe: true
+    strobe_effects: false # Strobe/Flash YASAK
+    allowed_colors: ["amber", "green"] # Mavi/beyaz KAPALI
+    max_brightness: 50 # VSS krizini tetiklemez
+    min_transition_ms: 3000 # Pürüzsüz geçiş (ani değişim yok)
+
     cooking_started:
-      preset: 2 # Sıcak turuncu
+      preset: 2 # Sıcak turuncu (amber)
       brightness: 50
+      transition: 3000
     cooking_progress:
       preset: 2
       brightness: 30
+      transition: 3000
     cooking_finished:
       preset: 3 # Yeşil
       brightness: 40
+      transition: 3000
     keep_warm:
       preset: 1 # Loş amber
       brightness: 25
+      transition: 3000
+
+  # Lamba (Modül 29) fiziksel onay
+  lamp:
+    enabled: true
+    mqtt_topic: "jarvis/lamp/motion/command"
+    cooking_started:
+      action: "aim_down" # Tencereye eğil
+      color: "amber"
+      brightness: 40
+    cooking_finished:
+      action: "nod" # Başını salla (onay)
+      color: "green"
+      brightness: 50
+    cooking_error:
+      action: "shake" # Sallan (hata)
+      color: "red"
+      brightness: 60
 
   # Mobil bildirim
   mobile:

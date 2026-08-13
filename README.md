@@ -394,11 +394,13 @@ Bu proje, fiziksel bir Raspberry Pi / PC sunucusu gerektirmez. Sistem **ucuz bir
 - **Zero Trust Güvenlik (7 Katman):** OpenClaw hiçbir zaman serbest çalışmaz. Docker konteyner içinde, root yetkisi olmadan, dosya sistemi kilitli, ağ kısıtlı. Tehlikeli komutlar otomatik engellenir. Önemli işlerde mobil onay ister — "Bu işlem için onayınız gerekli"
 - **Fiziksel Lamba ile Senkron:** OpenClaw bir görevi bitirdiğinde masadaki robotik lamba (Modül 29) başını sallar ve yeşil ışık yanar. Görev hata alırsa lamba sallanır ve kırmızı yanar. Onay beklerken lamba size bakar ve kehribar renk yanar. "Dijital ajanınız fiziksel olarak size haber verir"
 
-### 28. `multicooker_chef_automation` — Multicooker Chef ve Vision-Cooker Orkestrasyonu 🍳
+### 28. `multicooker_chef_automation` — Mealie + Multicooker Chef Automation 🍳
 
-- **Çin Bulutundan Koparılmış Tencere:** Piyasadaki bir Xiaomi akıllı tencere alınır, Çin bulutuna bağlantısı router seviyesinde kesilir. Artık sadece sizin yerel ağınızda, Home Assistant üzerinden çalışır. "Xiaomi'nin sunucuları habersizce veri toplamaz"
-- **Gözle Pişir (Vision-Cooker):** Modül 13'ün kamerası (Qwen-VL Max) tezgaha bakar, malzemeleri tanır. "Domates, soğan, sarımsak görüyorum → domates çorbası öneririm" der. Siz onayladığınızda tencere otomatik başlar, doğru sıcaklık ve süreyi ayarlar. "Kamera görür, beyin düşünür, tencere pişirir"
-- **Sesli ve Işıklı Pişirme Bildirimi:** Pişirme başlayınca WLED ışıklar turuncu yanar ve Jarvis "Pişirme başladı" der. Pişirme bittiğinde ışıklar yeşile döner, Jarvis "Yemeğiniz hazır" der ve telefonunuza bildirim gelir. Tek dokunuşla kapatır veya sıcak tutmaya alırsınız. "Mutfakta yalnız değilsiniz"
+- **Thermomix'e Açık Kaynak Rakip:** 100.000₺'lik Thermomix'in kapalı Cookidoo ekosistemi yerine, Mealie (açık kaynak tarif yöneticisi) + Xiaomi akıllı tencere (~3.000₺) ile aynı fonksiyonları fazlasıyla karşılar. Üstelik makro hesabı, görüntü tanıma ve sesli kontrol Thermomix'te YOK. "Açık kaynak, kapalı sisteme karşı"
+- **Mealie Tarif Kütüphanesi:** Bir tarif sitesinin URL'ini yapıştırırsınız → Mealie otomatik malzeme, talimat ve besin değerlerini çıkarıp veritabanına kaydeder. Tüm tarifler sizin sunucunuzda, hiçbir bulut bağımlılığı yok. "Tarif sitenizin URL'ini yapıştırın, gerisini Mealie halleder"
+- **Sporcu Makro Orkestrasyonu:** DeepSeek, kilonuzu ve hedefinizi (bulk/cut/maintenance) alır, günlük protein/karb/yağ hedeflerinizi hesaplar. Mealie'deki tarifleri bu hedeflere göre dinamik olarak ölçekler — "85kg'sınız ve bakım modundasınız, bu tarifi 2 porsiyona çıkarıyorum, 540 kalori 45g protein" der. "Sporcu beslenmesi artık otomatik"
+- **Gözle Pişir (Vision-to-Cook):** Modül 13'ün kamerası (Qwen-VL Max) tezgaha bakar, malzemeleri tanır. Mealie'deki tariflerle eşleştirir, size önerir. Onayladığınızda tencere otomatik başlar. "Kamera görür, Mealie eşleştirir, DeepSeek ölçekler, tencere pişirir"
+- **VSS Dostu Bildirim:** Pişirme başlayınca WLED ışıklar pürüzsüz geçişle turuncu yanar (strobe YASAK, sadece kehribar/yeşil). Lamba (Modül 29) tencereye eğilir. Pişirme bittiğinde Lamba başını sallar ve yeşil yanar. Jarvis "Yemeğiniz hazır" der. "Gözünüzü rahatsız etmeden haber verir"
 
 ### 29. `embodied_jarvis_avatar` — Embodied Jarvis Avatar (5-DOF Robotik Lamba) 💡
 
@@ -454,7 +456,11 @@ jarvis/#
 ├── openclaw/status/task             → OpenClaw (Modül 27) görev durumu
 ├── openclaw/approval/request        → OpenClaw onay talebi
 ├── multicooker/command             → Multicooker (Modül 28) pişirme komutu
-└── multicooker/status               → Multicooker pişirme durumu
+├── multicooker/status               → Multicooker pişirme durumu
+├── jarvis/chef/ingredients_detected → Modül 13 malzeme tespiti → Mealie eşleştirme
+├── jarvis/chef/recipe_suggestion   → Mealie tarif önerisi (besin değerleri ile)
+├── jarvis/chef/recipe_approved     → Kullanıcı tarif onayı → pişirme başlat
+└── jarvis/lamp/motion/command       → Lamba (Modül 29) fiziksel onay (nod/shake/aim)
 ```
 
 ### Haberleşme Protokolleri
@@ -594,10 +600,11 @@ akilli-evim/
 │   ├── digital_physical_sync.yaml
 │   ├── vss_screen_shield.py
 │   └── config.yaml
-├── multicooker_chef_automation/    ← Modül 28: Multicooker Chef (Yerel İzole)
-│   ├── hardware_and_local_isolation.md
-│   ├── vision_cooker_orchestration.yaml
-│   ├── cooking_notification_automation.yaml
+├── multicooker_chef_automation/    ← Modül 28: Mealie + Multicooker Chef
+│   ├── hardware_and_local_isolation.md  ← Mealie Docker + Thermomix rakip + Xiaomi/Tuya izolasyon
+│   ├── mealie_macro_orchestrator.py     ← Mealie REST API + DeepSeek makro + porsiyon ölçekleme
+│   ├── vision_cooker_orchestration.yaml ← Vision-to-Cook kapalı döngü (Qwen-VL → Mealie → Tencere)
+│   ├── cooking_notification_automation.yaml ← VSS dostu bildirim + Lamba fiziksel onay
 │   └── config.yaml
 ├── embodied_jarvis_avatar/         ← Modül 29: Embodied Jarvis Avatar (5-DOF Lamba)
 │   ├── hardware_and_kinematics.md
@@ -651,7 +658,7 @@ akilli-evim/
 | Dijital Ajan | **OpenClaw v2026.4.15** (browser-use + shell + file ops), **browser-use** (Playwright), Docker Zero Trust sandbox (7 katman) |
 | Fiziksel Avatar | **Autonomous OS** (autonomous-ai/autonomous-os — edge_body_only), **PCA9685** I2C PWM driver, MG996R + SG90 servo, inverse kinematics |
 | Robotik Evcil Hayvan | **Kame32** (ESP32 DevKit V1 + 8× SG90/MG90S), ESP32Servo kütüphanesi, paralelgram mekanizması, F693ZZ rulman |
-| Akıllı Mutfak | **Xiaomi Miot Auto** (`miot_local: true`), **Tuya Local**, router `iptables` ile Çin bulutu izolasyonu |
+| Akıllı Mutfak | **Mealie** (açık kaynak tarif yöneticisi, REST API, URL scrape), **Xiaomi Miot Auto** (`miot_local: true`), **Tuya Local**, router `iptables` ile Çin bulutu izolasyonu, DeepSeek sporcu makro orkestrasyonu |
 | Ağ | Tailscale VPN, GL-MT3000 (Beryl AX), WiFi 6 |
 | Mikrodenetleyici | ESP32/ESP32-S3 (ESPHome 2026), ESP32 DevKit V1 (Kame32 — Arduino IDE) |
 | Sensör | LD2410/LD2450 (mmWave radar — varlık/hareket), MPU6050 (ivmeölçer), TTP223 (kapasitif), INMP441 (I2S mic). ⚠️ Kalp atışı/nefes için akıllı saat (Apple Health/Google Fit) veya HLK-LD6002 (60GHz Vital Signs Radar) gerekir. LD2410/LD2450/LD2420/LD6001 kalp/nefes ÖLÇMEZ |

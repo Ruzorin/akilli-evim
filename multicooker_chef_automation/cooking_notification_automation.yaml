@@ -1,13 +1,26 @@
 # =============================================================================
-# multicooker_chef_automation — Otonom Pişirme ve Bildirim Senaryosu
+# multicooker_chef_automation — Otonom Pişirme ve VSS Dostu Bildirim
 # =============================================================================
 # Yemek pişirme süreci başladığında, devam ettiğinde ve bittiğinde
-# Jarvis sesli asistan (MiniMax) ve WLED ışıklarıyla odaya bilgi verir.
+# Jarvis sesli asistan (MiniMax), WLED ışıkları ve Lamba (Modül 29)
+# ile odaya bilgi verir.
+#
+# 🛡️ VSS (Visual Snow Syndrome) KORUMASI:
+#   - Strobe/Flash efektleri YASAK
+#   - Sadece kehribar (amber) ve yeşil renkler
+#   - Mavi/beyaz ışık KAPALI
+#   - Tüm geçişler ≥3000ms (pürüzsüz, ani değişim yok)
+#   - Maksimum parlaklık %50 (VSS krizini tetiklemez)
+#
+# 💡 LAMBA (MODÜL 29) FİZİKSEL ONAY:
+#   - Pişirme başladı → Lamba hafif eğilir (tencereye bakar)
+#   - Pişirme bitti → Lamba başını sallar (onay) + yeşil ışık
+#   - Hata → Lamba sallanır (red) + kırmızı ışık
 #
 # 🍳 BİLDİRİM AŞAMALARI:
-# 1. Pişirme BAŞLADI → WLED sıcak turuncu + MiniMax "pişiriyorum"
-# 2. Pişirme DEVAM → WLED nabız (sıcaklık hissi) + ara bildirim
-# 3. Pişirme BİTTİ → WLED yeşil + MiniMax "yemeğiniz hazır"
+# 1. Pişirme BAŞLADI → WLED sıcak turuncu (pürüzsüz) + Lamba eğilir + MiniMax
+# 2. Pişirme DEVAM → WLED loş nabız (sıcaklık hissi) + ara bildirim
+# 3. Pişirme BİTTİ → WLED yeşil (pürüzsüz) + Lamba başını sallar + MiniMax
 # 4. Sıcak TUTMA → WLED loş amber + MiniMax "sıcak tutuyorum"
 # =============================================================================
 
@@ -43,11 +56,17 @@ automation:
         entity_id: binary_sensor.multicooker_cooking
         to: "on"
     action:
-      # WLED — sıcak turuncu (pişirme hissi)
+      # WLED — sıcak turuncu (VSS dostu: pürüzsüz geçiş, strobe YOK)
       - service: mqtt.publish
         data:
           topic: "wled/audio_reactive/preset"
-          payload: '{"preset": 2, "brightness": 50}'
+          payload: '{"preset": 2, "brightness": 50, "transition": 3000}'
+
+      # Lamba (Modül 29) — tencereye hafif eğil (pişirme başladı)
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/lamp/motion/command"
+          payload: '{"action": "aim_down", "color": "amber", "brightness": 40}'
 
       # Jarvis sesli bildirim
       - service: tts.speak
@@ -56,8 +75,8 @@ automation:
         data:
           media_player_entity_id: media_player.jarvis_speaker
           message: >
-            Pişirme başladı efendim. 
-            {{ states('input_select.jarvis_recipe_suggestion') | replace('_', ' ') }} 
+            Pişirme başladı efendim.
+            {{ states('input_select.jarvis_recipe_suggestion') | replace('_', ' ') }}
             hazırlanıyor.
 
       # Mobil bildirim
@@ -139,11 +158,17 @@ automation:
         entity_id: switch.multicooker_power
         state: "on"
     action:
-      # WLED — yeşil parıltı (başarılı)
+      # WLED — yeşil parıltı (VSS dostu: pürüzsüz geçiş, strobe YOK)
       - service: mqtt.publish
         data:
           topic: "wled/audio_reactive/preset"
-          payload: '{"preset": 3, "brightness": 40}'
+          payload: '{"preset": 3, "brightness": 40, "transition": 3000}'
+
+      # Lamba (Modül 29) — başını salla (onay, başarı) + yeşil ışık
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/lamp/motion/command"
+          payload: '{"action": "nod", "color": "green", "brightness": 50}'
 
       # Jarvis sesli bildirim
       - service: tts.speak
@@ -152,8 +177,8 @@ automation:
         data:
           media_player_entity_id: media_player.jarvis_speaker
           message: >
-            Yemeğiniz hazır efendim. 
-            {{ states('input_select.jarvis_recipe_suggestion') | replace('_', ' ') }} 
+            Yemeğiniz hazır efendim.
+            {{ states('input_select.jarvis_recipe_suggestion') | replace('_', ' ') }}
             tamamlandı. Afiyet olsun.
 
       # Mobil bildirim (actionable)
