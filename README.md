@@ -390,9 +390,9 @@ Bu proje, fiziksel bir Raspberry Pi / PC sunucusu gerektirmez. Sistem **ucuz bir
 ### 27. `openclaw_digital_sandbox` — OpenClaw Dijital Ajan ve Zero Trust Sandbox 🖥️
 
 - **Jarvis'in Dijital Elleri:** OpenClaw, Jarvis'in bilgisayarda sizin için iş yapan dijital ajanı. Tarayıcıda gezinir, dosya okur, shell komutları çalıştırır. "Bana uçuş ara" → OpenClaw tarayıcıyı açar, siteleri gezer, sonuçları getirir
+- **Gerçek Dünya Siparişleri:** Sesli veya yazılı komutla günlük işleri otomatik halleder. "Yemeksepeti'den lahmacun söyle" → tarayıcıyı açar, restoranı bulur, siparişi verir. "İstanbul-Ankara otobüs bileti al" → sitesi açar, koltuk seçer, bileti alır. "Marketten süt ve ekmek sipariş et" → sepete ekler, teslimat saatini seçer. "Jarvis'e söyle, o halleder"
 - **Zero Trust Güvenlik (7 Katman):** OpenClaw hiçbir zaman serbest çalışmaz. Docker konteyner içinde, root yetkisi olmadan, dosya sistemi kilitli, ağ kısıtlı. Tehlikeli komutlar otomatik engellenir. Önemli işlerde mobil onay ister — "Bu işlem için onayınız gerekli"
 - **Fiziksel Lamba ile Senkron:** OpenClaw bir görevi bitirdiğinde masadaki robotik lamba (Modül 29) başını sallar ve yeşil ışık yanar. Görev hata alırsa lamba sallanır ve kırmızı yanar. Onay beklerken lamba size bakar ve kehribar renk yanar. "Dijital ajanınız fiziksel olarak size haber verir"
-- **VSS Ekran Kalkanı:** Visual Snow Syndrome için ekran parlaklığı, Night Light (3400K) ve dark mode otomatik ayarlar. Lamba ile senkron çalışır — lamba kehribar yanarsa ekran da sıcak renge döner
 
 ### 28. `multicooker_chef_automation` — Multicooker Chef ve Vision-Cooker Orkestrasyonu 🍳
 
@@ -404,7 +404,7 @@ Bu proje, fiziksel bir Raspberry Pi / PC sunucusu gerektirmez. Sistem **ucuz bir
 
 - **Jarvis'in Fiziksel Yüzü:** 3D yazıcı ile basılan 5 eksenli robotik bir masa lambası. Autonomous OS (açık kaynak robot işletim sistemi) ile çalışır. Beyin bulut VPS'de, Raspberry Pi sadece "gövde" — komutları alır ve servo motorları hareket ettirir. "Jarvis artık sadece ses değil, hareket eden bir fiziksel varlık"
 - **Sana Bakar, Seni İzler:** Lamba size doğru dönebilir, size bakabilir, başını sallayabilir. Inverse kinematics ile yumuşak ve doğal hareketler. Acil durumlarda E-STOP ile anında durur
-- **Postür Kalkanı (VSS):** Kullanıcı 210cm, Visual Snow Syndrome'lu. MediaPipe Pose ile boyun açısı sürekli ölçülür. Boyun 15°+ öne eğilirse ("Tech Neck") lamba size döner, kehribar ışıkla nabız atar ve Jarvis "Postürünüzü düzeltin" der. 25°+ ise daha güçlü uyarı. Düzeltince lamba başını sallar ve yeşil yanar. "Lambanız aynı zamanda postür koçunuz"
+- **Postür Kalkanı:** MediaPipe Pose ile boyun açısı sürekli ölçülür. Boyun 15°+ öne eğilirse ("Tech Neck") lamba size döner, kehribar ışıkla nabız atar ve Jarvis "Postürünüzü düzeltin" der. 25°+ ise daha güçlü uyarı. Düzeltince lamba başını sallar ve yeşil yanar. "Lambanız aynı zamanda postür koçunuz"
 - **Dijital Ajan ile Konuşur:** OpenClaw (Modül 27) bir iş bitirdiğinde lamba başını sallar. Kame (Modül 30) dans ettiğinde lamba ritme ayak uydurur. "Fiziksel ve dijital ajanlar birbiriyle konuşur"
 
 ### 30. `desktop_pet_kame` — Desktop Pet Kame32 (Dört Bacaklı Robot) 🐕
