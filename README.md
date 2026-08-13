@@ -2,7 +2,7 @@
 
 > **"Sinematik atmosfer, duyusal optimizasyon ve otonom yapay zeka ile yaşam ve mobil alanları tek bir akıllı ekosistemde birleştiren premium otomasyon platformu."**
 
-Bu proje, bir yaşam alanını ve aracı; sesli komutlarla yönetilebilen, sensörlerle çevresel farkındalığa sahip, görsel-işitsel-duyusal olarak sinematik bir atmosfer sunan ve çok-modelli yapay zeka ile proaktif karar veren **premium bir otomasyon ekosistemine** dönüştürür. Sistem, merkezi bir hibrit zeka beyni (`jarvis_core` — MiniMax + DeepSeek) etrafında **26 modülden** oluşan tek bir kod tabanı (Single Codebase) mimarisiyle inşa edilmiştir.
+Bu proje, bir yaşam alanını ve aracı; sesli komutlarla yönetilebilen, sensörlerle çevresel farkındalığa sahip, görsel-işitsel-duyusal olarak sinematik bir atmosfer sunan ve çok-modelli yapay zeka ile proaktif karar veren **premium bir otomasyon ekosistemine** dönüştürür. Sistem, merkezi bir hibrit zeka beyni (`jarvis_core` — MiniMax + DeepSeek) etrafında **30 modülden** oluşan tek bir kod tabanı (Single Codebase) mimarisiyle inşa edilmiştir. Sistem, dijital ajan (OpenClaw), fiziksel avatarlar (5-DOF robotik lamba + dört bacaklı robot evcil hayvan) ve akıllı mutfak otomasyonu ile fiziksel-dijital dünyayı birleştirir.
 
 ---
 
@@ -540,6 +540,33 @@ akilli-evim/
     ├── anti_vss_lighting_protocol.yaml
     ├── posture_and_spinal_guard.py
     └── hypertension_and_recovery_orchestrator.yaml
+├── openclaw_digital_sandbox/       ← Modül 27: OpenClaw Dijital Ajan (Zero Trust Sandbox)
+│   ├── sandbox_and_security.md
+│   ├── digital_physical_sync.yaml
+│   ├── vss_screen_shield.py
+│   └── config.yaml
+├── multicooker_chef_automation/    ← Modül 28: Multicooker Chef (Yerel İzole)
+│   ├── hardware_and_local_isolation.md
+│   ├── vision_cooker_orchestration.yaml
+│   ├── cooking_notification_automation.yaml
+│   └── config.yaml
+├── embodied_jarvis_avatar/         ← Modül 29: Embodied Jarvis Avatar (5-DOF Lamba)
+│   ├── hardware_and_kinematics.md
+│   ├── autonomous_os_setup.md
+│   ├── embodied_lamp_driver.py
+│   ├── posture_shield_daemon.py
+│   ├── posture_shield_automation.yaml
+│   ├── DEVICE.md
+│   ├── SOUL.md
+│   ├── SAFETY.md
+│   └── config.yaml
+└── desktop_pet_kame/               ← Modül 30: Desktop Pet Kame (8-DOF Quadruped)
+    ├── hardware_and_assembly.md
+    ├── kame_esp8266_firmware.ino
+    ├── audio_reactive_dance.yaml
+    ├── eye_of_sauron_parking.py
+    ├── wingman_greeting_protocol.yaml
+    └── config.yaml
 ```
 
 ---
@@ -556,7 +583,11 @@ akilli-evim/
 8. **Faz 8 — Modül 21-25:** Araç modülleri (Knight Rider → Omniscience → Stealth → Edge-AI → Sentry) ✅
 9. **Faz 9 — Modül 26:** Medikal Kalkan (VSS + Postür + Tansiyon) ✅
 10. **Faz 10 — Maliyet Devrimi:** MiniMax Speech 2.8 Turbo + DeepSeek Hybrid Brain + Voice Cloning ✅
-11. **Faz 11 — Entegrasyon:** Tüm modüllerin Jarvis ile orkestrasyonu
+11. **Faz 11 — Entegrasyon:** Tüm modüllerin Jarvis ile orkestrasyonu ✅
+12. **Faz 12 — Modül 27:** OpenClaw Dijital Ajan (Zero Trust Docker Sandbox + VSS Ekran Kalkanı) ✅
+13. **Faz 13 — Modül 28:** Multicooker Chef (Xiaomi/Tuya yerel izolasyon + Vision-Cooker kapalı döngü) ✅
+14. **Faz 14 — Modül 29:** Embodied Jarvis Avatar (5-DOF robotik lamba + Autonomous OS + Postür Kalkanı) ✅
+15. **Faz 15 — Modül 30:** Desktop Pet Kame (8-DOF quadruped + Audio-Reactive Dans + Eye of Sauron Park + Wingman Karşılama) ✅
 
 ---
 

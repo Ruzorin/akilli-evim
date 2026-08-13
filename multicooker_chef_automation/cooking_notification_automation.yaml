@@ -1,0 +1,260 @@
+# =============================================================================
+# multicooker_chef_automation — Otonom Pişirme ve Bildirim Senaryosu
+# =============================================================================
+# Yemek pişirme süreci başladığında, devam ettiğinde ve bittiğinde
+# Jarvis sesli asistan (MiniMax) ve WLED ışıklarıyla odaya bilgi verir.
+#
+# 🍳 BİLDİRİM AŞAMALARI:
+# 1. Pişirme BAŞLADI → WLED sıcak turuncu + MiniMax "pişiriyorum"
+# 2. Pişirme DEVAM → WLED nabız (sıcaklık hissi) + ara bildirim
+# 3. Pişirme BİTTİ → WLED yeşil + MiniMax "yemeğiniz hazır"
+# 4. Sıcak TUTMA → WLED loş amber + MiniMax "sıcak tutuyorum"
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# SENSOR: Multicooker durum (Xiaomi Miot Auto / Tuya Local)
+# -----------------------------------------------------------------------------
+sensor:
+  - platform: template
+    sensors:
+      multicooker_status_text:
+        friendly_name: "Multicooker Durum"
+        value_template: >
+          {% if is_state('binary_sensor.multicooker_cooking', 'on') %}
+            cooking
+          {% elif is_state('climate.smart_multicooker', 'keep_warm') %}
+            keep_warm
+          {% else %}
+            idle
+          {% endif %}
+        icon: mdi:pot-steam
+
+# -----------------------------------------------------------------------------
+# OTOMASYON 1: Pişirme başladı → WLED + sesli bildirim
+# -----------------------------------------------------------------------------
+automation:
+  - id: "jarvis_cooker_started_notification"
+    alias: "Multicooker — Pişirme Başladı Bildirimi"
+    description: >
+      Multicooker pişirmeye başladığında WLED sıcak turuncu yapar ve
+      Jarvis sesli bildirim verir.
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.multicooker_cooking
+        to: "on"
+    action:
+      # WLED — sıcak turuncu (pişirme hissi)
+      - service: mqtt.publish
+        data:
+          topic: "wled/audio_reactive/preset"
+          payload: '{"preset": 2, "brightness": 50}'
+
+      # Jarvis sesli bildirim
+      - service: tts.speak
+        target:
+          entity_id: tts.minimax_speech
+        data:
+          media_player_entity_id: media_player.jarvis_speaker
+          message: >
+            Pişirme başladı efendim. 
+            {{ states('input_select.jarvis_recipe_suggestion') | replace('_', ' ') }} 
+            hazırlanıyor.
+
+      # Mobil bildirim
+      - service: notify.mobile_app
+        data:
+          title: "🍳 Pişirme Başladı"
+          message: >
+            {{ states('input_select.jarvis_recipe_suggestion') | replace('_', ' ') }} 
+            pişiriliyor. Tahmini süre: 
+            {{ states('sensor.multicooker_remaining_time') }} dakika.
+
+    mode: single
+    max_exceeded: silent
+
+  # ---------------------------------------------------------------------------
+  # OTOMASYON 2: Pişirme devam → Ara bildirim (her 10 dk)
+  # ---------------------------------------------------------------------------
+  - id: "jarvis_cooker_progress_notification"
+    alias: "Multicooker — Pişirme Devam Bildirimi"
+    description: >
+      Pişirme sürerken her 10 dakikada bir WLED nabız yapar ve
+      Jarvis kalan süreyi sesli bildirir.
+    trigger:
+      - platform: time_pattern
+        minutes: "/10"
+    condition:
+      - condition: state
+        entity_id: binary_sensor.multicooker_cooking
+        state: "on"
+    action:
+      # WLED — hafif nabız (sıcaklık hissi)
+      - service: mqtt.publish
+        data:
+          topic: "wled/audio_reactive/preset"
+          payload: '{"preset": 2, "brightness": 30}'
+
+      # Sadece 20 dk'da bir sesli bildirim (sürekli rahatsız etme)
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: >
+                  {{ (as_timestamp(now()) - 
+                      as_timestamp(states.input_datetime.last_cooker_alert.state | default(0))) > 1200 }}
+            sequence:
+              - service: tts.speak
+                target:
+                  entity_id: tts.minimax_speech
+                data:
+                  media_player_entity_id: media_player.jarvis_speaker
+                  message: >
+                    Pişirme devam ediyor efendim. 
+                    {{ states('sensor.multicooker_remaining_time') }} dakika kaldı.
+
+              - service: input_datetime.set_datetime
+                target:
+                  entity_id: input_datetime.last_cooker_alert
+                data:
+                  datetime: "{{ now() }}"
+
+    mode: single
+
+  # ---------------------------------------------------------------------------
+  # OTOMASYON 3: Pişirme bitti → WLED yeşil + sesli "hazır"
+  # ---------------------------------------------------------------------------
+  - id: "jarvis_cooker_finished_notification"
+    alias: "Multicooker — Pişirme Bitti Bildirimi"
+    description: >
+      Multicooker pişirmeyi bitirdiğinde WLED yeşil parıltı yapar ve
+      Jarvis sesli "yemeğiniz hazır" bildirimi verir.
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.multicooker_cooking
+        to: "off"
+        for:
+          seconds: 5
+    condition:
+      # Sadece pişirme sonrası (manuel kapatma değil)
+      - condition: state
+        entity_id: switch.multicooker_power
+        state: "on"
+    action:
+      # WLED — yeşil parıltı (başarılı)
+      - service: mqtt.publish
+        data:
+          topic: "wled/audio_reactive/preset"
+          payload: '{"preset": 3, "brightness": 40}'
+
+      # Jarvis sesli bildirim
+      - service: tts.speak
+        target:
+          entity_id: tts.minimax_speech
+        data:
+          media_player_entity_id: media_player.jarvis_speaker
+          message: >
+            Yemeğiniz hazır efendim. 
+            {{ states('input_select.jarvis_recipe_suggestion') | replace('_', ' ') }} 
+            tamamlandı. Afiyet olsun.
+
+      # Mobil bildirim (actionable)
+      - service: notify.mobile_app
+        data:
+          title: "✅ Yemek Hazır!"
+          message: >
+            {{ states('input_select.jarvis_recipe_suggestion') | replace('_', ' ') }} 
+            pişirildi. Sıcak tutma moduna geçildi.
+          data:
+            actions:
+              - action: "keep_warm"
+                title: "Sıcak Tut"
+              - action: "turn_off_cooker"
+                title: "Kapat"
+
+      # 5 sn sonra sıcak tutma moduna geç
+      - delay:
+          seconds: 5
+      - service: climate.set_hvac_mode
+        target:
+          entity_id: climate.smart_multicooker
+        data:
+          hvac_mode: "keep_warm"
+
+    mode: single
+    max_exceeded: silent
+
+  # ---------------------------------------------------------------------------
+  # OTOMASYON 4: Sıcak tutma → WLED loş amber
+  # ---------------------------------------------------------------------------
+  - id: "jarvis_cooker_keep_warm_notification"
+    alias: "Multicooker — Sıcak Tutma Bildirimi"
+    description: >
+      Multicooker sıcak tutma moduna geçtiğinde WLED loş amber yapar.
+    trigger:
+      - platform: state
+        entity_id: climate.smart_multicooker
+        attribute: hvac_mode
+        to: "keep_warm"
+    action:
+      - service: mqtt.publish
+        data:
+          topic: "wled/audio_reactive/preset"
+          payload: '{"preset": 1, "brightness": 25}'
+
+      - service: tts.speak
+        target:
+          entity_id: tts.minimax_speech
+        data:
+          media_player_entity_id: media_player.jarvis_speaker
+          message: "Sıcak tutuyorum efendim."
+
+    mode: single
+    max_exceeded: silent
+
+  # ---------------------------------------------------------------------------
+  # OTOMASYON 5: Mobil "Kapat" → Multicooker kapat
+  # ---------------------------------------------------------------------------
+  - id: "jarvis_cooker_mobile_turn_off"
+    alias: "Multicooker — Mobil Kapat"
+    trigger:
+      - platform: event
+        event_type: mobile_app_notification_action
+        event_data:
+          action: "turn_off_cooker"
+    action:
+      - service: climate.turn_off
+        target:
+          entity_id: climate.smart_multicooker
+      - service: switch.turn_off
+        target:
+          entity_id: switch.multicooker_power
+      - service: mqtt.publish
+        data:
+          topic: "wled/audio_reactive/preset"
+          payload: '{"preset": 0}'
+
+    mode: single
+
+  - id: "jarvis_cooker_mobile_keep_warm"
+    alias: "Multicooker — Mobil Sıcak Tut"
+    trigger:
+      - platform: event
+        event_type: mobile_app_notification_action
+        event_data:
+          action: "keep_warm"
+    action:
+      - service: climate.set_hvac_mode
+        target:
+          entity_id: climate.smart_multicooker
+        data:
+          hvac_mode: "keep_warm"
+
+    mode: single
+
+# -----------------------------------------------------------------------------
+# INPUT DATETIME: Son cooker bildirimi (cooldown için)
+# -----------------------------------------------------------------------------
+input_datetime:
+  last_cooker_alert:
+    name: "Son Cooker Bildirimi"
+    has_time: true
+    has_date: true

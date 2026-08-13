@@ -1,0 +1,167 @@
+# =============================================================================
+# multicooker_chef_automation — Modül Konfigürasyonu
+# =============================================================================
+# Modül 28: Multicooker Chef Automation
+# Jarvis'in mutfaktaki "kasları" — ticari akıllı tencere, yerel ağda izole
+# Modül 13 (Vision Chef) görür → Modül 28 (Cooker) pişirir
+# =============================================================================
+
+module:
+  name: "multicooker_chef_automation"
+  number: 28
+  description: >
+    Jarvis'in mutfaktaki pişirme kolları. Ticari akıllı tencere (Xiaomi
+    Mi Smart Multi Cooker veya Tuya) Çin bulutundan koparılıp tamamen
+    yerel ağda Home Assistant üzerinden kontrol edilir. Modül 13 (Vision
+    Chef — Qwen-VL Max) tezgaha konan malzemeleri görür, tarif oluşturur
+    ve kullanıcının onayıyla pişirme profilini multicooker'a iletir.
+
+# =============================================================================
+# DONANIM
+# =============================================================================
+hardware:
+  # Önerilen: Xiaomi Mi Smart Multi Cooker 3L
+  device: "xiaomi_mi_smart_multi_cooker_3l"
+  model: "chunmi.cooker.normal4"
+  power: "700W"
+  capacity: "3L"
+  wifi: "2.4GHz"
+
+  # Alternatif: Tuya Smart Multicooker
+  alternative: "tuya_smart_multicooker"
+
+# =============================================================================
+# YEREL İZOLASYON
+# =============================================================================
+local_isolation:
+  # Çin bulutu kapalı
+  cloud_connection: false
+  local_only: true
+
+  # HA Entegrasyonu
+  integration:
+    primary: "xiaomi_miot_auto" # HACS — önerilen
+    alternative: "tuya_local" # HACS — bütçe alternatifi
+
+  # Xiaomi Miot Auto config
+  xiaomi_miot:
+    miot_local: true # Yerel LAN modu zorla
+    miot_cloud: false # Cloud tamamen kapalı
+    check_lan: true # LAN bağlantısını doğrula
+
+  # Router seviyesi internet engelleme
+  router_block:
+    method: "iptables" # GL-MT3000
+    target_ip: "192.168.1.108"
+    rule: "iptables -A FORWARD -s 192.168.1.108 -j DROP"
+
+# =============================================================================
+# HA ENTITY'LERİ
+# =============================================================================
+entities:
+  climate: "climate.smart_multicooker"
+  power_switch: "switch.multicooker_power"
+  temperature_sensor: "sensor.multicooker_temperature"
+  remaining_time: "sensor.multicooker_remaining_time"
+  status: "sensor.multicooker_status"
+  cooking_active: "binary_sensor.multicooker_cooking"
+
+# =============================================================================
+# MODÜL 13 (VISION) ENTEGRASYONU
+# =============================================================================
+vision_integration:
+  source_module: 13
+  source: "Vision Chef — Qwen-VL Max"
+  camera: "Tapo C200 (192.168.1.107)"
+
+  # Kapalı döngü
+  closed_loop:
+    1_vision: "Kamera → Qwen-VL Max → malzeme tespiti"
+    2_recipe: "Qwen-VL → tarif önerisi → MQTT"
+    3_voice: "MiniMax → sesli tarif önerisi"
+    4_approval: "Kullanıcı → 'Pişir' onayı (sesli/NFC)"
+    5_cook: "HA → Multicooker'a pişirme profili gönder"
+    6_notify: "WLED + MiniMax → pişirme bildirimi"
+
+  # MQTT topic'leri
+  mqtt:
+    recipe_suggestion: "jarvis/chef/recipe_suggestion"
+    cooking_command: "multicooker/command"
+
+# =============================================================================
+# PİŞİRME PROFİLLERİ
+# =============================================================================
+cooking_profiles:
+  tomato_soup:
+    temperature: 100
+    mode: "cook"
+    estimated_time_min: 30
+
+  chicken_rice:
+    temperature: 105
+    mode: "rice"
+    estimated_time_min: 40
+
+  vegetable_porridge:
+    temperature: 95
+    mode: "porridge"
+    estimated_time_min: 25
+
+  pasta:
+    temperature: 100
+    mode: "cook"
+    estimated_time_min: 15
+
+  steamed_vegetables:
+    temperature: 98
+    mode: "cook"
+    estimated_time_min: 20
+
+# =============================================================================
+# BİLDİRİM SİSTEMİ
+# =============================================================================
+notifications:
+  # MiniMax Speech 2.8 Turbo
+  voice:
+    enabled: true
+    entity: "tts.minimax_speech"
+    media_player: "media_player.jarvis_speaker"
+
+  # WLED ışık bildirimleri
+  wled:
+    cooking_started:
+      preset: 2 # Sıcak turuncu
+      brightness: 50
+    cooking_progress:
+      preset: 2
+      brightness: 30
+    cooking_finished:
+      preset: 3 # Yeşil
+      brightness: 40
+    keep_warm:
+      preset: 1 # Loş amber
+      brightness: 25
+
+  # Mobil bildirim
+  mobile:
+    enabled: true
+    actions:
+      - "keep_warm"
+      - "turn_off_cooker"
+
+  # Bildirim cooldown
+  voice_cooldown_sec: 1200 # 20 dk (sürekli rahatsız etme)
+
+# =============================================================================
+# AĞ
+# =============================================================================
+network:
+  mqtt:
+    broker: "gl-mt3000.local"
+    port: 1883
+
+  ha:
+    url: "http://homeassistant.local:8123"
+
+  tailscale:
+    enabled: true # Cloud VPS ↔ yerel ağ

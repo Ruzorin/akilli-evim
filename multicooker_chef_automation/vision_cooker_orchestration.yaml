@@ -1,0 +1,260 @@
+# =============================================================================
+# multicooker_chef_automation — Vision-Cooker Orkestrasyonu (Modül 13 + 28)
+# =============================================================================
+# Modül 13 (Vision Chef — Qwen-VL Max) tezgaha konan malzemeleri görür,
+# bir tarif oluşturur ve kullanıcının onayıyla pişirme profilini
+# (sıcaklık, süre, mod) doğrudan akıllı tencereye (Modül 28) iletir.
+#
+# 🍳 KAPALI DÖNGÜ (CLOSED-LOOP):
+# 1. Kamera → Qwen-VL Max → malzeme tespiti + tarif önerisi
+# 2. Jarvis → sesli tarif önerisi (MiniMax)
+# 3. Kullanıcı → "Pişir" onayı (sesli veya NFC)
+# 4. HA → Multicooker'a pişirme profili gönder (sıcaklık + süre + mod)
+# 5. Multicooker → pişirme başlar → WLED + sesli bildirim
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# INPUT SELECT: Tarif önerisi (Qwen-VL'den gelen)
+# -----------------------------------------------------------------------------
+input_select:
+  jarvis_recipe_suggestion:
+    name: "Jarvis Tarif Önerisi"
+    options:
+      - "none"
+      - "tomato_soup"
+      - "chicken_rice"
+      - "vegetable_porridge"
+      - "pasta"
+      - "steamed_vegetables"
+      - "custom"
+    initial: "none"
+    icon: mdi:chef-hat
+
+# -----------------------------------------------------------------------------
+# INPUT BOOLEAN: Otomatik pişirme onayı
+# -----------------------------------------------------------------------------
+input_boolean:
+  jarvis_auto_cook_enabled:
+    name: "Otomatik Pişirme (Onaylı)"
+    icon: mdi:pot-steam
+    initial: false
+
+# -----------------------------------------------------------------------------
+# SCRIPT: Qwen-VL'den gelen tarifi multicooker'a uygula
+# -----------------------------------------------------------------------------
+script:
+  jarvis_vision_cooker_orchestrate:
+    alias: "Vision-Cooker Orkestrasyonu"
+    description: >
+      Qwen-VL Max kamerasından gelen tarif önerisini multicooker'a uygula.
+      Modül 13 (Vision) → Modül 28 (Cooker) kapalı döngü.
+    fields:
+      recipe:
+        description: "Tarif adı (Qwen-VL'den)"
+        example: "tomato_soup"
+        selector:
+          select:
+            options:
+              - "tomato_soup"
+              - "chicken_rice"
+              - "vegetable_porridge"
+              - "pasta"
+              - "steamed_vegetables"
+              - "custom"
+    sequence:
+      # 1. Tarif profilini belirle
+      - choose:
+          # Domates Çorbası
+          - conditions:
+              - condition: template
+                value_template: "{{ recipe == 'tomato_soup' }}"
+            sequence:
+              - service: climate.set_temperature
+                target:
+                  entity_id: climate.smart_multicooker
+                data:
+                  temperature: 100
+                  hvac_mode: "cook"
+              - service: input_select.select_option
+                target:
+                  entity_id: input_select.jarvis_recipe_suggestion
+                data:
+                  option: "tomato_soup"
+
+          # Tavuklu Pilav
+          - conditions:
+              - condition: template
+                value_template: "{{ recipe == 'chicken_rice' }}"
+            sequence:
+              - service: climate.set_temperature
+                target:
+                  entity_id: climate.smart_multicooker
+                data:
+                  temperature: 105
+                  hvac_mode: "rice"
+              - service: input_select.select_option
+                target:
+                  entity_id: input_select.jarvis_recipe_suggestion
+                data:
+                  option: "chicken_rice"
+
+          # Sebze Lapası
+          - conditions:
+              - condition: template
+                value_template: "{{ recipe == 'vegetable_porridge' }}"
+            sequence:
+              - service: climate.set_temperature
+                target:
+                  entity_id: climate.smart_multicooker
+                data:
+                  temperature: 95
+                  hvac_mode: "porridge"
+              - service: input_select.select_option
+                target:
+                  entity_id: input_select.jarvis_recipe_suggestion
+                data:
+                  option: "vegetable_porridge"
+
+          # Makarna
+          - conditions:
+              - condition: template
+                value_template: "{{ recipe == 'pasta' }}"
+            sequence:
+              - service: climate.set_temperature
+                target:
+                  entity_id: climate.smart_multicooker
+                data:
+                  temperature: 100
+                  hvac_mode: "cook"
+              - service: input_select.select_option
+                target:
+                  entity_id: input_select.jarvis_recipe_suggestion
+                data:
+                  option: "pasta"
+
+          # Buharda Sebze
+          - conditions:
+              - condition: template
+                value_template: "{{ recipe == 'steamed_vegetables' }}"
+            sequence:
+              - service: climate.set_temperature
+                target:
+                  entity_id: climate.smart_multicooker
+                data:
+                  temperature: 98
+                  hvac_mode: "cook"
+              - service: input_select.select_option
+                target:
+                  entity_id: input_select.jarvis_recipe_suggestion
+                data:
+                  option: "steamed_vegetables"
+
+      # 2. Jarvis sesli onay iste
+      - service: tts.speak
+        target:
+          entity_id: tts.minimax_speech
+        data:
+          media_player_entity_id: media_player.jarvis_speaker
+          message: >
+            Tezgahı görüyorum efendim. 
+            {{ recipe | replace('_', ' ') }} önerebilirim. 
+            Pişirmemi ister misiniz?
+
+      # 3. WLED — "tarif hazır" kehribar parıltısı
+      - service: mqtt.publish
+        data:
+          topic: "wled/audio_reactive/preset"
+          payload: '{"preset": 1, "brightness": 40}'
+
+# -----------------------------------------------------------------------------
+# OTOMASYON: Kullanıcı "Pişir" dedi → Multicooker başlat
+# -----------------------------------------------------------------------------
+automation:
+  - id: "jarvis_cooker_start_cooking"
+    alias: "Multicooker — Pişirme Başlat (Kullanıcı Onayı)"
+    description: >
+      Kullanıcı sesli "Pişir" veya NFC ile onayladığında multicooker'ı başlat.
+    trigger:
+      # Sesli komut: "Jarvis, pişir"
+      - platform: conversation
+        command:
+          - "pişir"
+          - "pişirmeye başla"
+          - "yemeği pişir"
+      # NFC tetikleyici (Modül 2)
+      - platform: tag
+        tag_id: "multicooker_start"
+    condition:
+      - condition: state
+        entity_id: input_select.jarvis_recipe_suggestion
+        state: "none"
+        alias: "Tarif seçili değil"
+        # not condition — tarif seçili OLMALI
+      - not:
+          - condition: state
+            entity_id: input_select.jarvis_recipe_suggestion
+            state: "none"
+    action:
+      # Multicooker'ı aç
+      - service: switch.turn_on
+        target:
+          entity_id: switch.multicooker_power
+
+      # Pişirme modunu başlat
+      - service: climate.set_hvac_mode
+        target:
+          entity_id: climate.smart_multicooker
+        data:
+          hvac_mode: "cook"
+
+      # Jarvis sesli onay
+      - service: tts.speak
+        target:
+          entity_id: tts.minimax_speech
+        data:
+          media_player_entity_id: media_player.jarvis_speaker
+          message: >
+            Elbette efendim. 
+            {{ states('input_select.jarvis_recipe_suggestion') | replace('_', ' ') }} 
+            pişiriyorum.
+
+      # WLED — pişirme başladı (sıcak turuncu)
+      - service: mqtt.publish
+        data:
+          topic: "wled/audio_reactive/preset"
+          payload: '{"preset": 2, "brightness": 50}'
+
+    mode: single
+    max_exceeded: silent
+
+  # ---------------------------------------------------------------------------
+  # OTOMASYON: Qwen-VL tarif önerisi → input_select güncelle
+  # ---------------------------------------------------------------------------
+  - id: "jarvis_cooker_vision_recipe_update"
+    alias: "Multicooker — Qwen-VL Tarif Önerisi"
+    description: >
+      Modül 13 (Vision Chef) Qwen-VL Max'tan gelen tarif önerisini
+      input_select'e yaz. Kullanıcı onayı beklenir.
+    trigger:
+      - platform: mqtt
+        topic: "jarvis/chef/recipe_suggestion"
+    action:
+      - service: input_select.select_option
+        target:
+          entity_id: input_select.jarvis_recipe_suggestion
+        data:
+          option: "{{ trigger.payload_json.recipe }}"
+
+      # Jarvis sesli öneri
+      - service: tts.speak
+        target:
+          entity_id: tts.minimax_speech
+        data:
+          media_player_entity_id: media_player.jarvis_speaker
+          message: >
+            Tezgaha bakıyorum efendim. 
+            {{ trigger.payload_json.recipe | replace('_', ' ') }} 
+            yapabiliriz. Onaylıyor musunuz?
+
+    mode: single
+    max_exceeded: silent
