@@ -1,0 +1,151 @@
+# =============================================================================
+# desktop_pet_kame — Modül Konfigürasyonu
+# =============================================================================
+# Modül 30: Desktop Pet Kame
+# Jarvis'in masadaki evcil hayvanı — 8-DOF dört bacaklı robot
+# Kamera/mikrofonu YOK — tüm zeka Jarvis'ten MQTT ile gelir
+# =============================================================================
+
+module:
+  name: "desktop_pet_kame"
+  number: 30
+  description: >
+    Jarvis'in masadaki fiziksel evcil hayvanı. 8-DOF dört bacaklı robot
+    (Kame — BQ açık kaynak). ESP8266 NodeMCU ile çalışır, kamera/mikrofonu
+    YOK. Tüm zeka Jarvis'ten (Modül 13 kamera + Modül 10 WLED mikrofon)
+    MQTT üzerinden gelir. Audio-reactive dans, Eye of Sauron otonom şarj,
+    Wingman misafir karşılama senaryoları.
+
+# =============================================================================
+# DONANIM
+# =============================================================================
+hardware:
+  # Ana işlemci
+  mcu: "esp8266_nodemcu_v3"
+
+  # Servo motorlar
+  servos:
+    count: 8
+    type: "SG90" # veya MG90S (metal dişli, önerilen)
+    dof: 8 # 4 bacak × 2 servo (hip + knee)
+    mechanism: "parallelogram" # Ayak her zaman zemine dik
+
+  # Güç
+  battery: "2S_LiPo_1000mAh_7.4V"
+  charge_module: "TP4056" # LiPo koruma
+  wireless_charge: "Qi_Receiver_Coil" # Otonom şarj
+
+  # 3D baskı
+  design: "Kame_BQ_Thingiverse_1265766"
+  filament: "PLA"
+  bearings: "F693ZZ × 8"
+
+  # Sensörler YOK — Kame'nin gözü/kulağı yok
+  # Tüm algılama Jarvis'ten (Modül 13 + 10) gelir
+  sensors: "none"
+
+# =============================================================================
+# AĞ — LOKAL İZOLASYON
+# =============================================================================
+network:
+  # ⚠️ ÇİN BULUTU YOK — sadece yerel ağ
+  isolation: "local_only"
+  cloud_connection: false
+
+  wifi:
+    ssid: "GL-MT3000"
+    # Sadece yerel ağa bağlan, dış sunucuya istek gönderme
+
+  mqtt:
+    broker: "gl-mt3000.local"
+    port: 1883
+    client_id: "kame-desktop-pet"
+
+    # Kame dinler (Cloud → Kame komutları)
+    subscribe_topics:
+      move: "kame/command/move" # {"dir": "forward", "steps": 3}
+      dance: "kame/command/dance" # {"bpm": 120, "beat": 1}
+      pose: "kame/command/pose" # {"pose": "bow"}
+      sit: "kame/command/sit"
+      stand: "kame/command/stand"
+
+    # Kame gönderir (Kame → Cloud durum)
+    publish_topics:
+      battery: "kame/status/battery" # {"level": 85}
+      alive: "kame/status/alive" # {"heartbeat": 1}
+
+# =============================================================================
+# MODÜL ENTEGRASYONLARI
+# =============================================================================
+integrations:
+  # Modül 10: Audio Reactive WLED — BPM/beat verisi
+  audio_reactive:
+    source_module: 10
+    source: "WLED INMP441"
+    data: "BPM + beat + energy"
+    frequency: "10 Hz" # Saniyede 10 beat gönderimi
+    mqtt_topic: "kame/command/dance"
+    # Kame beat'e göre: çömel/kalk/ayak vur/spin
+
+  # Modül 13: Vision Chef / Tapo C200 — Kame konum takibi
+  eye_of_sauron:
+    source_module: 13
+    source: "Tapo C200 IP Camera"
+    data: "Kame masadaki konumu (OpenCV renk filtre)"
+    purpose: "Otonom şarj parkı"
+    mqtt_topic: "kame/command/move"
+    # Kame şarjı < %20 → Eye of Sauron park modu
+
+  # Modül 2: Hidden Triggers — Misafir varlığı
+  wingman:
+    source_module: 2
+    source: "NFC / kapı sensörü"
+    data: "Misafir geldi/gitti"
+    purpose: "Misafir karşılama"
+    mqtt_topic: "kame/command/move + pose"
+
+# =============================================================================
+# SENARYOLAR
+# =============================================================================
+scenarios:
+  # 1. Audio-Reactive Dans
+  dance:
+    enabled: true
+    description: "WLED BPM'e senkron dans (çömel/kalk/ayak vur)"
+    cooldown_sec: 0 # Müzik süresince aktif
+
+  # 2. Eye of Sauron Otonom Şarj
+  auto_park:
+    enabled: true
+    description: "Batarya < %20 → Tapo C200 ile konum bul → Qi pede park"
+    battery_threshold: 20
+    max_steps: 20
+    position_tolerance: 0.05 # normalize
+
+  # 3. Wingman Karşılama
+  wingman:
+    enabled: true
+    description: "Misafir geldi → Kame kalk + 3 adım yürü + baş eğ"
+    cooldown_sec: 300 # 5 dk
+    night_mode_start: "23:00"
+    night_mode_end: "08:00"
+
+# =============================================================================
+# GÜVENLIK
+# =============================================================================
+safety:
+  # Servo açı sınırları (derece)
+  servo_limits:
+    hip: [45, 135] # Kalça eklemleri
+    knee: [30, 150] # Diz eklemleri
+
+  # Hareket hızı
+  max_speed_deg_per_ms: 0.5 # 0.5°/ms → pürüzsüz
+
+  # Batarya koruma
+  min_battery_pct: 10 # %10 altında → hareket durur
+  low_battery_alert: 20 # %20 → Eye of Sauron park
+
+  # Lokal izolasyon
+  no_cloud: true # Hiçbir dış sunucuya bağlanma
+  local_only: true

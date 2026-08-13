@@ -1,0 +1,212 @@
+# =============================================================================
+# desktop_pet_kame — Audio-Reactive Dans Otomasyonu (Modül 10 Entegrasyonu)
+# =============================================================================
+# Kame'nin mikrofonu YOK. Odadaki WLED sistemi (Modül 10) INMP441 ile
+# müziğin BPM/ritim verisini alır ve saniyede 10 kez MQTT üzerinden
+# Kame'ye iletir. Kame bu ritme göre senkron dans eder.
+#
+# 🎵 MANTIK:
+# 1. WLED (INMP441) → ses analizi → BPM + beat tespiti
+# 2. WLED → MQTT "kame/command/dance" → {"bpm": 120, "beat": 1}
+# 3. Kame ESP8266 → beat'e göre çömel/kalk/ayak vur
+# 4. Müzik durduğunda → Kame çömel (uyku modu)
+#
+# 🎯 SENKRONİZASYON:
+# WLED saniyede 10 kez beat gönderir (10 Hz).
+# Kame her beat'te bir hareket yapar:
+#   Çift beat → çömel (bass drop)
+#   Tek beat → kalk + ayak vuru
+#   8 beat'te bir → spin (dönüş)
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# SENSOR: WLED'den gelen BPM verisi (MQTT discovery)
+# -----------------------------------------------------------------------------
+mqtt:
+  sensor:
+    - name: "WLED Audio BPM"
+      state_topic: "wled/audio_reactive/bpm"
+      value_template: "{{ value_json.bpm | round(1) }}"
+      unit_of_measurement: "BPM"
+      icon: mdi:music-note
+
+    - name: "WLED Audio Beat"
+      state_topic: "wled/audio_reactive/beat"
+      value_template: "{{ value_json.beat }}"
+      icon: mdi:drum
+
+    - name: "WLED Audio Energy"
+      state_topic: "wled/audio_reactive/energy"
+      value_template: "{{ value_json.energy | round(2) }}"
+      icon: mdi:flash
+
+  binary_sensor:
+    - name: "WLED Music Playing"
+      state_topic: "wled/audio_reactive/energy"
+      value_template: "{{ value_json.energy > 0.1 }}"
+      payload_on: true
+      payload_off: false
+      delay_off:
+        seconds: 5 # 5 sn sessizlik → müzik durdu
+
+# -----------------------------------------------------------------------------
+# INPUT BOOLEAN: Kame dans modu aktif/pasif
+# -----------------------------------------------------------------------------
+input_boolean:
+  kame_dance_mode:
+    name: "Kame Dans Modu"
+    icon: mdi:robot-dance
+    initial: true
+
+  kame_dance_when_guest:
+    name: "Misafir Varken Dans"
+    icon: mdi:account-group
+    initial: false # Misafir varken dansı kapat (rahatsız etme)
+
+# -----------------------------------------------------------------------------
+# OTOMASYON 1: Müzik başladı → Kame dans et
+# -----------------------------------------------------------------------------
+automation:
+  - id: "kame_dance_music_start"
+    alias: "Kame — Müzik Başladı, Dans Et"
+    description: >
+      WLED müzik algıladığında Kame'ye BPM verisini gönder ve dans modunu başlat.
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.wled_music_playing
+        to: "on"
+    condition:
+      - condition: state
+        entity_id: input_boolean.kame_dance_mode
+        state: "on"
+      # Misafir varsa dansı kapat
+      - condition: state
+        entity_id: input_boolean.kame_dance_when_guest
+        state: "off"
+      - condition: template
+        value_template: "{{ states('binary_sensor.guest_present') != 'on' }}"
+    action:
+      # Kame'ye dans komutu gönder — ilk beat
+      - service: mqtt.publish
+        data:
+          topic: "kame/command/dance"
+          payload: >
+            {
+              "bpm": {{ states('sensor.wled_audio_bpm') | int(120) }},
+              "beat": 0,
+              "energy": {{ states('sensor.wled_audio_energy') | float(0.5) }}
+            }
+
+      # Jarvis duyurusu (kısa)
+      - service: tts.speak
+        target:
+          entity_id: tts.minimax_speech
+        data:
+          media_player_entity_id: media_player.jarvis_speaker
+          message: "Kame dans ediyor efendim."
+
+    mode: single
+    max_exceeded: silent
+
+  # ---------------------------------------------------------------------------
+  # OTOMASYON 2: Beat → Kame'ye ilet (10 Hz döngü)
+  # ---------------------------------------------------------------------------
+  - id: "kame_dance_beat_relay"
+    alias: "Kame — Beat Relay (10Hz)"
+    description: >
+      WLED'den gelen her beat'i Kame'ye ilet. WLED saniyede 10 kez
+      beat gönderir, bu otomasyon her beat'te Kame'ye komut yollar.
+    trigger:
+      - platform: state
+        entity_id: sensor.wled_audio_beat
+    condition:
+      - condition: state
+        entity_id: binary_sensor.wled_music_playing
+        state: "on"
+      - condition: state
+        entity_id: input_boolean.kame_dance_mode
+        state: "on"
+    action:
+      - service: mqtt.publish
+        data:
+          topic: "kame/command/dance"
+          payload: >
+            {
+              "bpm": {{ states('sensor.wled_audio_bpm') | int(120) }},
+              "beat": {{ states('sensor.wled_audio_beat') | int(0) }},
+              "energy": {{ states('sensor.wled_audio_energy') | float(0.5) }}
+            }
+    mode: queued
+    max: 20 # Sıraya alınmış beat'ler
+
+  # ---------------------------------------------------------------------------
+  # OTOMASYON 3: Müzik durdu → Kame çömel (uyku)
+  # ---------------------------------------------------------------------------
+  - id: "kame_dance_music_stop"
+    alias: "Kame — Müzik Durdu, Çömel"
+    description: >
+      WLED 5 sn sessizlik algıladığında Kame'ye çömelme komutu gönder.
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.wled_music_playing
+        to: "off"
+    condition:
+      - condition: state
+        entity_id: input_boolean.kame_dance_mode
+        state: "on"
+    action:
+      - service: mqtt.publish
+        data:
+          topic: "kame/command/sit"
+          payload: "{}"
+
+      # 3 sn sonra tam uyku pozisyonu
+      - delay:
+          seconds: 3
+      - service: mqtt.publish
+        data:
+          topic: "kame/command/pose"
+          payload: '{"pose": "tilt"}' # "Uyuyan" pozisyon
+
+    mode: single
+    max_exceeded: silent
+
+  # ---------------------------------------------------------------------------
+  # OTOMASYON 4: BPM değişti → Kame'ye yeni tempo bildir
+  # ---------------------------------------------------------------------------
+  - id: "kame_dance_bpm_change"
+    alias: "Kame — BPM Değişti"
+    description: >
+      Müzik temposu (BPM) önemli ölçüde değiştiğinde Kame'ye bildir.
+      Kame dans hızını yeni BPM'e ayarlar.
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.wled_audio_bpm
+        above: 0
+    condition:
+      - condition: template
+        value_template: >
+          {{ (trigger.to_state.state | float - trigger.from_state.state | float) | abs > 10 }}
+      - condition: state
+        entity_id: binary_sensor.wled_music_playing
+        state: "on"
+    action:
+      - service: mqtt.publish
+        data:
+          topic: "kame/command/dance"
+          payload: >
+            {
+              "bpm": {{ trigger.to_state.state | int }},
+              "beat": 0,
+              "energy": {{ states('sensor.wled_audio_energy') | float(0.5) }},
+              "tempo_change": true
+            }
+      - service: persistent_notification.create
+        data:
+          title: "🎵 Kame Tempo Değişikliği"
+          message: >
+            BPM: {{ trigger.from_state.state }} → {{ trigger.to_state.state }}
+            Kame dans hızını ayarlıyor.
+
+    mode: single
+    max_exceeded: silent

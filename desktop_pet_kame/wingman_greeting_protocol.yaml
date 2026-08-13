@@ -1,0 +1,252 @@
+# =============================================================================
+# desktop_pet_kame — Wingman Karşılama Protokolü
+# =============================================================================
+# Odaya misafir girdiğinde, Jarvis ışıkları loş amber yapıp sesli karşılama
+# yaparken, uyuyan Kame ayağa kalkıp misafire doğru 3 adım atarak
+# "selamlama (baş eğme)" hareketi yapar.
+#
+# 🐾 "WINGMAN" MANTIĞI:
+# Kame, Jarvis'in "sahne evcil hayvanı"dır. Misafir odaya girdiğinde:
+# 1. Jarvis: Işıklar amber, difüzör açılır, müzik yumuşar
+# 2. Jarvis: "Hoş geldiniz efendim" sesli karşılama (MiniMax)
+# 3. Kame: Uyku pozisyonundan kalk → misafire 3 adım yürü → baş eğ (bow)
+# 4. Kame: 2 sn bekleyip masaya geri dön → çömel (uyku)
+#
+# 🎯 "PREMIUM" HİSSİ:
+# Misafir, odaya girer girmez hem sesli karşılama hem de fiziksel
+# bir robotun "selamlaması" alır → "wow" faktörü → premium hissi.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# INPUT BOOLEAN: Wingman modu aktif/pasif
+# -----------------------------------------------------------------------------
+input_boolean:
+  kame_wingman_mode:
+    name: "Kame Wingman Karşılama"
+    icon: mdi:hand-wave
+    initial: true
+
+  kame_sleeping:
+    name: "Kame Uyuyor"
+    icon: mdi:sleep
+    initial: true
+
+# -----------------------------------------------------------------------------
+# OTOMASYON 1: Misafir geldi → Wingman karşılama
+# -----------------------------------------------------------------------------
+automation:
+  - id: "kame_wingman_guest_arrival"
+    alias: "Kame Wingman — Misafir Karşılama"
+    description: >
+      Misafir odaya girdiğinde Kame ayağa kalkıp misafire yürür ve baş eğer.
+    trigger:
+      # Modül 2 (Hidden Triggers) NFC veya kapı sensörü
+      - platform: state
+        entity_id: binary_sensor.guest_present
+        to: "on"
+      # VEYA kapı açıldı
+      - platform: state
+        entity_id: binary_sensor.door_contact
+        to: "on"
+    condition:
+      - condition: state
+        entity_id: input_boolean.kame_wingman_mode
+        state: "on"
+      # Kame uyuyorsa uyandır (sadece uyuyan Kame karşılama yapar)
+      - condition: state
+        entity_id: input_boolean.kame_sleeping
+        state: "on"
+      # Misafir zaten karşılanmadı (cooldown)
+      - condition: template
+        value_template: >
+          {{ (as_timestamp(now()) - 
+              as_timestamp(states.input_datetime.last_guest_greeting.state | default(0))) > 300 }}
+    action:
+      # === FAZ 1: Jarvis ortamı hazırla ===
+      # Işıklar loş amber
+      - service: light.turn_on
+        target:
+          entity_id: light.room_ambient
+        data:
+          brightness_pct: 30
+          color_name: amber
+          transition: 3
+
+      # Difüzör aç (hoş geldin kokusu)
+      - service: switch.turn_on
+        target:
+          entity_id: switch.smart_diffuser
+
+      # Müzik yumuşak lounge
+      - service: mqtt.publish
+        data:
+          topic: "wled/audio_reactive/preset"
+          payload: '{"preset": 1}' # Date Lounge Vibe
+
+      # === FAZ 2: Kame'yi uyandır ===
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.kame_sleeping
+
+      # Kame ayağa kalk
+      - service: mqtt.publish
+        data:
+          topic: "kame/command/stand"
+          payload: "{}"
+
+      # 1 sn bekle (kalkma animasyonu)
+      - delay:
+          seconds: 1
+
+      # === FAZ 3: Kame misafire yürü (3 adım) ===
+      - repeat:
+          count: 3
+          sequence:
+            - service: mqtt.publish
+              data:
+                topic: "kame/command/move"
+                payload: '{"dir": "forward", "steps": 1}'
+            - delay:
+                seconds: 1
+
+      # === FAZ 4: Baş eğme (bow) — selamlama ===
+      - service: mqtt.publish
+        data:
+          topic: "kame/command/pose"
+          payload: '{"pose": "bow"}'
+
+      # === FAZ 5: Jarvis sesli karşılama ===
+      - service: tts.speak
+        target:
+          entity_id: tts.minimax_speech
+        data:
+          media_player_entity_id: media_player.jarvis_speaker
+          message: >
+            Hoş geldiniz efendim. Ben Jarvis, 
+            ve bu masadaki küçük arkadaşım Kame.
+
+      # === FAZ 6: Kame geri dön ve uyu ===
+      - delay:
+          seconds: 5
+
+      # Geri dön (3 adım geri)
+      - repeat:
+          count: 3
+          sequence:
+            - service: mqtt.publish
+              data:
+                topic: "kame/command/move"
+                payload: '{"dir": "backward", "steps": 1}'
+            - delay:
+                seconds: 1
+
+      # Çömel (uyku pozisyonu)
+      - service: mqtt.publish
+        data:
+          topic: "kame/command/sit"
+          payload: "{}"
+
+      # Uyuyor işaretini aç
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.kame_sleeping
+
+      # Son karşılama zamanını kaydet
+      - service: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.last_guest_greeting
+        data:
+          datetime: "{{ now() }}"
+
+    mode: single
+    max_exceeded: silent
+
+  # ---------------------------------------------------------------------------
+  # OTOMASYON 2: Misafir gitti → Kame uyku moduna dön
+  # ---------------------------------------------------------------------------
+  - id: "kame_wingman_guest_left"
+    alias: "Kame Wingman — Misafir Gitti"
+    description: >
+      Misafir odadan çıktığında Kame uyku moduna döner.
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.guest_present
+        to: "off"
+        for:
+          minutes: 2
+    condition:
+      - condition: state
+        entity_id: input_boolean.kame_sleeping
+        state: "off"
+    action:
+      # Kame çömel
+      - service: mqtt.publish
+        data:
+          topic: "kame/command/sit"
+          payload: "{}"
+
+      # Uyku işareti
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.kame_sleeping
+
+      # Işıklar normale dön
+      - service: light.turn_on
+        target:
+          entity_id: light.room_ambient
+        data:
+          brightness_pct: 60
+          color_name: warm_white
+          transition: 5
+
+    mode: single
+
+  # ---------------------------------------------------------------------------
+  # OTOMASYON 3: Gece → Kame uyku (wingman kapalı)
+  # ---------------------------------------------------------------------------
+  - id: "kame_wingman_night_sleep"
+    alias: "Kame Wingman — Gece Uyku Modu"
+    trigger:
+      - platform: time
+        at: "23:00:00"
+    action:
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.kame_wingman_mode
+      - service: mqtt.publish
+        data:
+          topic: "kame/command/sit"
+          payload: "{}"
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.kame_sleeping
+
+    mode: single
+
+  - id: "kame_wingman_morning_wake"
+    alias: "Kame Wingman — Sabah Uyanma"
+    trigger:
+      - platform: time
+        at: "08:00:00"
+    action:
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.kame_wingman_mode
+      - service: mqtt.publish
+        data:
+          topic: "kame/command/stand"
+          payload: "{}"
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.kame_sleeping
+
+    mode: single
+
+# -----------------------------------------------------------------------------
+# INPUT DATETIME: Son karşılama zamanı (cooldown için)
+# -----------------------------------------------------------------------------
+input_datetime:
+  last_guest_greeting:
+    name: "Son Misafir Karşılama"
+    has_time: true
+    has_date: true
