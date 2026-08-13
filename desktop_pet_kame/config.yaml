@@ -11,17 +11,17 @@ module:
   number: 30
   description: >
     Jarvis'in masadaki fiziksel evcil hayvanı. 8-DOF dört bacaklı robot
-    (Kame — BQ açık kaynak). ESP8266 NodeMCU ile çalışır, kamera/mikrofonu
-    YOK. Tüm zeka Jarvis'ten (Modül 13 kamera + Modül 10 WLED mikrofon)
-    MQTT üzerinden gelir. Audio-reactive dans, Eye of Sauron otonom şarj,
-    Wingman misafir karşılama senaryoları.
+    (Kame32 — BQ açık kaynak, güncel versiyon). ESP32 DevKit ile çalışır,
+    kamera/mikrofonu YOK. Tüm zeka Jarvis'ten (Modül 13 kamera + Modül 10
+    WLED mikrofon) MQTT üzerinden gelir. Audio-reactive dans, Eye of Sauron
+    otonom şarj, Wingman misafir karşılama senaryoları.
 
 # =============================================================================
 # DONANIM
 # =============================================================================
 hardware:
   # Ana işlemci
-  mcu: "esp8266_nodemcu_v3"
+  mcu: "esp32_devkit_v1"
 
   # Servo motorlar
   servos:

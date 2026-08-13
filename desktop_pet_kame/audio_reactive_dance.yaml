@@ -8,7 +8,7 @@
 # 🎵 MANTIK:
 # 1. WLED (INMP441) → ses analizi → BPM + beat tespiti
 # 2. WLED → MQTT "kame/command/dance" → {"bpm": 120, "beat": 1}
-# 3. Kame ESP8266 → beat'e göre çömel/kalk/ayak vur
+# 3. Kame ESP32 → beat'e göre çömel/kalk/ayak vur
 # 4. Müzik durduğunda → Kame çömel (uyku modu)
 #
 # 🎯 SENKRONİZASYON:

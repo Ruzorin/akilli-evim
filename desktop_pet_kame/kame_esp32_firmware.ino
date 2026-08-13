@@ -1,8 +1,9 @@
 /*
  =============================================================================
- desktop_pet_kame — ESP8266 NodeMCU Firmware (Kame Robot)
+ desktop_pet_kame — ESP32 Firmware (Kame32 Robot)
  =============================================================================
  2026 Sürümü — Jarvis'in masadaki evcil hayvanı
+ Kame32: Güncel tasarım — ESP32 + 8× SG90/MG90S
 
  🔒 LOKAL İZOLASYON:
     Bu firmware ÇİN BULUTU'na bağlanmaz. Sadece yerel MQTT broker'a
@@ -26,15 +27,24 @@
  GEREKLİ KÜTÜPHANELER:
     Arduino IDE → Library Manager:
     - PubSubClient (MQTT)
-    - ESP8266WiFi (dahili)
+    - ESP32Servo (ESP32 servo kontrolü — standart Servo.h ESP32'de çalışmaz)
+    - ArduinoJson (JSON parse)
+    - WiFi (ESP32 dahili)
+
+ 🔧 ESP32 KAME32 DONANIM:
+    MCU: ESP32 DevKit V1 (38 pin — dual-core Xtensa LX6 240MHz)
+    Servo: 8 × SG90/MG90S
+    Pil: 2S LiPo 7.4V (voltage divider → GPIO34 ADC)
+    WiFi: Dahili 2.4GHz
 
  =============================================================================
 */
 
-#include <ESP8266WiFi.h>
+#include <WiFi.h>
 #include <PubSubClient.h>
-#include <Servo.h>
+#include <ESP32Servo.h>
 #include <ArduinoJson.h>
+#include <ESPmDNS.h>
 
 // =============================================================================
 // KONFIGÜRASYON
@@ -47,12 +57,12 @@ const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
 // MQTT — Yerel broker (ÇİN BULUTU YOK!)
 const char* MQTT_BROKER = "gl-mt3000.local";
 const int MQTT_PORT = 1883;
-const char* MQTT_CLIENT_ID = "kame-desktop-pet";
+const char* MQTT_CLIENT_ID = "kame32-desktop-pet";
 
-// Servo pin'leri (ESP8266 NodeMCU)
-// D1=GPIO5, D2=GPIO4, D3=GPIO0, D4=GPIO2
-// D5=GPIO14, D6=GPIO12, D7=GPIO13, D8=GPIO15
-const int SERVO_PINS[8] = {D1, D2, D3, D4, D5, D6, D7, D8};
+// Servo pin'leri (ESP32 DevKit V1 — 38 pin)
+// Boot-safe pin'ler seçildi (strapping pin 0,2,5,12,15 kullanılmaz)
+// 13,14,16,17,18,19,21,22 — hepsi PWM destekler
+const int SERVO_PINS[8] = {13, 14, 16, 17, 18, 19, 21, 22};
 
 // Servo kanal eşlemesi
 // 0: Sol Ön Hip, 1: Sol Ön Knee
@@ -69,10 +79,12 @@ const int SERVO_MAX = 150;
 const int WALK_SPEED = 3;      // derece/adım
 const int DANCE_SPEED = 5;     // derece/adım (dans daha hızlı)
 
-// Batarya ölçüm (Analog A0 pin)
-const int BATTERY_PIN = A0;
-const float BATTERY_FULL = 840;   // 2S LiPo tam = 8.4V → A0 ~840
-const float BATTERY_EMPTY = 660;  // 2S LiPo boş = 6.6V → A0 ~660
+// Batarya ölçüm (ESP32 ADC1 — GPIO34, input-only pin)
+// ESP32 ADC 12-bit (0-4095), max 3.3V
+// 2S LiPo 7.4V → voltage divider (R1=10k, R2=4.7k) → 7.4×4.7/14.7 ≈ 2.37V
+const int BATTERY_PIN = 34;
+const float BATTERY_FULL = 2930;   // 8.4V → 2.70V ADC → ~2930 (12-bit)
+const float BATTERY_EMPTY = 2300;  // 6.6V → 2.11V ADC → ~2300
 
 // =============================================================================
 // GLOBAL DEĞİŞKENLER
@@ -98,15 +110,26 @@ unsigned long lastBeatTime = 0;
 
 void setup() {
   Serial.begin(115200);
-  Serial.println("\n=== Kame Desktop Pet ===");
+  Serial.println("\n=== Kame32 Desktop Pet (ESP32) ===");
+
+  // ESP32 Servo timer ayarı (ESP32Servo kütüphanesi)
+  ESP32PWM::allocateTimer(0);
+  ESP32PWM::allocateTimer(1);
+  ESP32PWM::allocateTimer(2);
+  ESP32PWM::allocateTimer(3);
 
   // Servo'ları başlat
   for (int i = 0; i < 8; i++) {
-    servos[i].attach(SERVO_PINS[i]);
+    servos[i].setPeriodHertz(50);  // Standart 50Hz servo
+    servos[i].attach(SERVO_PINS[i], 500, 2400);  // Min/max PWM µs
     servos[i].write(SERVO_CENTER[i]);
     currentPose[i] = SERVO_CENTER[i];
   }
-  Serial.println("8 servo başlatıldı");
+  Serial.println("8 servo başlatıldı (ESP32)");
+
+  // ADC çözünürlüğü (ESP32 12-bit)
+  analogReadResolution(12);
+  analogSetAttenuation(ADC_11db);  // 0-3.3V tam aralık
 
   // WiFi bağlan
   WiFi.mode(WIFI_STA);  // Sadece istemci (AP kapalı)
@@ -119,15 +142,17 @@ void setup() {
   }
   Serial.println("\nWiFi bağlandı: " + WiFi.localIP().toString());
 
+  // mDNS (kame32.local)
+  if (MDNS.begin("kame32")) {
+    Serial.println("mDNS: kame32.local");
+  }
+
   // MQTT kur
   mqtt.setServer(MQTT_BROKER, MQTT_PORT);
   mqtt.setCallback(mqttCallback);
   mqtt.setBufferSize(512);
 
-  // mDNS (kame.local)
-  // Arduino IDE → ESP8266 mDNS kütüphanesi gerekli
-
-  Serial.println("Kame hazır — MQTT bekleniyor...");
+  Serial.println("Kame32 hazır — MQTT bekleniyor...");
 }
 
 // =============================================================================
@@ -135,7 +160,7 @@ void setup() {
 // =============================================================================
 
 void loop() {
-  // MQTT bağlantısı维持
+  // MQTT bağlantısı
   if (!mqtt.connected()) {
     mqttReconnect();
   }
@@ -394,6 +419,7 @@ void strikePose(String pose) {
 // =============================================================================
 
 void checkBattery() {
+  // ESP32 ADC 12-bit (0-4095)
   int raw = analogRead(BATTERY_PIN);
   float level = map(raw, (int)BATTERY_EMPTY, (int)BATTERY_FULL, 0, 100);
   level = constrain(level, 0, 100);
@@ -401,7 +427,7 @@ void checkBattery() {
   String payload = "{\"level\":" + String((int)level) + "}";
   mqtt.publish("kame/status/battery", payload.c_str());
 
-  Serial.println("Batarya: " + String((int)level) + "%");
+  Serial.println("Batarya: " + String((int)level) + "% (ADC: " + String(raw) + ")");
 
   // Şarj azsa uyar
   if (level < 20) {

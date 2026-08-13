@@ -562,7 +562,7 @@ akilli-evim/
 │   └── config.yaml
 └── desktop_pet_kame/               ← Modül 30: Desktop Pet Kame (8-DOF Quadruped)
     ├── hardware_and_assembly.md
-    ├── kame_esp8266_firmware.ino
+    ├── kame_esp32_firmware.ino
     ├── audio_reactive_dance.yaml
     ├── eye_of_sauron_parking.py
     ├── wingman_greeting_protocol.yaml

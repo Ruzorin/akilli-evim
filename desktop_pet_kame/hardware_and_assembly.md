@@ -6,23 +6,28 @@
 
 ---
 
-## 🐾 Kame Nedir?
+## 🐾 Kame32 Nedir?
 
-Kame, BQ Innovation Lab (Javier Isabel) tarafından geliştirilen açık kaynak
-3D basılabilir dört bacaklı robottur. 8 serbestlik derecesi (DOF) ile
+Kame32, BQ Innovation Lab'in orijinal Kame robotunun güncel, bütçe dostu
+versiyonudur. Orijinal Kame pahalı ve bulunması zor Turnigy servolar
+gerektiriyordu. Kame32 ise her yerde bulunan ucuz parçalarla yeniden
+tasarlandı — ESP32 + 8× SG90/MG90S.
+
+3D basılabilir dört bacaklı robot, 8 serbestlik derecesi (DOF) ile
 her bacakta 2 servo — paralelgram mekanizması ile ayak her zaman zemine
 dik kalır.
 
 | Özellik | Detay |
 |---------|-------|
-| **Tasarım** | Kame by BQ — Thingiverse #1265766 |
+| **Tasarım** | Kame32 (Kame by BQ — güncel versiyon) |
 | **Kaynak** | https://www.thingiverse.com/thing:1265766 |
 | **Lisans** | CC BY-SA 3.0 |
 | **DOF** | 8 (4 bacak × 2 servo) |
 | **Mekanizma** | Paralelgram — ayak zemine dik |
 | **Rulman** | F693ZZ (PLA parçalara tam oturur) |
-| **İşlemci** | ESP8266 NodeMCU v3 |
-| **Güç** | 2S LiPo (7.4V) — HV servo doğrudan |
+| **İşlemci** | ESP32 DevKit V1 (dual-core 240MHz) |
+| **Servo** | 8× SG90 veya MG90S (her yerde bulunur) |
+| **Güç** | 2S LiPo (7.4V) — voltage divider ile ADC |
 
 ---
 
@@ -44,16 +49,17 @@ dik kalır.
                    │ Local LAN (WiFi)
                    │
     ┌──────────────▼──────────────┐
-    │   ESP8266 NodeMCU (Kame)     │
+    │   ESP32 DevKit (Kame32)     │
     │   ⚠️ ÇİN BULUTU YOK!         │
     │   Sadece yerel MQTT dinler   │
     │   8 × SG90/MG90S servo       │
     └─────────────────────────────┘
 ```
 
-**Kritik:** ESP8266 NodeMCU varsayılan olarak Blynk/Tuya çin bulutuna
-bağlanmaya çalışır. Biz bunu DISABLE edip SADECE yerel MQTT broker'a
-(GL-MT3000) bağlanacak şekilde izole ederiz.
+**Kritik:** ESP32 DevKit varsayılan olarak herhangi bir buluta
+bağlanmaz (ESP8266 NodeMCU'daki Blynk/Tuya sorunu yoktur). Yine de
+WiFi'ı SADECE yerel MQTT broker'a (GL-MT3000) bağlanacak şekilde
+izole ederiz — hiçbir dış sunucuya istek göndermez.
 
 ---
 
@@ -63,16 +69,17 @@ bağlanmaya çalışır. Biz bunu DISABLE edip SADECE yerel MQTT broker'a
 
 | # | Malzeme | Adet | Fiyat (₺) | Not |
 |---|---------|------|-----------|-----|
-| 1 | ESP8266 NodeMCU v3 (CH340) | 1 | ~120 | Ana işlemci — WiFi + MQTT |
+| 1 | ESP32 DevKit V1 (38 pin, dual-core) | 1 | ~150 | Ana işlemci — WiFi + MQTT + PWM |
 | 2 | SG90 Micro Servo (1.8kg-cm) | 8 | ~25/adet | 4 bacak × 2 servo (hafif Kame) |
 |   | — VEYA — MG90S Metal Dişli (2.2kg-cm) | 8 | ~35/adet | Daha dayanıklı (önerilen) |
-| 3 | 2S LiPo Batarya 1000mAh (7.4V) | 1 | ~150 | HV servo doğrudan besler |
+| 3 | 2S LiPo Batarya 1000mAh (7.4V) | 1 | ~150 | Voltage divider ile ADC'ye |
 | 4 | TP4056 Şarj Modülü (koruma dahil) | 1 | ~15 | LiPo şarj koruması |
 | 5 | 1000µF/16V Elektrolitik Kondansatör | 1 | ~10 | Servo güç dalgalanması |
 | 6 | Qi Receiver Coil (kablosuz şarj) | 1 | ~60 | Otonom şarj pad'i |
 | 7 | Slide Switch (aç/kapa) | 1 | ~5 | Güç anahtarı |
+| 8 | 10kΩ + 4.7kΩ Direnç (voltage divider) | 1 set | ~5 | LiPo → ESP32 ADC için |
 
-**Ara Toplam (SG90): ~560₺ / (MG90S): ~640₺**
+**Ara Toplam (SG90): ~590₺ / (MG90S): ~670₺**
 
 ### 2. 3D Baskı
 
@@ -99,32 +106,46 @@ bağlanmaya çalışır. Biz bunu DISABLE edip SADECE yerel MQTT broker'a
 
 | Kategori | SG90 | MG90S |
 |----------|------|-------|
-| Elektronik | ~560₺ | ~640₺ |
+| Elektronik | ~590₺ | ~670₺ |
 | 3D Baskı | ~300₺ | ~300₺ |
 | Şarj İstasyonu | ~160₺ | ~160₺ |
-| **TOPLAM** | **~1.020₺ (~$30)** | **~1.100₺ (~$33)** |
+| **TOPLAM** | **~1.050₺ (~$31)** | **~1.130₺ (~$34)** |
 
 ---
 
-## 🔧 ESP8266 Pin Bağlantıları
+## 🔧 ESP32 Pin Bağlantıları
 
 ### Servo Kanal Ataması
 
-| Servo | ESP8266 Pin | Bacak | Eksen | Açı Aralığı |
-|-------|-------------|-------|-------|-------------|
-| 1 | D1 (GPIO5) | Sol Ön | Hip (kalça) | 45-135° |
-| 2 | D2 (GPIO4) | Sol Ön | Knee (diz) | 30-150° |
-| 3 | D3 (GPIO0) | Sağ Ön | Hip | 45-135° |
-| 4 | D4 (GPIO2) | Sağ Ön | Knee | 30-150° |
-| 5 | D5 (GPIO14) | Sol Arka | Hip | 45-135° |
-| 6 | D6 (GPIO12) | Sol Arka | Knee | 30-150° |
-| 7 | D7 (GPIO13) | Sağ Arka | Hip | 45-135° |
-| 8 | D8 (GPIO15) | Sağ Arka | Knee | 30-150° |
+ESP32 DevKit V1 — boot-safe pin'ler seçildi (strapping pin 0,2,5,12,15 kullanılmaz)
+
+| Servo | ESP32 Pin | Bacak | Eksen | Açı Aralığı |
+|-------|-----------|-------|-------|-------------|
+| 1 | GPIO 13 | Sol Ön | Hip (kalça) | 45-135° |
+| 2 | GPIO 14 | Sol Ön | Knee (diz) | 30-150° |
+| 3 | GPIO 16 | Sağ Ön | Hip | 45-135° |
+| 4 | GPIO 17 | Sağ Ön | Knee | 30-150° |
+| 5 | GPIO 18 | Sol Arka | Hip | 45-135° |
+| 6 | GPIO 19 | Sol Arka | Knee | 30-150° |
+| 7 | GPIO 21 | Sağ Arka | Hip | 45-135° |
+| 8 | GPIO 22 | Sağ Arka | Knee | 30-150° |
+
+### Batarya Ölçüm (Voltage Divider)
+
+```
+  2S LiPo (+) ──[ 10kΩ ]──┬──[ 4.7kΩ ]── GND
+                           │
+                           └── GPIO 34 (ADC1_CH6, input-only)
+
+  7.4V × 4.7/(10+4.7) ≈ 2.37V → ESP32 ADC (12-bit, 0-4095)
+  8.4V (full) → ~2.70V → ~2930
+  6.6V (empty) → ~2.11V → ~2300
+```
 
 ### Güç Bağlantısı
 
 ```
-  2S LiPo (7.4V) ──┬── Switch ──┬── ESP8266 Vin (5V pin'e bağla)
+  2S LiPo (7.4V) ──┬── Switch ──┬── ESP32 Vin (5V pin'e bağla)
                    │             │
                    │             ├── Servo VCC (tüm 8 servo)
                    │             │
@@ -132,26 +153,29 @@ bağlanmaya çalışır. Biz bunu DISABLE edip SADECE yerel MQTT broker'a
                    │
                    └── TP4056 ── Qi Receiver Coil (şarj için)
 
-  GND ── Ortak (ESP8266 + Servo + LiPo + TP4056)
+  GND ── Ortak (ESP32 + Servo + LiPo + TP4056)
 ```
 
-⚠️ **Servoları ESP8266'dan BESLEME!** 8 servo peak ~8A — ESP8266'nın
-3.3V pin'i SADECE ~12mA verebilir. LiPo'dan doğrudan besle.
+⚠️ **Servoları ESP32'den BESLEME!** 8 servo peak ~8A — ESP32'nin
+3.3V pin'i SADECE ~20mA verebilir. LiPo'dan doğrudan besle.
+ESP32'nin 5V Vin pin'i de yeterli gücü sağlamaz — servo güç hattını
+ayrı bir hat olarak LiPo'dan çek.
 
 ---
 
 ## 🔒 Lokal İzolasyon — Çin Bulutu Devre Dışı
 
-ESP8266 NodeMCU varsayılan firmware'leri (Blynk, Tuya, WeMo) çin
-bulut sunucularına bağlanır. Biz bunu tamamen devre dışı bırakır:
+ESP32 DevKit varsayılan olarak herhangi bir buluta bağlanmaz
+(ESP8266 NodeMCU'daki Blynk/Tuya/WeMo sorunu yoktur). Yine de
+tam izolasyon için:
 
 ### İzolasyon Adımları
 
-1. **Arduino IDE ile özel firmware yükle** (`kame_esp8266_firmware.ino`)
+1. **Arduino IDE ile özel firmware yükle** (`kame_esp32_firmware.ino`)
 2. **WiFi:** Sadece GL-MT3000 ağına bağlan (SSID: GL-MT3000)
 3. **MQTT:** Sadece yerel broker (gl-mt3000.local:1883)
 4. **Cloud bağlantısı YOK** — hiçbir dış sunucuya istek göndermez
-5. **mDNS:** `kame.local` olarak yerel ağda keşfedilir
+5. **mDNS:** `kame32.local` olarak yerel ağda keşfedilir
 
 ### MQTT Topic'leri (Kame Dinler)
 
@@ -184,7 +208,7 @@ bulut sunucularına bağlanır. Biz bunu tamamen devre dışı bırakır:
 
 ## 🔗 İlgili Dosyalar
 
-- [`kame_esp8266_firmware.ino`](kame_esp8266_firmware.ino) — ESP8266 Arduino kodu
+- [`kame_esp32_firmware.ino`](kame_esp32_firmware.ino) — ESP32 Arduino kodu (Kame32)
 - [`audio_reactive_dance.yaml`](audio_reactive_dance.yaml) — WLED BPM → Kame dans
 - [`eye_of_sauron_parking.py`](eye_of_sauron_parking.py) — OpenCV otonom park
 - [`wingman_greeting_protocol.yaml`](wingman_greeting_protocol.yaml) — Misafir karşılama
