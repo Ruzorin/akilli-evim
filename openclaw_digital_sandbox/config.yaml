@@ -1,0 +1,201 @@
+# =============================================================================
+# openclaw_digital_sandbox — Modül Konfigürasyonu
+# =============================================================================
+# Modül 27: OpenClaw Dijital Ajan
+# Jarvis'in "dijital elleri" — tarayıcı + masaüstü otomasyonu
+# Zero Trust Docker sandbox ile izole edilmiş
+# =============================================================================
+
+module:
+  name: "openclaw_digital_sandbox"
+  number: 27
+  description: >
+    Jarvis'in dijital ajanı. OpenClaw (açık kaynak otonom AI ajan) ile
+    çalışır. Docker sandbox içinde izole edilmiştir (Zero Trust).
+    browser-use ile tarayıcı otomasyonu, shell ile dosya işlemleri,
+    API ile sipariş/rezervasyon yapar. Fiziksel modüllerle (Lamba)
+    MQTT üzerinden senkronize çalışır. VSS için ekran kalkanı yönetir.
+
+# =============================================================================
+# OPENCLAW
+# =============================================================================
+openclaw:
+  version: "2026.4.15" # Nisan 2026 stabil sürüm
+  license: "MIT"
+  repo: "https://github.com/openclaw/openclaw"
+
+  # Beyin (Cloud VPS'te)
+  brain: "deepseek-v4-pro"
+  voice: "minimax_speech_2.8_turbo"
+
+  # Çalışma ortamı
+  runtime: "docker" # docker, kvm, bare-metal
+  container_name: "jarvis-openclaw"
+
+  # Beceriler (Skills)
+  skills:
+    browser_use: true # browser-use ile web otomasyonu
+    shell: true # Shell komutları (sandbox içinde)
+    file_ops: true # Dosya işlemleri (/openclaw/data içinde)
+    messaging: true # WhatsApp, Telegram, Slack
+    api_connectors: true # REST API çağrıları
+
+# =============================================================================
+# SANDBOX — ZERO TRUST GÜVENLİK
+# =============================================================================
+sandbox:
+  isolation: "docker" # docker, kvm
+  zero_trust: true
+
+  # 7 katmanlı güvenlik
+  layers:
+    container:
+      user: "1000:1000" # Non-root
+      cap_drop: "ALL"
+      cap_add: ["NET_BIND_SERVICE"]
+      read_only: true
+      tmpfs: ["/tmp:100M", "/var/tmp:50M"]
+
+    seccomp:
+      profile: "seccomp-openclaw.json"
+      default_action: "ERRNO"
+
+    landlock:
+      enabled: true
+      allowed_paths:
+        - "/openclaw/data"
+        - "/openclaw/skills"
+        - "/openclaw/browser"
+        - "/tmp"
+      denied_paths:
+        - "/home"
+        - "/root"
+        - "/etc"
+        - "/proc"
+        - "/sys"
+
+    network:
+      namespace: "jarvis-isolated"
+      allowlist: true
+      allowed:
+        - "api.deepseek.com"
+        - "api.minimax.io"
+        - "dashscope.aliyuncs.com"
+        - "0.0.0.0/0" # browser-use için internet
+      denied:
+        - "192.168.1.1"
+        - "*.facebook.com"
+        - "*.google-analytics.com"
+
+    skill_audit:
+      allow_unofficial: false
+      require_approval: true
+      banned_patterns:
+        - "rm -rf"
+        - "curl | bash"
+        - "eval("
+        - "os.system"
+
+    memory:
+      wipe_interval_days: 30
+      redact_patterns:
+        - "password"
+        - "token"
+        - "api_key"
+        - "secret"
+        - "credit_card"
+
+    approval:
+      required_actions:
+        - "file.delete"
+        - "payment.send"
+        - "order.place"
+        - "shell.execute"
+        - "email.send"
+      method: "mqtt" # MQTT → HA → mobil onay
+      timeout: 300
+
+# =============================================================================
+# FİZİKSEL-DİJİTAL SENKRONİZASYON (Modül 29 Lamba)
+# =============================================================================
+physical_sync:
+  enabled: true
+  target_module: 29 # Embodied Jarvis Avatar (Lamba)
+
+  # MQTT topic'leri
+  mqtt:
+    broker: "gl-mt3000.local"
+    port: 1883
+
+    # OpenClaw → Lamba (görev durumu)
+    lamp_motion: "jarvis/lamp/motion/command"
+    lamp_light: "jarvis/lamp/light/command"
+
+    # OpenClaw → HA (görev durumu)
+    task_status: "openclaw/status/task"
+    approval: "openclaw/status/approval"
+
+  # Senaryolar
+  scenarios:
+    task_complete:
+      lamp_action: "nod" # Baş sallama (onay)
+      lamp_color: "soft_green_glow"
+      voice: true # MiniMax sesli onay
+
+    task_failed:
+      lamp_action: "shake" # Baş sallama (red)
+      lamp_color: "soft_red_glow"
+      voice: true
+
+    approval_needed:
+      lamp_action: "aim" # Kullanıcıya bak
+      lamp_color: "amber_pulse"
+      mobile_notification: true
+
+# =============================================================================
+# VSS EKRAN KALKANI
+# =============================================================================
+vss_shield:
+  enabled: true
+  user_condition: "visual_snow_syndrome"
+
+  # Çalışma süresi
+  work_session_min: 50
+  break_duration_min: 10
+  max_daily_screen_hours: 8
+
+  # Ekran parametreleri (VSS eşikleri)
+  max_brightness_pct: 70
+  target_brightness_pct: 50
+  max_blue_light_pct: 30
+  target_color_temp_k: 3400 # Sıcak amber
+
+  # Karanlık mod
+  dark_mode_start: "20:00"
+  dark_mode_end: "07:00"
+
+  # Lamba senkron
+  lamp_sync: true
+  lamp_sync_topic: "jarvis/lamp/light/command"
+
+  # VSS seviyeleri
+  levels:
+    good: "screen_hours < 1, brightness < 50"
+    moderate: "screen_hours 1-3, brightness 50-70"
+    high: "screen_hours 3-5, brightness > 70"
+    critical: "screen_hours > 5 or brightness > 80"
+
+# =============================================================================
+# AĞ
+# =============================================================================
+network:
+  mqtt:
+    broker: "gl-mt3000.local"
+    port: 1883
+
+  ha:
+    url: "http://homeassistant.local:8123"
+    # Tailscale VPN ile Cloud VPS'ten erişim
+
+  tailscale:
+    enabled: true # Cloud VPS ↔ yerel ağ şifreli tünel

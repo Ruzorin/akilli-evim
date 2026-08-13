@@ -1,0 +1,324 @@
+# =============================================================================
+# openclaw_digital_sandbox — Fiziksel-Dijital Senkronizasyon (Modül 29 Lamba)
+# =============================================================================
+# OpenClaw dijital bir görevi tamamladığında, masadaki Autonomous OS yüklü
+# Lamba'ya (Modül 29) MQTT üzerinden bildirir. Lamba fiziksel olarak
+# başını sallayarak dijital görevi kullanıcıya onaylar.
+#
+# 🤖 → 🪔 MANTIK:
+# OpenClaw: "Yarınki uçak biletini aldım" (dijital görev tamam)
+#   → MQTT "jarvis/lamp/motion/command" → {"skill": "nod", "comment": "task_complete"}
+#   → Lamba başını sallar (onay hareketi)
+#   → LED halka yeşil parıltı (başarılı)
+#   → Jarvis (MiniMax): "Biletinizi aldım efendim" (sesli onay)
+#
+# 🎯 "FİZİKSEL-DİJİTAL ÇARPIŞMASI":
+# Dijital ajan (OpenClaw) bir iş yapar → fiziksel ajan (Lamba) bunu
+# kullanıcıya "vücut dili" ile bildirir → "embodied AI" hissi.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# SENSOR: OpenClaw görev durumu (MQTT discovery)
+# -----------------------------------------------------------------------------
+mqtt:
+  sensor:
+    - name: "OpenClaw Current Task"
+      state_topic: "openclaw/status/task"
+      value_template: "{{ value_json.task }}"
+      icon: mdi:robot
+
+    - name: "OpenClaw Task Status"
+      state_topic: "openclaw/status/task"
+      value_template: "{{ value_json.status }}"
+      icon: mdi:check-circle
+
+    - name: "OpenClaw Task Description"
+      state_topic: "openclaw/status/task"
+      value_template: "{{ value_json.description }}"
+      icon: mdi:text
+
+  binary_sensor:
+    - name: "OpenClaw Task Complete"
+      state_topic: "openclaw/status/task"
+      value_template: "{{ value_json.status == 'complete' }}"
+      payload_on: true
+      payload_off: false
+
+    - name: "OpenClaw Task Failed"
+      state_topic: "openclaw/status/task"
+      value_template: "{{ value_json.status == 'failed' }}"
+      payload_on: true
+      payload_off: false
+
+    - name: "OpenClaw Approval Needed"
+      state_topic: "openclaw/status/approval"
+      value_template: "{{ value_json.required }}"
+      payload_on: true
+      payload_off: false
+
+# -----------------------------------------------------------------------------
+# INPUT BOOLEAN: Fiziksel onay modu
+# -----------------------------------------------------------------------------
+input_boolean:
+  openclaw_physical_confirm:
+    name: "Fiziksel Onay (Lamba Baş Sallama)"
+    icon: mdi:robot-confirm
+    initial: true
+
+# -----------------------------------------------------------------------------
+# OTOMASYON 1: Görev tamam → Lamba baş salla + sesli onay
+# -----------------------------------------------------------------------------
+automation:
+  - id: "openclaw_task_complete_lamp_nod"
+    alias: "OpenClaw Görev Tamam — Lamba Onayı"
+    description: >
+      OpenClaw dijital görevi tamamladığında Lamba başını sallar,
+      LED yeşil parıltı yapar ve Jarvis sesli onay verir.
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.openclaw_task_complete
+        to: "on"
+    condition:
+      - condition: state
+        entity_id: input_boolean.openclaw_physical_confirm
+        state: "on"
+    action:
+      # 1. Lamba baş sallama (nod hareketi)
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/lamp/motion/command"
+          payload: >
+            {
+              "skill": "nod",
+              "comment": "OpenClaw görev tamam — fiziksel onay"
+            }
+
+      # 2. LED halka yeşil parıltı (başarılı)
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/lamp/light/command"
+          payload: >
+            {
+              "effect": "soft_green_glow",
+              "brightness": 40,
+              "duration": 3,
+              "comment": "Görev başarılı — yeşil onay"
+            }
+
+      # 3. Jarvis sesli onay (MiniMax)
+      - service: tts.speak
+        target:
+          entity_id: tts.minimax_speech
+        data:
+          media_player_entity_id: media_player.jarvis_speaker
+          message: >
+            {{ states('sensor.openclaw_task_description') | default('Görev tamamlandı efendim.') }}
+
+      # 4. Mobil bildirim
+      - service: notify.mobile_app
+        data:
+          title: "✅ OpenClaw Görev Tamam"
+          message: >
+            {{ states('sensor.openclaw_current_task') }}: 
+            {{ states('sensor.openclaw_task_description') }}
+
+      # 5. 5 sn sonra lamba park pozisyonuna dön
+      - delay:
+          seconds: 5
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/lamp/motion/command"
+          payload: '{"skill": "home"}'
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/lamp/light/command"
+          payload: '{"effect": "off"}'
+
+    mode: single
+    max_exceeded: silent
+
+  # ---------------------------------------------------------------------------
+  # OTOMASYON 2: Görev başarısız → Lamba baş sallama (hayır) + kırmızı
+  # ---------------------------------------------------------------------------
+  - id: "openclaw_task_failed_lamp_shake"
+    alias: "OpenClaw Görev Başarısız — Lamba Red"
+    description: >
+      OpenClaw görevi başaramadığında Lamba başını sallar (hayır),
+      LED kırmızı parıltı yapar ve Jarvis sesli uyarı verir.
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.openclaw_task_failed
+        to: "on"
+    condition:
+      - condition: state
+        entity_id: input_boolean.openclaw_physical_confirm
+        state: "on"
+    action:
+      # 1. Lamba baş sallama (shake — hayır hareketi)
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/lamp/motion/command"
+          payload: >
+            {
+              "skill": "shake",
+              "comment": "OpenClaw görev başarısız — fiziksel red"
+            }
+
+      # 2. LED halka kırmızı parıltı (başarısız)
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/lamp/light/command"
+          payload: >
+            {
+              "effect": "soft_red_glow",
+              "brightness": 30,
+              "duration": 3,
+              "comment": "Görev başarısız — kırmızı uyarı"
+            }
+
+      # 3. Jarvis sesli uyarı
+      - service: tts.speak
+        target:
+          entity_id: tts.minimax_speech
+        data:
+          media_player_entity_id: media_player.jarvis_speaker
+          message: >
+            Üzgünüm efendim, {{ states('sensor.openclaw_current_task') }} 
+            görevini tamamlayamadım. {{ states('sensor.openclaw_task_description') }}
+
+      # 4. Mobil bildirim
+      - service: notify.mobile_app
+        data:
+          title: "❌ OpenClaw Görev Başarısız"
+          message: >
+            {{ states('sensor.openclaw_current_task') }}: 
+            {{ states('sensor.openclaw_task_description') }}
+
+      # 5. 5 sn sonra lamba park
+      - delay:
+          seconds: 5
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/lamp/motion/command"
+          payload: '{"skill": "home"}'
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/lamp/light/command"
+          payload: '{"effect": "off"}'
+
+    mode: single
+    max_exceeded: silent
+
+  # ---------------------------------------------------------------------------
+  # OTOMASYON 3: Onay gerekli → Lamba "dikkat" + mobil onay
+  # ---------------------------------------------------------------------------
+  - id: "openclaw_approval_needed_lamp_alert"
+    alias: "OpenClaw Onay Gerekli — Lamba Dikkat"
+    description: >
+      OpenClaw tehlikeli bir işlem için onay istediğinde Lamba "dikkat"
+      hareketi yapar (kullanıcıya bakar) ve mobil onay bildirimi gönderir.
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.openclaw_approval_needed
+        to: "on"
+    action:
+      # 1. Lamba kullanıcıya bak (aim)
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/lamp/motion/command"
+          payload: >
+            {
+              "skill": "aim",
+              "x": 0.3,
+              "y": 0.0,
+              "z": 0.5,
+              "comment": "Onay gerekli — kullanıcıya bak"
+            }
+
+      # 2. LED kehribar (dikkat)
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/lamp/light/command"
+          payload: >
+            {
+              "effect": "amber_pulse",
+              "brightness": 50,
+              "speed": 0.3,
+              "comment": "Onay bekle — kehribar dikkat"
+            }
+
+      # 3. Jarvis sesli soru
+      - service: tts.speak
+        target:
+          entity_id: tts.minimax_speech
+        data:
+          media_player_entity_id: media_player.jarvis_speaker
+          message: >
+            Efendim, bir işlem için onayınıza ihtiyacım var: 
+            {{ states('sensor.openclaw_task_description') }}
+
+      # 4. Mobil onay bildirimi (actionable)
+      - service: notify.mobile_app
+        data:
+          title: "⚠️ OpenClaw Onay Bekliyor"
+          message: "{{ states('sensor.openclaw_task_description') }}"
+          data:
+            actions:
+              - action: "approve"
+                title: "Onayla"
+              - action: "reject"
+                title: "Reddet"
+
+    mode: single
+    max_exceeded: silent
+
+  # ---------------------------------------------------------------------------
+  # OTOMASYON 4: Mobil onay → OpenClaw'a gönder
+  # ---------------------------------------------------------------------------
+  - id: "openclaw_mobile_approval_response"
+    alias: "OpenClaw — Mobil Onay Yanıtı"
+    trigger:
+      - platform: event
+        event_type: mobile_app_notification_action
+        event_data:
+          action: "approve"
+    action:
+      - service: mqtt.publish
+        data:
+          topic: "openclaw/command/approval"
+          payload: '{"approved": true}'
+      # Lamba baş salla (onay)
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/lamp/motion/command"
+          payload: '{"skill": "nod", "comment": "Kullanıcı onayladı"}'
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/lamp/light/command"
+          payload: '{"effect": "soft_green_glow", "brightness": 40, "duration": 2}'
+
+    mode: single
+
+  - id: "openclaw_mobile_rejection_response"
+    alias: "OpenClaw — Mobil Red Yanıtı"
+    trigger:
+      - platform: event
+        event_type: mobile_app_notification_action
+        event_data:
+          action: "reject"
+    action:
+      - service: mqtt.publish
+        data:
+          topic: "openclaw/command/approval"
+          payload: '{"approved": false}'
+      # Lamba baş salla (red)
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/lamp/motion/command"
+          payload: '{"skill": "shake", "comment": "Kullanıcı reddetti"}'
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/lamp/light/command"
+          payload: '{"effect": "soft_red_glow", "brightness": 30, "duration": 2}'
+
+    mode: single
