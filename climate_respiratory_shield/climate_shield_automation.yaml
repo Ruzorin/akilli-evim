@@ -1,0 +1,303 @@
+# Modül 32: Yurt İklim ve Solunum Kalkanı — Otomasyon Mantığı
+#
+# GÜNDÜZ (07:00 - 23:00):
+#   Nem > %55 → Klima KAPAT (Broadlink) → Shelly ON → Hisense çalışır
+#   Nem < %45 → Shelly OFF → Hisense durur
+#
+# GECE (23:00 - 07:00):
+#   Hisense KAPAT (sessiz uyku)
+#   Klima → 26°C (Broadlink) → Swing TARA (hava tavana → boğaz koruması)
+#
+# AMAÇ: Kıbrıs rutubetini gündüz al, gece klimanın boğaz kurutmasını önle
+
+# ──────────────────────────────────────────────────────────────
+# GEREKSİNİMLER:
+#   - BME280 ESP32 sensörü (ESPHome) → HA'da sensor.oda_nemi
+#   - Shelly Plug S → HA'da switch.hisense_dehumidifier
+#   - Broadlink RM4 Mini (Modül 8) → HA'da climate.yurt_klima
+#   - DIY Hava Temizleyici → HA'da switch.diy_air_purifier
+# ──────────────────────────────────────────────────────────────
+
+automation:
+  # ================================================================
+  # GÜNDÜZ: NEM > %55 → KLİMA KAPAT + HISENSE AÇ
+  # ================================================================
+  - id: "climate_shield_day_high_humidity"
+    alias: "İklim Kalkanı — Gündüz Nem Yüksek"
+    description: "Nem > %55 → Klima kapat, Hisense nem alıcı çalıştır"
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.oda_nemi
+        above: 55
+        for:
+          minutes: 5 # 5 dk üstünde kalırsa tetiklen (dalgalanma önle)
+    condition:
+      - condition: time
+        after: "07:00:00"
+        before: "23:00:00"
+    action:
+      # Klima kapat (Broadlink — klima nemli havayı daha da soğutur, gereksiz)
+      - service: climate.turn_off
+        target:
+          entity_id: climate.yurt_klima
+      # Hisense nem alıcı aç (Shelly priz ON → Auto-Restart → çalışır)
+      - service: switch.turn_on
+        target:
+          entity_id: switch.hisense_dehumidifier
+      # Jarvis sesli bildirim
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/core/command"
+          payload: >-
+            {
+              "action": "speak",
+              "message": "Oda nemi %55'in üstüne çıktı. Klima kapatıldı, nem alıcı çalıştırılıyor."
+            }
+      # Durum yayınla
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/climate/status"
+          payload: '{"mode":"dehumidify","humidity":"high","hisense":"on","climate":"off"}'
+
+  # ================================================================
+  # GÜNDÜZ: NEM < %45 → HISENSE KAPAT
+  # ================================================================
+  - id: "climate_shield_day_low_humidity"
+    alias: "İklim Kalkanı — Gündüz Nem Düzeldi"
+    description: "Nem < %45 → Hisense nem alıcı durdur"
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.oda_nemi
+        below: 45
+        for:
+          minutes: 5
+    condition:
+      - condition: time
+        after: "07:00:00"
+        before: "23:00:00"
+    action:
+      # Hisense nem alıcı kapat
+      - service: switch.turn_off
+        target:
+          entity_id: switch.hisense_dehumidifier
+      # Durum yayınla
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/climate/status"
+          payload: '{"mode":"idle","humidity":"normal","hisense":"off","climate":"off"}'
+
+  # ================================================================
+  # GECE: HISENSE KAPAT + KLİMA 26°C + SWING TAVAN (BOĞAZ KORUMA)
+  # ================================================================
+  - id: "climate_shield_night_mode"
+    alias: "İklim Kalkanı — Gece Modu (Boğaz Koruması)"
+    description: "23:00 → Hisense kapat, Klima 26°C, Swing tavan (boğaz kurutması önle)"
+    trigger:
+      - platform: time
+        at: "23:00:00"
+    action:
+      # Hisense nem alıcı kapat (sessiz uyku — kompressör gürültüsü yok)
+      - service: switch.turn_off
+        target:
+          entity_id: switch.hisense_dehumidifier
+      # Klima aç + 26°C (sıcak değil, serin değil — boğaz kurutmaz)
+      - service: climate.turn_on
+        target:
+          entity_id: climate.yurt_klima
+      - delay: "00:00:03"
+      - service: climate.set_temperature
+        target:
+          entity_id: climate.yurt_klima
+        data:
+          temperature: 26
+          hvac_mode: cool
+      # Swing modu → TARA (hava akımı tavana yönlendir)
+      # Broadlink IR komutu: Swing Vertical → Up
+      - service: remote.send_command
+        target:
+          entity_id: remote.broadlink_rm4_mini
+        data:
+          command: "swing_vertical_up"
+      # Jarvis sesli bildirim
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/core/command"
+          payload: >-
+            {
+              "action": "speak",
+              "message": "İyi geceler. Gece modu aktif. Nem alıcı kapatıldı, klima 26 dereceye ayarlandı. Hava akımı tavana yönlendirildi, boğazınız korunuyor."
+            }
+      # Durum yayınla
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/climate/status"
+          payload: '{"mode":"night_throat_protection","hisense":"off","climate":"26c_swing_up"}'
+
+  # ================================================================
+  # SABAH: GECE MODUNDAN ÇIK → GÜNDÜZ MODU
+  # ================================================================
+  - id: "climate_shield_morning_mode"
+    alias: "İklim Kalkanı — Sabah Modu"
+    description: "07:00 → Klima kapat, nem alıcı otomatik (nem > %55 ise açılır)"
+    trigger:
+      - platform: time
+        at: "07:00:00"
+    action:
+      # Klima kapat (gündüz doğal havalandırma)
+      - service: climate.turn_off
+        target:
+          entity_id: climate.yurt_klima
+      # Hisense'i nem seviyesine göre otomatik bırak
+      # (Eğer nem > %55 ise "day_high_humidity" otomasyonu tetiklenecek)
+      - choose:
+          - conditions:
+              - condition: numeric_state
+                entity_id: sensor.oda_nemi
+                above: 55
+            sequence:
+              - service: switch.turn_on
+                target:
+                  entity_id: switch.hisense_dehumidifier
+      # Jarvis sesli bildirim
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/core/command"
+          payload: >-
+            {
+              "action": "speak",
+              "message": "Günaydın. Gece modu devre dışı. Klima kapatıldı."
+            }
+      # Durum yayınla
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/climate/status"
+          payload: '{"mode":"day","climate":"off","hisense":"auto"}'
+
+  # ================================================================
+  # UYARI: NEM ÇOK YÜKSEK (> %65) → JARVIS PROAKTİF UYARI
+  # ================================================================
+  - id: "climate_shield_critical_humidity"
+    alias: "İklim Kalkanı — Kritik Nem Uyarısı"
+    description: "Nem > %65 → Jarvis proaktif uyarır (küf riski)"
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.oda_nemi
+        above: 65
+        for:
+          minutes: 10
+    action:
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/core/command"
+          payload: >-
+            {
+              "action": "speak",
+              "message": "Uyarı: Oda nemi %65'in üstünde. Küf riski var. Nem alıcı zaten çalışıyor, lütfen pencereyi kapatın."
+            }
+
+  # ================================================================
+  # DIY HAVA TEMİZLEYİCİ — ZAMANLAYICI (GÜNDÜZ %80, GECE %40)
+  # ================================================================
+  - id: "climate_shield_air_purifier_day"
+    alias: "Hava Temizleyici — Gündüz Modu"
+    trigger:
+      - platform: time
+        at: "07:00:00"
+    action:
+      - service: switch.turn_on
+        target:
+          entity_id: switch.diy_air_purifier
+      # (PWM fan kontrolü varsa %80 hız)
+
+  - id: "climate_shield_air_purifier_night"
+    alias: "Hava Temizleyici — Gece Modu (Sessiz)"
+    trigger:
+      - platform: time
+        at: "23:00:00"
+    action:
+      # Gece: Fan %40 (sessiz) veya tamamen kapat
+      - choose:
+          - conditions:
+              - condition: numeric_state
+                entity_id: sensor.oda_nemi
+                below: 55 # Nem normalse kapat
+            sequence:
+              - service: switch.turn_off
+                target:
+                  entity_id: switch.diy_air_purifier
+          # Nem yüksekse gece bile çalışmaya devam et (küf riski > ses)
+          - conditions:
+              - condition: numeric_state
+                entity_id: sensor.oda_nemi
+                above: 55
+            sequence:
+              - service: switch.turn_on
+                target:
+                  entity_id: switch.diy_air_purifier
+                  # (PWM %40 — sessiz mod)
+
+  # ================================================================
+  # JARVIS SESLİ KOMUT → İKLİM KONTROL
+  # ================================================================
+  - id: "climate_shield_voice_command"
+    alias: "Jarvis → İklim Kalkanı Sesli Komut"
+    trigger:
+      - platform: mqtt
+        topic: "jarvis/climate/command"
+    action:
+      - choose:
+          # "Nem alıcıyı aç"
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.payload_json.action == 'dehumidifier_on' }}"
+            sequence:
+              - service: switch.turn_on
+                target:
+                  entity_id: switch.hisense_dehumidifier
+              - service: mqtt.publish
+                data:
+                  topic: "jarvis/core/command"
+                  payload: '{"action":"speak","message":"Nem alıcı açıldı, efendim."}'
+          # "Nem alıcıyı kapat"
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.payload_json.action == 'dehumidifier_off' }}"
+            sequence:
+              - service: switch.turn_off
+                target:
+                  entity_id: switch.hisense_dehumidifier
+              - service: mqtt.publish
+                data:
+                  topic: "jarvis/core/command"
+                  payload: '{"action":"speak","message":"Nem alıcı kapatıldı."}'
+          # "Gece moduna geç"
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.payload_json.action == 'night_mode' }}"
+            sequence:
+              - service: switch.turn_off
+                target:
+                  entity_id: switch.hisense_dehumidifier
+              - service: climate.set_temperature
+                target:
+                  entity_id: climate.yurt_klima
+                data:
+                  temperature: 26
+                  hvac_mode: cool
+              - service: mqtt.publish
+                data:
+                  topic: "jarvis/core/command"
+                  payload: '{"action":"speak","message":"Gece modu aktif. Boğaz koruması devrede."}'
+          # "Nem durumunu söyle"
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.payload_json.action == 'status' }}"
+            sequence:
+              - service: mqtt.publish
+                data:
+                  topic: "jarvis/core/command"
+                  payload: >-
+                    {
+                      "action": "speak",
+                      "message": "Oda nemi şu an {{ states('sensor.oda_nemi') }} yüzde, sıcaklık {{ states('sensor.oda_sicakligi') }} derece."
+                    }

@@ -1,0 +1,169 @@
+# Modül 31: Siber Barmen — Jarvis MQTT Entegrasyonu
+# Jarvis sesli komut → MQTT → CocktailBerry tetiklenir
+# CocktailBerry tamamlandı → MQTT → Jarvis sesli bildirim + Lamba (Modül 29) senkron
+
+# ──────────────────────────────────────────────────────────────
+# GEREKSİNİMLER:
+#   - CocktailBerry REST API (http://raspberrypi.local:5000)
+#   - MQTT broker (GL-MT3000)
+#   - Home Assistant (VPS)
+#   - Modül 29 (Lamba) — fiziksel onay için
+# ──────────────────────────────────────────────────────────────
+
+# ============================================================
+# REST COMMAND TANIMLARI (configuration.yaml'a eklenecek)
+# ============================================================
+# rest_command:
+#   cocktailberry_make:
+#     url: "http://raspberrypi.local:5000/api/make"
+#     method: POST
+#     content_type: "application/json"
+#     payload: '{"recipe":"{{ recipe }}"}'
+#
+#   cocktailberry_make_custom:
+#     url: "http://raspberrypi.local:5000/api/make_custom"
+#     method: POST
+#     content_type: "application/json"
+#     payload: '{"ingredients":{{ ingredients }}}'
+
+# ============================================================
+# OTOMASYONLAR
+# ============================================================
+automation:
+  # ── 1. JARVIS SESLİ KOMUT → COCKTAILBERRY TETİKLEME ──
+  - id: "jarvis_barmen_voice_command"
+    alias: "Jarvis → CocktailBerry Sesli Komut"
+    description: "Jarvis sesli komutunu CocktailBerry'ye ilet"
+    trigger:
+      - platform: mqtt
+        topic: "jarvis/barmen/command"
+    action:
+      - choose:
+          # Negroni
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.payload_json.recipe | lower == 'negroni' }}"
+            sequence:
+              - service: rest_command.cocktailberry_make
+                data:
+                  recipe: "Negroni"
+          # Mojito
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.payload_json.recipe | lower == 'mojito' }}"
+            sequence:
+              - service: rest_command.cocktailberry_make
+                data:
+                  recipe: "Mojito"
+          # Margarita
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.payload_json.recipe | lower == 'margarita' }}"
+            sequence:
+              - service: rest_command.cocktailberry_make
+                data:
+                  recipe: "Margarita"
+          # Aperol Spritz
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.payload_json.recipe | lower == 'aperol_spritz' }}"
+            sequence:
+              - service: rest_command.cocktailberry_make
+                data:
+                  recipe: "Aperol Spritz"
+          # Özel tarif (payload içinde malzemeler)
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.payload_json.custom is defined }}"
+            sequence:
+              - service: rest_command.cocktailberry_make_custom
+                data:
+                  ingredients: "{{ trigger.payload_json.custom }}"
+      # Durum bildir
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/barmen/status"
+          payload: '{"state":"making","recipe":"{{ trigger.payload_json.recipe }}"}'
+
+  # ── 2. COCKTAILBERRY TAMAMLANDI → JARVIS SESLİ BİLDİRİM ──
+  - id: "jarvis_barmen_recipe_done"
+    alias: "CocktailBerry Tamamlandı → Jarvis Bildirim"
+    description: "Kokteyl hazır → Jarvis sesli bildirir + Lamba yeşil yanar"
+    trigger:
+      - platform: mqtt
+        topic: "jarvis/barmen/recipe_done"
+    action:
+      # Jarvis sesli bildirim
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/core/command"
+          payload: >-
+            {
+              "action": "speak",
+              "message": "Kokteyliniz hazır. {{ trigger.payload_json.recipe }} servise hazır, efendim."
+            }
+      # Lamba (Modül 29) — yeşil yanar + başını sallar (başarı)
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/lamp/motion/command"
+          payload: '{"motion":"nod","color":"green","duration":3}'
+      # WLED — premium amber flash (kutlama)
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/lighting/wled"
+          payload: '{"effect":"amber_pulse","duration":5}'
+
+  # ── 3. COCKTAILBERRY HATA → JARVIS UYARI + LAMBA KIRMIZI ──
+  - id: "jarvis_barmen_error"
+    alias: "CocktailBerry Hata → Jarvis Uyarı"
+    description: "Pompa hatası/şişe boş → Jarvis uyarır + Lamba kırmızı"
+    trigger:
+      - platform: mqtt
+        topic: "jarvis/barmen/error"
+    action:
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/core/command"
+          payload: >-
+            {
+              "action": "speak",
+              "message": "Uyarı: {{ trigger.payload_json.message }}. Lütfen kontrol edin."
+            }
+      # Lamba (Modül 29) — kırmızı yanar + sallar (hata)
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/lamp/motion/command"
+          payload: '{"motion":"shake","color":"red","duration":3}'
+
+  # ── 4. GÜNLÜK LİMİT KONTROLÜ ──
+  - id: "jarvis_barmen_daily_limit"
+    alias: "Günlük Kokteyl Limiti"
+    description: "Günde max 5 kokteyl — limit dolunca Jarvis reddeder"
+    trigger:
+      - platform: mqtt
+        topic: "jarvis/barmen/command"
+    condition:
+      - condition: numeric_state
+        entity_id: "counter.cocktailberry_daily_count"
+        above: 5
+    action:
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/core/command"
+          payload: >-
+            {
+              "action": "speak",
+              "message": "Günlük kokteyl limitine ulaştınız. Yarın tekrar deneyin, efendim."
+            }
+      # Komutu CocktailBerry'ye iletme (reddet)
+
+  # ── 5. GÜNLÜK SAYACI SIFIRLA (Gece yarısı) ──
+  - id: "jarvis_barmen_reset_counter"
+    alias: "Günlük Kokteyl Sayacı Sıfırla"
+    trigger:
+      - platform: time
+        at: "00:00:00"
+    action:
+      - service: counter.reset
+        target:
+          entity_id: "counter.cocktailberry_daily_count"

@@ -1449,6 +1449,284 @@ python3 eye_of_sauron_parking.py --calibrate
 
 ---
 
+## Faz 16: Modül 31 — Siber Barmen (CocktailBerry)
+
+> **Kokteyl miksoloji robotu — Raspberry Pi 4 + 7" Touch + 10 pompa + 16-CH röle + 1N4007 diyot**
+
+### Adım 1: Elektronik Kablolama (Pompalar → Röle → 1N4007 Diyot)
+
+```
+1. 12V 10A SMPS'i duvara bağla (akım korumalı priz üzerinden)
+2. LM2596 Buck Converter'ı 12V rail'e bağla
+   → Trimpot ile çıkışı 5.0V'a ayarla (multimetre ile doğrula)
+   → 5V çıkışı Pi 4 USB-C girişine bağla
+
+3. 10 pompayı 12V rail'e paralel bağla:
+   Pompa + (kırmızı) → 12V
+   Pompa - (siyah)   → Röle COM terminali
+   Röle NO terminali → GND (12V rail)
+
+4. ⚠️ KRİTİK — 1N4007 DİYOT LEHİMLEME (Ters Akım Koruması):
+   Her pompanın + ve - terminaline 1N4007 diyot PARALEL lehimle:
+   
+   1N4007 Katot (çizgili taraf) → Pompa + (12V tarafı)
+   1N4007 Anot                → Pompa - (GND tarafı)
+   
+   → Diyot TERS bias'ta: normal çalışmada iletim yok
+   → Röle açıldığında ters EMF spike'ı diyot üzerinden kısa devre olur
+   → Röle kontakları ve Pi GPIO pin'leri korunur
+   
+   10 pompa için 10 diyot lehimle
+   Isı büzük boru ile izole et
+   Multimetre ile doğrula: ters yönde yüksek direnç
+
+5. 16-CH Röle kartını Pi GPIO'ya bağla:
+   VCC → Pi 5V (Pin 2/4)
+   GND → Pi GND (Pin 6)
+   IN1 → GPIO 17 (Pompa 1 - Vodka)
+   IN2 → GPIO 27 (Pompa 2 - Gin)
+   IN3 → GPIO 22 (Pompa 3 - Rom)
+   IN4 → GPIO 23 (Pompa 4 - Tekila)
+   IN5 → GPIO 24 (Pompa 5 - Viski)
+   IN6 → GPIO 25 (Pompa 6 - Campari)
+   IN7 → GPIO 5  (Pompa 7 - Lime Juice)
+   IN8 → GPIO 6  (Pompa 8 - Cranberry)
+   IN9 → GPIO 12 (Pompa 9 - Soda)
+   IN10→ GPIO 16 (Pompa 10 - Tonic)
+
+6. 7" Touch Display DSI ribbon → Pi 4 DSI port
+7. Silikon hortumları pompalardan nozüle bağla (gıda uyumlu)
+```
+
+### Adım 2: CocktailBerry Kurulumu (Tek Satır)
+
+```bash
+# Raspberry Pi 4 terminalinde (Raspberry Pi OS Bookworm 64-bit)
+bash <(curl -sL https://raw.githubusercontent.com/AndreWohnsland/CocktailBerry/master/install.sh)
+
+# Script otomatik:
+# → Python venv oluşturur
+# → CocktailBerry klonlar
+# → Gereksinimleri yükler
+# → GPIO izinlerini ayarlar
+# → systemd servis kaydeder
+# → Web UI: http://raspberrypi.local:5000
+```
+
+### Adım 3: Pompa Kalibrasyonu
+
+```bash
+# Her pompanın akış hızını ölç:
+python3 -m CocktailBerry --calibrate-pump 1
+# → 10 sn çalıştır → çıkan sıvıyı ml olarak ölç
+# → Akış hızı = ml / 10 sn
+# → config/ingredients.yaml'a kaydet
+# 10 pompa için tekrarla
+
+# Hortum doluluk (priming):
+python3 -m CocktailBerry --prime-all
+# → Hortumlar dolana kadar pompaları çalıştır
+```
+
+### Adım 4: Kiosk Modu (Tam Ekran UI)
+
+```bash
+# Chromium Kiosk servis oluştur
+sudo tee /etc/systemd/system/cocktailberry-kiosk.service > /dev/null << 'EOF'
+[Unit]
+Description=CocktailBerry Kiosk Mode
+After=cocktailberry.service
+Requires=cocktailberry.service
+
+[Service]
+Type=simple
+User=pi
+Environment=DISPLAY=:0
+ExecStart=/usr/bin/chromium-browser --kiosk --noerrdialogs \
+  --disable-translate --disable-infobars \
+  --app=http://localhost:5000
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=graphical.target
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable cocktailberry-kiosk
+sudo systemctl start cocktailberry-kiosk
+
+# Otomatik login (boot'ta grafik ortam):
+sudo raspi-config
+# → System Options → Boot / Auto Login → Desktop Autologin
+```
+
+### Adım 5: Jarvis MQTT Entegrasyonu
+
+```bash
+# MQTT bridge script kur
+# (siber_barmen_cocktailberry/cocktailberry_kiosk_setup.md dosyasına bak)
+
+# Bridge servis:
+sudo systemctl enable cocktailberry-mqtt
+sudo systemctl start cocktailberry-mqtt
+
+# HA'ya rest_command ekle (configuration.yaml):
+# rest_command:
+#   cocktailberry_make:
+#     url: "http://raspberrypi.local:5000/api/make"
+#     method: POST
+#     content_type: "application/json"
+#     payload: '{"recipe":"{{ recipe }}"}'
+
+# HA'ya otomasyonları ekle:
+# siber_barmen_cocktailberry/jarvis_mqtt_integration.yaml
+```
+
+### Adım 6: Test
+
+```
+1. Pi'yi boot et → CocktailBerry + Kiosk otomatik başlar
+2. Ekrandan "Negroni" seç → pompalar çalışır → kokteyl hazır
+3. Jarvis'e "Bana Negroni yap" de:
+   → MQTT "jarvis/barmen/command" {"recipe":"negroni"}
+   → Bridge → CocktailBerry REST API → pompalar çalışır
+   → Bitti → MQTT "jarvis/barmen/recipe_done"
+   → Jarvis "Kokteyliniz hazır" der
+   → Lamba (Modül 29) yeşil yanar + başını sallar
+4. Acil stop: Ekrandaki STOP butonu → tüm röleler OFF
+5. Günlük limit: 5 kokteyl → 6.'da Jarvis reddeder
+```
+
+---
+
+## Faz 17: Modül 32 — Yurt İklim ve Solunum Kalkanı
+
+> **Kıbrıs rutubeti + klima boğaz kurutması → otonom iklim yönetimi**
+
+### Adım 1: Hisense D16CW + Shelly Plug S Kurulumu
+
+```
+1. Hisense D16CW'yi yurt odasına yerleştir:
+   → Duvara yakın (~30cm) ama hava akışı engellenmeyecek
+   → Tank altına damarlık tepsisi (opsiyonel)
+   → Sürekli drenaj hortumu tak (tank dolum sorununu önle)
+
+2. Hisense'i manuel aç:
+   → Mode: Continuous (sürekli nem alma)
+   → Fan: Low (sessiz)
+   → Bu ayar KALSIN — Shelly prizle sadece güç kes/aç yapacağız
+
+3. Hisense güç kablosunu → Shelly Plug S prizine tak
+4. Shelly Plug S'i → duvar prizine tak (akım korumalı priz üzerinden)
+5. Shelly'yi GL-MT3000 WiFi ağına bağla:
+   → Shelly app veya web UI (http://shellyplug-xxxx.local)
+   → WiFi: yurt ağı, statik IP ayarla
+   → HA'ya entegre et (Shelly integration veya MQTT)
+
+6. Test:
+   → Shelly ON → Hisense güç alır → Auto-Restart → çalışır
+   → Shelly OFF → Hisense durur
+   → Shelly ON → Hisense otomatik başlar (butona basmaya gerek yok)
+```
+
+### Adım 2: BME280 + ESP32 Nem Sensörü
+
+```bash
+# ESPHome ile BME280 sensörü flaşla
+# (climate_respiratory_shield/bme280_esphome.yaml dosyasını kullan)
+
+# 1. ESP32'yi USB ile bilgisayara bağla
+# 2. ESPHome web UI'da yeni device oluştur
+# 3. bme280_esphome.yaml içeriğini yapıştır
+# 4. secrets.yaml oluştur:
+#    wifi_ssid: "yurt_wifi"
+#    wifi_password: "yurt_sifre"
+#    ota_password: "gizli_sifre"
+# 5. Install → Wire → ESP32'ye flaşla
+# 6. ESP32 yurt WiFi'sine bağlanır → MQTT yayınlar
+# 7. HA'da sensor.oda_nemi, sensor.oda_sicakligi görünür
+```
+
+### Adım 3: DIY Hava Temizleyici Montajı
+
+```
+1. HEPA H13 filtreyi kutuya yerleştir (alt kısım)
+2. 12V PC fanını kutunun üstüne monte et (üfler → yukarı)
+3. Fan güç → 12V 2A adaptör → Shelly Plug S (veya ESP32 PWM)
+4. Kutu altında hava giriş delikleri aç (kirli hava girer)
+5. Kutu üstünde fan çıkışı (temiz hava çıkar)
+
+Akış: Aşağıdan kirli hava → HEPA filtre → yukarıdan temiz hava
+
+6. Shelly/ESP32'yi HA'ya entegre et:
+   → switch.diy_air_purifier
+```
+
+### Adım 4: HA Otomasyonlarını Yükle
+
+```bash
+# climate_shield_automation.yaml içeriğini HA configuration.yaml'a ekle
+# (veya packages/ klasörüne kopyala)
+
+# Otomasyon mantığı:
+# GÜNDÜZ (07:00-23:00):
+#   Nem > %55 (5 dk) → Klima KAPAT + Hisense AÇ (Shelly ON)
+#   Nem < %45 (5 dk) → Hisense KAPAT (Shelly OFF)
+#
+# GECE (23:00-07:00):
+#   Hisense KAPAT (sessiz uyku)
+#   Klima → 26°C (Broadlink IR)
+#   Swing → TARA / Vertical Up (hava tavana → boğaz koruması)
+#
+# SABAH (07:00):
+#   Klima KAPAT
+#   Hisense → nem > %55 ise aç, değilse kapalı kal
+```
+
+### Adım 5: Broadlink Klima Komutları Öğret
+
+```
+1. HA → Broadlink RM4 Mini → Learn Command
+2. Klima kumandasından şu komutları öğret:
+   → "power_on"    : Klima aç
+   → "power_off"   : Klima kapat
+   → "cool_26"     : 26°C soğutma modu
+   → "swing_vertical_up" : Swing dikey → yukarı (hava tavana)
+   → "swing_off"   : Swing kapat
+3. HA climate entegrasyonu veya remote.send_command ile kullan
+```
+
+### Adım 6: Test Senaryosu
+
+```
+GÜNDÜZ TEST:
+1. BME280 nemini %60'a getir (nemli bez veya duş)
+2. 5 dk sonra → Otomasyon tetiklenir
+3. Klima kapanır, Hisense açılır
+4. Jarvis "Oda nemi %55'in üstüne çıktı" der
+5. Nem %40'a düşene kadar bekle → Hisense kapanır
+
+GECE TEST:
+1. Saat 23:00 → Gece modu tetiklenir
+2. Hisense kapanır (sessiz)
+3. Klima 26°C'ye ayarlanır, swing tavana
+4. Jarvis "İyi geceler. Boğaz koruması devrede" der
+
+SABAH TEST:
+1. Saat 07:00 → Sabah modu
+2. Klima kapanır
+3. Nem > %55 ise Hisense açılır
+4. Jarvis "Günaydın" der
+
+SESLİ KOMUT TEST:
+1. "Odamın nemini kontrol et" → Jarvis nem ve sıcaklığı söyler
+2. "Nem alıcıyı aç" → Shelly ON → Hisense çalışır
+3. "Gece moduna geç" → Hisense OFF + Klima 26°C + Swing tavan
+```
+
+---
+
 ### Adım 5: Modül Bazlı Kablo Gizleme Kontrol Listesi
 
 | Modül | Kablo Gizleme Yöntemi |
@@ -1466,6 +1744,8 @@ python3 eye_of_sauron_parking.py --calibrate
 | **Modül 11 (barista_mode)** | Shelly priz kablo gerektirmez (duvar prizi) |
 | **Modül 12 (intimacy_sync_mode)** | MPU6050 + ESP32 kabloları yatak kirişi boyunca bantlı, köpük altında |
 | **Modül 13 (vision_chef_assistant)** | Tapo C200 güç kablosu dolap arkasında, USB kısa kablo |
+| **Modül 31 (CocktailBerry)** | Pi 4 + röle + SMPS kabloları bar kovanı arkasında, sleeve ile gizli. Pompa kabloları kovan içinde düzenli |
+| **Modül 32 (İklim Kalkanı)** | BME280 ESP32 kitaplık arkasında bantlı. Hisense + Shelly kablosu duvar kenarı kanalda. DIY hava temizleyici kablosu mobilya altında |
 
 ### Altın Kural
 

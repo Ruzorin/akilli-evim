@@ -592,4 +592,77 @@
 
 ---
 
+## 🍸 Modül 31: Siber Barmen (CocktailBerry)
+
+### Kokteyl Robot Beyni
+
+| | Önerilen | Alternatif 1 | Alternatif 2 |
+|---|---|---|---|
+| **Model** | CocktailBerry (Raspberry Pi 4 + 7" Touch) | Drink Crafter (ESP32) | Barsys 2.0 (Ticari) |
+| **Fiyat** | ~$265 (Pi + ekran + 10 pompa + röle + diyot) | ~$120 (ESP32 + 10 pompa + röle) | ~$1.500+ |
+| **Ekran** | 7" Dokunmatik (Kiosk mod) | Yok (Headless — web/mobil UI) | Dahili tablet |
+| **Pompa sayısı** | 10 | 8-12 | 8 |
+| **Topluluk** | Aktif GitHub (AndreWohnsland) | Aktif GitHub | Kapalı kaynak |
+| **Neden önerilen?** | **ŞOV (Wow Factor):** Misafir geldiğinde 7" ekranda kokteyl menüsü parlar — "Negroni" butonuna dokunur, robot pompalar çalışmaya başlar. Bu bir KOKTEYL ROBOTU — headless bir ESP32'de "şov" yok. CocktailBerry'nin Kiosk modu, misafirin gözünde "premium lounge" hissi yaratır. Ayrıca Pi 4'ün gücü: web UI + MQTT bridge + Jarvis entegrasyonu aynı anda çalışır. ESP32'de bu üçü birden zor | Ucuz ama **ekran yok** — misafir telefonundan web UI açmak zorunda. "Wow factor" sıfır. Bir kokteyl robotu bir IoT sensörü değil, bir ŞOV parçasıdır. Headless = misafir "nerede robot?" der. Ayrıca ESP32'de MQTT bridge + web server + GPIO kontrol aynı anda zor | Çok pahalı ($1.500+), kapalı kaynak, Jarvis'e entegre edilemez, Çin/ABD bulutuna bağımlı |
+
+> **Dost acı söyler:** Drink Crafter "daha ucuz ve daha az güç tüketir" diyebilirsiniz. Doğru — ama bir kokteyl robotu bir sıcaklık sensörü DEĞİL. Misafir geldiğinde ekranda parlayan bir menü, pompaların çalışma sesi ve bardağa akan içki — bu bir DENEYİM. Headless ESP32'de deneyim yok. CocktailBerry'nin 7" ekranı, bu projenin "premium lounge" konseptiyle uyumlu. $145 fark, "wow factor" için ödenir.
+
+### Ekran: 7" Touch vs Headless
+
+| | Önerilen | Alternatif |
+|---|---|---|
+| **Model** | Raspberry Pi 7" Touch Display | Headless (web/mobil UI) |
+| **Fiyat** | ~$60 | $0 |
+| **Kullanım** | Ekrana dokun → kokteyl seç → pompalar çalışır | Telefon/web tarayıcı aç → URL gir → kokteyl seç |
+| **Misafir deneyimi** | "Wow!" — robotun ekranına dokunur, içki akar | "URL nedir?" — telefon çıkar, IP adresi yaz, bağlan, seç |
+| **Kiosk mod** | Evet — tam ekran, başka uygulama yok | Hayır — tarayıcıda, sekmeler arası kaçış |
+| **Neden önerilen?** | Misafir deneyimi = ŞOV. Ekrana dokunmak, bir butona basmak ve robotun çalışmasını izlemek — bu "premium lounge" hissinin temeli. Headless bir kokteyl robotu, bir kahve makinesinden farkı olmayan bir kutudur | Misafirin telefonuna bir IP adresi vermek "premium" değil "öğrenci işi". Ayrıca yurt WiFi'sinde her misafirin aynı ağda olması gerekir |
+
+---
+
+## 🛡️ Modül 32: Yurt İklim ve Solunum Kalkanı
+
+### Nem Alma Cihazı: 1.6L vs 4.2L
+
+| | Önerilen | Alternatif |
+|---|---|---|
+| **Model** | Hisense D16CW (1.6L/gün) | Hisense D42CW (4.2L/gün) |
+| **Fiyat** | ~$120 | ~$250 |
+| **Boyut** | 34×21×40 cm | 36×25×64 cm |
+| **Ses** | ~38dB | ~48dB |
+| **Güç** | ~230W | ~550W |
+| **Yurt odası (15-20m²)** | Yeterli (1.6L/gün) | Overkill (4.2L/gün) |
+| **Neden önerilen?** | Yurt odası 15-20m². Günde 1.6L nem alma bu alan için yeterli. 4.2L model 2× pahalı, 2× büyük, 10dB daha gürültülü (gece uyutur), 2× güç tüketir. Doğru kapasiteyi seçmek mühendisliktir — en büyüğü almak değil | Yurt odası için fazla kapasite. Boşa enerji harcar, yer kaplar, gürültülü. 4.2L/gün ancak 40-50m² bir oda için anlamlı |
+
+> **Dost acı söyler:** "Daha büyük alırım, daha hızlı kurur" düşüncesi yanıltıcı. 1.6L/gün, 15-20m² bir odada nemi %80'den %50'ye indirmek için yeterli. 4.2L model bu odada kompressörü sürekli stop-start yapar (kısa döngü) — bu hem enerji israfı hem de kompressör ömrünü kısaltır. Ayrıca 48dB gece uyurken rahatsız eder — 38dB ise fısıltı seviyesinde.
+
+### Nem Alıcı vs Nemlendirici
+
+| | Önerilen (Kıbrıs için) | Alternatif |
+|---|---|---|
+| **Cihaz** | Nem Alma Cihazı (Dehumidifier) | Nemlendirici (Humidifier) |
+| **Fiyat** | ~$120 (Hisense D16CW) | ~$40-80 |
+| **Kıbrıs nemi** | %65-80 (YÜKSEK) | — |
+| **Sorun** | Rutubet, küf, nefes darlığı | Kuru hava (Kıbrıs'ta YOK) |
+| **Neden önerilen?** | Kıbrıs bir ADA. Deniz çevrili. Yurt odalarında nem yazın %70-80, kışın %60-70. Sorun NEM FAZLA, az değil. Nemlendirici kullanmak, yangına benzin dökmektir — küf büyür, duvarlar terler, nefes darlığı artar. Nem ALICI gerekir | Nemlendirici kuru iklimler için (örn. Ankara kışın %20-30 nem). Kıbrıs'ta nem zaten yüksek. Nemlendirici = küf üretme makinesi |
+
+> **Dost acı söyler:** "Klima boğazımı kurutuyor, o yüzden nemlendirici lazım" diyebilirsiniz. YANLIŞ. Klima boğazı kurutuyorsa çözüm nemlendirici eklemek değil — KLİMAYI 26°C'ye alıp swing'i tavana yönlendirmektir (hava akımı doğrudan yüzünüze/boğazınıza çarpmaz). Nem zaten %60+ iken nemlendirici eklemek, odayı bataklığa çevirir. Doğru çözüm: Gündüz nem al, gece klimayı yumuşak modda çalıştır.
+
+### Hava Temizleyici: DIY (HEPA+Fan) vs Xiaomi
+
+| | Önerilen | Alternatif 1 | Alternatif 2 |
+|---|---|---|---|
+| **Model** | DIY (HEPA H13 + 12V PC Fan) | Xiaomi Mi Air Purifier 4 Lite | IKEA STARKVIND |
+| **Fiyat** | ~$25 | ~$130 | ~$90 |
+| **Filtre değişim** | ~$8 (HEPA H13) | ~$30 (Xiaomi orijinal) | ~$20 (IKEA) |
+| **Akıllı kontrol** | Shelly/ESP32 (HA — yerel) | Mi Home (Çin bulutu) | IKEA Dirigera (yerel) |
+| **Boyut** | ~15×15×20 cm (gizlenebilir) | 24×24×52 cm (büyük kule) | 13×13×55 cm |
+| **CADR** | ~80 m³/h | ~360 m³/h | ~80 m³/h |
+| **Yurt odası (15-20m²)** | Yeterli | Overkill | Yeterli |
+| **Neden önerilen?** | 5× ucuz, filtre 4× ucuz, HA'ya yerel entegre (Zero-Trust uyumlu), kutu içinde gizlenebilir (premium lounge). Yurt odası 15-20m² için CADR 80 yeterli. HEPA H13 %99.95 verimlilik — toz, küf sporu, polen, PM2.5 filtreler | Çok güçlü ama yurt odası için overkill (CADR 360 = 40m²+). Çin bulutuna bağımlı — Zero-Trust ihlali. Büyük ve beyaz — "premium lounge" değil "öğrenci odası" görüntüsü. Filtre pahalı | İyi ama yine pahalı ($90 vs $25). IKEA ekosistemi sınırlı. DIY ile aynı CADR ama 4× fiyat |
+
+> **Dost acı söyler:** "Xiaomi alırım, markalı, garantili" diyebilirsiniz. Ama bu projenin anayasası ZERO-TRUST — hiçbir cihaz Çin/ABD bulutuna bağımlı olmayacak. Xiaomi Mi Air Purifier Mi Home app olmadan tam kontrol zor (yerel API var ama sınırlı). DIY HEPA+Fan: $25, Shelly prizle aç/kapa, HA'da otomasyon, filtre $8. Aynı işi yapıyor, 5× ucuz, Zero-Trust uyumlu. Mühendislik = en pahalıyı almak değil, en DOĞRUyu almak.
+
+---
+
 *Bu dosya, her ekipman için "neden bu?" sorusunu yanıtlar. Yeni alternatifler bulundukça güncellenir.*

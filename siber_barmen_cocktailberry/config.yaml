@@ -1,0 +1,68 @@
+# Modül 31: Siber Barmen — CocktailBerry Konfigürasyonu
+# Raspberry Pi 4 + 7" Touch + 10x 12V Pompa + 16-CH Röle
+
+module:
+  id: 31
+  name: "Siber Barmen (CocktailBerry)"
+  type: "kokteyl_miksoloji_robotu"
+  host: "raspberrypi.local"
+  port: 5000 # CocktailBerry web UI
+
+hardware:
+  sbc: "Raspberry Pi 4 (4GB)"
+  display: 'Raspberry Pi 7" Touch Display (DSI)'
+  relay_board: "16-CH 5V Active-Low Relay"
+  pumps: 10
+  pump_type: "12V Diyafram/Peristaltik"
+  pump_voltage: "12V"
+  pump_current_peak: "0.8A"
+  power_supply: "12V 10A SMPS"
+  voltage_regulator: "LM2596 Buck (12V → 5V/3A)"
+  protection_diodes: "1N4007 × 10 (ters akım koruması)"
+  hose: "Gıda uyumlu silikon Ø6mm × 15m"
+
+gpio_mapping:
+  pump_1: 17 # Vodka
+  pump_2: 27 # Gin
+  pump_3: 22 # Rom
+  pump_4: 23 # Tekila
+  pump_5: 24 # Viski
+  pump_6: 25 # Campari
+  pump_7: 5 # Lime Juice
+  pump_8: 6 # Cranberry
+  pump_9: 12 # Soda
+  pump_10: 16 # Tonic
+  # CH11-16: Yedek (gelecek genişletme)
+
+relay_logic: "active_low" # GPIO LOW = röle ON (pompa çalışır)
+
+mqtt:
+  broker: "gl-mt3000.local"
+  port: 1883
+  command_topic: "jarvis/barmen/command"
+  status_topic: "jarvis/barmen/status"
+  recipe_done_topic: "jarvis/barmen/recipe_done"
+
+kiosk:
+  enabled: true
+  display_orientation: "landscape"
+  autostart: true
+  idle_timeout: 300 # 5 dk hareketsizlik → ekran koruma
+  pin_lock: true # Çocuk kilidi
+
+safety:
+  max_cocktails_per_day: 5
+  age_verification: true
+  emergency_stop_gpio: 26 # Fiziksel acil stop butonu
+  leak_tray: true
+
+jarvis_integration:
+  voice_trigger: true
+  voice_phrases:
+    - "bana kokteyl yap"
+    - "bana negroni yap"
+    - "bana mojito yap"
+    - "bana margarita yap"
+    - "bana aperol spritz yap"
+  notify_on_done: true # Jarvis sesli "Kokteyliniz hazır" der
+  lamp_sync: true # Modül 29 lamba yeşil yanar (başarı)

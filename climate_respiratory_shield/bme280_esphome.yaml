@@ -1,0 +1,104 @@
+# Modül 32: BME280 Nem Sensörü — ESPHome Konfigürasyonu
+# ESP32 DevKit V1 + BME280 (I2C) → MQTT → Home Assistant
+
+esphome:
+  name: climate-shield-sensor
+  friendly_name: "İklim Kalkanı Sensör"
+  comment: "Modül 32 — BME280 Nem/Sıcaklık/Basınç Sensörü"
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+# WiFi — GL-MT3000 ağına bağlan
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  fast_connect: true # Yurt ağı için hızlı bağlan
+
+  # Statik IP (DHCP çakışması önle)
+  manual_ip:
+    static_ip: 192.168.8.132
+    gateway: 192.168.8.1
+    subnet: 255.255.255.0
+
+# MQTT — GL-MT3000 yerel broker
+mqtt:
+  broker: gl-mt3000.local
+  port: 1883
+  client_id: "climate-shield-sensor"
+  discovery: true
+  topic_prefix: "jarvis/climate"
+
+# Logger
+logger:
+  level: INFO
+  baud_rate: 0 # Serial log kapalı (MQTT üzerinden)
+
+# I2C Bus — BME280 için
+i2c:
+  sda: GPIO 21
+  scl: GPIO 22
+  scan: true
+  frequency: 100kHz
+
+# ── BME280 Sensör ──
+sensor:
+  # Sıcaklık
+  - platform: bme280_i2c
+    address: 0x76
+    temperature:
+      name: "Oda Sıcaklığı"
+      id: room_temperature
+      unit_of_measurement: "°C"
+      accuracy_decimals: 1
+      filters:
+        - sliding_window_moving_average:
+            window_size: 10
+            send_every: 5
+    # Nem (Ana sensör — iklim kalkanı için kritik)
+    humidity:
+      name: "Oda Nemi"
+      id: room_humidity
+      unit_of_measurement: "%"
+      accuracy_decimals: 1
+      filters:
+        - sliding_window_moving_average:
+            window_size: 10
+            send_every: 5
+    # Basınç
+    pressure:
+      name: "Oda Basıncı"
+      id: room_pressure
+      unit_of_measurement: "hPa"
+      accuracy_decimals: 1
+    update_interval: 30s # 30 saniyede bir ölç
+
+  # WiFi Sinyal Gücü
+  - platform: wifi_signal
+    name: "İklim Sensörü WiFi"
+    update_interval: 60s
+
+# ── Binary Sensor: Nem Yüksek ──
+binary_sensor:
+  - platform: template
+    name: "Nem Yüksek"
+    id: humidity_high
+    lambda: |-
+      return id(room_humidity).state > 55.0;
+    update_interval: 30s
+
+# ── Switch: Sensör Reset (Opsiyonel) ──
+switch:
+  - platform: restart
+    name: "İklim Sensörü Restart"
+
+# ── OTA Güncelleme ──
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+# ── Web Sunucu (Yerel debug) ──
+web_server:
+  port: 80

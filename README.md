@@ -2,7 +2,7 @@
 
 > **"Sinematik atmosfer, duyusal optimizasyon ve otonom yapay zeka ile yaşam ve mobil alanları tek bir akıllı ekosistemde birleştiren premium otomasyon platformu."**
 
-Bu proje, bir yaşam alanını ve aracı; sesli komutlarla yönetilebilen, sensörlerle çevresel farkındalığa sahip, görsel-işitsel-duyusal olarak sinematik bir atmosfer sunan ve çok-modelli yapay zeka ile proaktif karar veren **premium bir otomasyon ekosistemine** dönüştürür. Sistem, merkezi bir hibrit zeka beyni (`jarvis_core` — MiniMax + DeepSeek) etrafında **30 modülden** oluşan tek bir kod tabanı (Single Codebase) mimarisiyle inşa edilmiştir. Sistem, dijital ajan (OpenClaw), fiziksel avatarlar (5-DOF robotik lamba + dört bacaklı robot evcil hayvan) ve akıllı mutfak otomasyonu ile fiziksel-dijital dünyayı birleştirir.
+Bu proje, bir yaşam alanını ve aracı; sesli komutlarla yönetilebilen, sensörlerle çevresel farkındalığa sahip, görsel-işitsel-duyusal olarak sinematik bir atmosfer sunan ve çok-modelli yapay zeka ile proaktif karar veren **premium bir otomasyon ekosistemine** dönüştürür. Sistem, merkezi bir hibrit zeka beyni (`jarvis_core` — MiniMax + DeepSeek) etrafında **32 modülden** oluşan tek bir kod tabanı (Single Codebase) mimarisiyle inşa edilmiştir. Sistem, dijital ajan (OpenClaw), fiziksel avatarlar (5-DOF robotik lamba + dört bacaklı robot evcil hayvan), akıllı mutfak otomasyonu, otonom kokteyl robotu (CocktailBerry) ve iklim/solunum kalkanı ile fiziksel-dijital dünyayı birleştirir.
 
 ---
 
@@ -33,7 +33,8 @@ Bu proje, bir yaşam alanını ve aracı; sesli komutlarla yönetilebilen, sens�
 - **Aydınlatma:** WLED (Sound Reactive) + COB LED + Hyperion.ng (ekran senk)
 - **Sensörler:** LD2410/LD2450 mmWave radar, MPU6050 ivmeölçer, TTP223 kapasitif, INMP441 I2S mikrofon
 - **Araç:** OBD2 ELM327, Nvidia Jetson Nano 4GB + Sony IMX219 (Edge-AI ADAS)
-- **Gömülü:** Raspberry Pi Zero 2 W (Magic Mirror), Raspberry Pi 4 (jarvis_core + Hyperion)
+- **Gömülü:** Raspberry Pi Zero 2 W (Magic Mirror), Raspberry Pi 4 (jarvis_core + Hyperion + CocktailBerry Kiosk)
+- **İklim:** Hisense D16CW nem alıcı + Shelly Plug S + BME280/ESP32 + DIY HEPA H13 hava temizleyici
 
 ### Modül İsimlendirme Standartları
 Bu projede modüller, fonksiyonel amaçlarını net bir şekilde yansıtan teknik isimlerle tanımlanmıştır. Tüm modüllerin arkasındaki mantık (çevresel senkronizasyon, otonom iklim ayarı, akustik optimizasyon ve duyusal tetikleyiciler) tam güçle ve eksiksiz bir şekilde çalışmaktadır.
@@ -51,6 +52,8 @@ Bu projede modüller, fonksiyonel amaçlarını net bir şekilde yansıtan tekni
 - **Fiziksel Avatarlar:** 5-DOF robotik masa lambası (Autonomous OS — Jarvis'in fiziksel yüzü) + Kame32 dört bacaklı robot evcil hayvan (ESP32 — Jarvis'in fiziksel evcil hayvanı). Kamera/mikrofon YOK — tüm zeka Jarvis'ten MQTT ile gelir
 - **Dijital Ajan (OpenClaw):** Zero Trust Docker sandbox içinde otonom tarayıcı/masaüstü ajanı. Fiziksel lamba ile MQTT senkron — görev tamam → lamba başını sallar, hata → sallar
 - **Akıllı Mutfak:** Xiaomi/Tuya akıllı tencere (Çin bulutundan izole, yerel LAN) + Vision-Cooker kapalı döngü (Qwen-VL malzeme görür → tarif önerir → kullanıcı onayı → tencere pişirir → sesli/ışıklı bildirim)
+- **Siber Barmen (CocktailBerry):** Raspberry Pi 4 + 7" dokunmatik ekran (Kiosk mod) + 10 adet 12V pompa + 16-CH röle + 1N4007 ters akım koruma diyotları. Sesli komutla kokteyl yapar — "Bana Negroni yap" → pompalar çalışır → Lamba yeşil yanar
+- **İklim ve Solunum Kalkanı:** Kıbrıs rutubetine karşı Hisense D16CW nem alıcı (Shelly ile otonom) + BME280/ESP32 nem sensörü + DIY HEPA H13 hava temizleyici. Gece klima boğaz kurutmasını önler — 26°C + swing tavana yönlendirme
 - **Vücut Sağlığı Kalkanı:** Postür koruması (MediaPipe Pose), anti-mavi ışık protokolü, ekran parlaklık/renk sıcaklığı otonom ayarı
 
 ---
@@ -157,7 +160,7 @@ Bu proje, fiziksel bir Raspberry Pi / PC sunucusu gerektirmez. Sistem **ucuz bir
 
 ---
 
-## 📦 Modüller (30 Modül — 2026)
+## 📦 Modüller (32 Modül — 2026)
 
 ### 1. `jarvis_core` — Sistemin Beyni 🧠 (Core 3.0 — 2026 AGI)
 
@@ -420,6 +423,25 @@ Bu proje, fiziksel bir Raspberry Pi / PC sunucusu gerektirmez. Sistem **ucuz bir
 
 ---
 
+### 31. `siber_barmen_cocktailberry` — Siber Barmen (CocktailBerry Kiosk) 🍸
+
+- **Otonom Kokteyl Robotu:** Raspberry Pi 4 + 7" dokunmatik ekran (Kiosk mod) + 10 adet 12V pompa + 16 kanallı röle kartı. Misafir ekrana dokunur, kokteyl seçer, robot pompalar çalışır ve bardağa içki akıtır. "Bana Negroni yap" dersin, gerisini o halleder
+- **Şov (Wow Factor):** 7" ekranda parlayan kokteyl menüsü — misafirin gözünde "premium lounge" hissi. Headless bir ESP32'de bu deneyim yok. CocktailBerry Kiosk modu, bu projenin "premium lounge" konseptiyle uyumlu
+- **1N4007 Ters Akım Koruması:** Her pompanın + ve - terminaline 1N4007 diyot paralel lehimlenir. Röle açıldığında motor sargısındaki ters EMF spike'ı diyot tarafından absorbe edilir — röle kontakları ve Pi GPIO pin'leri korunur. Bu kural KRİTİKTİR, atlanmamaz
+- **Jarvis Sesli Komut:** "Bana Negroni yap" → MQTT `jarvis/barmen/command` → CocktailBerry REST API → pompalar çalışır → bitti → MQTT `jarvis/barmen/recipe_done` → Jarvis "Kokteyliniz hazır" der → Lamba (Modül 29) yeşil yanar + başını sallar
+- **Güvenlik:** Günde max 5 kokteyl (yazılımsal limit), yaş doğrulama, acil stop butonu, çocuk kilidi (PIN). Hata durumunda Lamba kırmızı yanar + sallar
+
+### 32. `climate_respiratory_shield` — Yurt İklim ve Solunum Kalkanı 🛡️
+
+- **Kıbrıs Rutubetine Karşı:** Hisense D16CW (1.6L/gün) nem alma cihazı, Shelly Plug S prizle otonom kontrol. BME280 + ESP32 sensör oda nemini ölçer. Nem > %55 → Klima kapatılır (Broadlink), Hisense açılır (Shelly ON → Auto-Restart). Nem < %45 → Hisense kapatılır. "Gündüz rutubeti alır, gece boğazınızı korur"
+- **Boğaz Koruması (Gece Modu):** Gece 23:00 → Hisense kapatılır (sessiz uyku — kompressör gürültüsü yok). Klima 26°C'ye alınır (Broadlink IR). Swing modu tavana yönlendirilir (hava akımı doğrudan yüzünüze/boğazınıza çarpmaz). "Klima boğazınızı kurutmaz, çünkü hava akımını tavana yönlendirir"
+- **DIY Hava Temizleyici:** HEPA H13 filtre + 12V PC fanı = $25 ile toz/küf/polen filtreleme. Xiaomi Mi Air Purifier ($130) yerine DIY — 5× ucuz, filtre 4× ucuz, HA'ya yerel entegre (Zero-Trust uyumlu), kutu içinde gizlenebilir
+- **Neden 1.6L ve 4.2L Değil:** Yurt odası 15-20m². 1.6L/gün yeterli. 4.2L model 2× pahalı, 2× büyük, 10dB daha gürültülü, 2× güç tüketir. Doğru kapasiteyi seçmek mühendisliktir
+- **Neden Nem Alıcı ve Nemlendirici Değil:** Kıbrıs bir ada — nem zaten %65-80. Nemlendirici = küf üretme makinesi. Klima boğazı kurutuyorsa çözüm nemlendirici değil — klimayı 26°C'ye alıp swing'i tavana yönlendirmektir
+- **Jarvis Sesli Komut:** "Odamın nemini kontrol et" → Jarvis nem ve sıcaklığı söyler. "Gece moduna geç" → Hisense OFF + Klima 26°C + Swing tavan. "Nem alıcıyı aç" → Shelly ON → Hisense çalışır
+
+---
+
 ## 🔗 Modüller Arası Haberleşme
 
 ### MQTT Topic Yapısı
@@ -463,7 +485,15 @@ jarvis/#
 ├── jarvis/chef/recipe_suggestion   → Mealie tarif önerisi (besin değerleri ile)
 ├── jarvis/chef/recipe_approved     → Kullanıcı tarif onayı → pişirme başlat
 ├── jarvis/lamp/motion/command       → Lamba (Modül 29) fiziksel onay (nod/shake/aim)
-└── jarvis/lifeos/nutrition/inject   → OpenClaw Yemeksepeti makro → Modül 16 Life OS
+├── jarvis/lifeos/nutrition/inject   → OpenClaw Yemeksepeti makro → Modül 16 Life OS
+├── jarvis/barmen/command            → CocktailBerry (Modül 31) kokteyl komutu
+├── jarvis/barmen/status             → CocktailBerry pişirme durumu
+├── jarvis/barmen/recipe_done        → CocktailBerry kokteyl hazır
+├── jarvis/barmen/error              → CocktailBerry pompa/şişe hatası
+├── jarvis/climate/humidity          → BME280 (Modül 32) oda nemi
+├── jarvis/climate/temperature       → BME280 (Modül 32) oda sıcaklığı
+├── jarvis/climate/command           → İklim Kalkanı (Modül 32) sesli komut
+└── jarvis/climate/status            → İklim Kalkanı mod durumu (day/night)
 ```
 
 ### Haberleşme Protokolleri
@@ -622,12 +652,22 @@ akilli-evim/
 │   ├── SOUL.md
 │   ├── SAFETY.md
 │   └── config.yaml
-└── desktop_pet_kame/               ← Modül 30: Desktop Pet Kame (8-DOF Quadruped)
-    ├── hardware_and_assembly.md
-    ├── kame_esp32_firmware.ino
-    ├── audio_reactive_dance.yaml
-    ├── eye_of_sauron_parking.py
-    ├── wingman_greeting_protocol.yaml
+├── desktop_pet_kame/               ← Modül 30: Desktop Pet Kame (8-DOF Quadruped)
+│   ├── hardware_and_assembly.md
+│   ├── kame_esp32_firmware.ino
+│   ├── audio_reactive_dance.yaml
+│   ├── eye_of_sauron_parking.py
+│   ├── wingman_greeting_protocol.yaml
+│   └── config.yaml
+├── siber_barmen_cocktailberry/     ← Modül 31: Siber Barmen (CocktailBerry Kiosk)
+│   ├── hardware_and_wiring.md          ← 10 pompa + 16-CH röle + 1N4007 diyot + LM2596
+│   ├── cocktailberry_kiosk_setup.md   ← install.sh + Kiosk mod + MQTT bridge
+│   ├── jarvis_mqtt_integration.yaml   ← Jarvis sesli komut → CocktailBerry REST API
+│   └── config.yaml
+└── climate_respiratory_shield/     ← Modül 32: Yurt İklim ve Solunum Kalkanı
+    ├── hardware_and_setup.md          ← Hisense D16CW + Shelly + BME280 + DIY HEPA
+    ├── bme280_esphome.yaml            ← ESP32 + BME280 ESPHome konfigürasyonu
+    ├── climate_shield_automation.yaml ← Gündüz nem alma + Gece boğaz koruması
     └── config.yaml
 ```
 
@@ -650,6 +690,8 @@ akilli-evim/
 13. **Faz 13 — Modül 28:** Multicooker Chef (Xiaomi/Tuya yerel izolasyon + Vision-Cooker kapalı döngü) ✅
 14. **Faz 14 — Modül 29:** Embodied Jarvis Avatar (5-DOF robotik lamba + Autonomous OS + Postür Kalkanı) ✅
 15. **Faz 15 — Modül 30:** Desktop Pet Kame (8-DOF quadruped + Audio-Reactive Dans + Eye of Sauron Park + Wingman Karşılama) ✅
+16. **Faz 16 — Modül 31:** Siber Barmen CocktailBerry (Pi 4 + 7" Kiosk + 10 pompa + 1N4007 diyot + Jarvis MQTT) ✅
+17. **Faz 17 — Modül 32:** Yurt İklim ve Solunum Kalkanı (Hisense D16CW + Shelly + BME280 + DIY HEPA + Gece boğaz koruması) ✅
 
 ---
 
@@ -664,14 +706,16 @@ akilli-evim/
 | Dijital Ajan | **OpenClaw v2026.4.15** (browser-use + shell + file ops), **browser-use** (Playwright), Docker Zero Trust sandbox (7 katman) |
 | Fiziksel Avatar | **Autonomous OS** (autonomous-ai/autonomous-os — edge_body_only), **PCA9685** I2C PWM driver, MG996R + SG90 servo, inverse kinematics |
 | Robotik Evcil Hayvan | **Kame32** (ESP32 DevKit V1 + 8× SG90/MG90S), ESP32Servo kütüphanesi, paralelgram mekanizması, F693ZZ rulman |
+| Kokteyl Robotu | **CocktailBerry** (Raspberry Pi 4 + 7" Touch Kiosk + 10× 12V pompa + 16-CH röle), 1N4007 ters akım koruma diyotları, LM2596 buck converter, Chromium Kiosk mod, REST API + MQTT bridge |
 | Akıllı Mutfak | **Mealie** (açık kaynak tarif yöneticisi, REST API, URL scrape), **Xiaomi Miot Auto** (`miot_local: true`), **Tuya Local**, router `iptables` ile Çin bulutu izolasyonu, DeepSeek sporcu makro orkestrasyonu |
+| İklim Kalkanı | **Hisense D16CW** (1.6L/gün kompresörlü nem alıcı, Auto-Restart), **Shelly Plug S** (güç kontrol + izleme), **BME280** (I2C nem/sıcakk/basınç, ESPHome), **DIY HEPA H13** + 12V PC fanı, Broadlink RM4 Mini (klima 26°C + swing tavan — boğaz koruması) |
 | Ağ | Tailscale VPN, GL-MT3000 (Beryl AX), WiFi 6 |
 | Mikrodenetleyici | ESP32/ESP32-S3 (ESPHome 2026), ESP32 DevKit V1 (Kame32 — Arduino IDE) |
 | Sensör | LD2410/LD2450 (mmWave radar — varlık/hareket), MPU6050 (ivmeölçer), TTP223 (kapasitif), INMP441 (I2S mic). ⚠️ Kalp atışı/nefes için akıllı saat (Apple Health/Google Fit) veya HLK-LD6002 (60GHz Vital Signs Radar) gerekir. LD2410/LD2450/LD2420/LD6001 kalp/nefes ÖLÇMEZ |
 | Kablosuz | Zigbee (Zigbee2MQTT), WiFi 6, IR (Broadlink) |
 | Görüntü | OpenCV 2026, MediaPipe Pose (postür analizi), face_recognition, ChromaDB (vektör DB), Hyperion.ng (ekran senk) |
 | Medya | Spotify Web API, WLED (Sound Reactive), Tuya, Hyperion (Ambilight) |
-| Gömülü | Raspberry Pi Zero 2 W (Magic Mirror), Raspberry Pi 4 (Jarvis Core + Hyperion + Autonomous OS Body), Nvidia Jetson Nano 4GB (Edge-AI ADAS) |
+| Gömülü | Raspberry Pi Zero 2 W (Magic Mirror), Raspberry Pi 4 (Jarvis Core + Hyperion + Autonomous OS Body + CocktailBerry Kiosk), Nvidia Jetson Nano 4GB (Edge-AI ADAS) |
 | Sağlık | Apple Health / Google Fit (akıllı saat), CalDAV/Google Calendar, PyPDF2 (kan tahlili), Omron BLE (tansiyon), FL-41 Rose Tint (VSS aydınlatma) |
 | VSS Kalkanı | MediaPipe Pose (servikal açı), WLED anti-mavi ışık protokolü, Windows WMI / brightnessctl (ekran parlaklık), Night Light 3400K |
 | Maliyet | **~$12-15/ay** (MiniMax ~$10 + DeepSeek ~$2 + Qwen-VL ~$2) |

@@ -441,6 +441,44 @@
 
 ---
 
+## 🍸 Modül 31: Siber Barmen (CocktailBerry)
+
+| # | Bileşen | Model / Tip | Adet | Fiyat (≈) | Not |
+|---|---|---|---|---|---|
+| 1 | Tek Kart Bilgisayar | Raspberry Pi 4 (4GB) | 1 | ~$55 | CocktailBerry + Kiosk UI |
+| 2 | Dokunmatik Ekran | Raspberry Pi 7" Touch Display | 1 | ~$60 | Kiosk mod — kokteyl seçim arayüzü |
+| 3 | Röle Kartı | 16 Kanal 5V Röle (Aktif Low) | 1 | ~$12 | 10 pompayı kontrol eder (6 yedek) |
+| 4 | Pompa | 12V Diyafram/Peristaltik Pompa | 10 | ~$8/adet | 10 farklı içki/mixer |
+| 5 | Silikon Hortum | Gıda uyumlu silikon Ø6mm | 15m | ~$15 | Pompa → nozül sıvı taşıma |
+| 6 | Koruma Diyotu | 1N4007 (1000V 1A) | 10 | ~$0.10/adet | Ters akım koruması — her pompaya paralel |
+| 7 | Güç Kaynağı | 12V 10A SMPS | 1 | ~$20 | 10 pompayı besler (8A peak) |
+| 8 | Voltaj Düşürücü | LM2596 Buck Converter | 1 | ~$3 | 12V → 5V (Pi'yi besler) |
+| 9 | DC Jack | 5.5×2.1mm Dişi | 2 | ~$1 | Güç girişi |
+| 10 | Jumper Kablo | Dişi-Erkek Dupont | 20 | ~$2 | Pi GPIO → röle kartı |
+| 11 | 3D Baskı | PLA Filament 500g | 1 | ~$6 | Pompa montaj + ekran çerçeve |
+
+> **Modül 31 donanım maliyeti: ~$265**
+
+---
+
+## 🛡️ Modül 32: Yurt İklim ve Solunum Kalkanı
+
+| # | Bileşen | Model / Tip | Adet | Fiyat (≈) | Not |
+|---|---|---|---|---|---|
+| 1 | Nem Alma Cihazı | Hisense D16CW (1.6L/gün) | 1 | ~$120 | Kompresörlü, Auto-Restart, Shelly ile kontrol |
+| 2 | Akıllı Priz | Shelly Plug S | 1 | ~$15 | Hisense'i otonom tetikler + güç izleme |
+| 3 | Sensör | BME280 (Sıcaklık + Nem + Basınç) | 1 | ~$5 | I2C, ESP32'ye bağlı |
+| 4 | Mikrodenetleyici | ESP32 DevKit V1 | 1 | ~$5 | BME280 okur, MQTT yayınlar |
+| 5 | HEPA Filtre | H13 (Ø15cm × 5cm) | 1 | ~$12 | DIY hava temizleyici — toz/küf/polen |
+| 6 | PC Fanı | 12V 120mm Bilgisayar Fanı | 1 | ~$8 | DIY hava temizleyici — hava akışı |
+| 7 | Güç Kaynağı | 12V 2A Adaptör | 1 | ~$6 | PC fanını besler |
+| 8 | 3D Baskı / Kutu | PLA 200g veya MDF kutu | 1 | ~$4 | HEPA + fan montajı |
+| 9 | Jumper Kablo | Dupont Dişi-Dişi | 4 | ~$1 | BME280 → ESP32 I2C |
+
+> **Modül 32 donanım maliyeti: ~$181**
+
+---
+
 ##  Toplam Maliyet Özeti
 
 | Kategori | Adet | Toplam Fiyat (≈) |
@@ -461,8 +499,10 @@
 | **Modül 28 (Multicooker)** | 1 | ~$45 (Xiaomi tencere) |
 | **Modül 29 (Lamba)** | — | ~$105 (servo + sürücü + 3D) |
 | **Modül 30 (Kame)** | — | ~$45 (ESP32 + 8 servo + Qi + 3D) |
+| **Modül 31 (CocktailBerry)** | — | ~$265 (Pi 4 + 7" ekran + 10 pompa + röle + diyot) |
+| **Modül 32 (İklim Kalkanı)** | — | ~$181 (Hisense D16CW + Shelly + BME280 + DIY HEPA) |
 | **API Abonelikleri** (MiniMax, DeepSeek, Qwen-VL, Spotify) | — | ~$15/ay |
-| **TOPLAM (Tek Seferlik)** | — | **~$1.115** |
+| **TOPLAM (Tek Seferlik)** | — | **~$1.561** |
 | **TOPLAM (Aylık)** | — | **~$15/ay** |
 
 > **Not:** Fiyatlar yaklaşık değerlerdir. Bazı bileşenler modüller arasında paylaşımlıdır (hoparlörler, API'ler, akıllı prizler). Gerçek maliyet, mevcut donanıma ve seçilen markalara göre değişir.
@@ -519,6 +559,18 @@
 31. 2S LiPo 1000mAh + TP4056 (~$9)
 32. Qi şarj verici + alıcı (~$5) + 5V/2A adaptör (~$4)
 33. PLA filament 500g (~$6) + F693ZZ rulman × 8 (~$1/adet)
+
+### Faz 16 (Siber Barmen — CocktailBerry)
+34. Raspberry Pi 4 (4GB) (~$55) + 7" Touch Display (~$60)
+35. 16 Kanal 5V Röle Kartı (~$12) + 10× 12V Pompa (~$8/adet)
+36. 1N4007 Diyot × 10 (~$0.10/adet) + 15m Silikon Hortum (~$15)
+37. 12V 10A SMPS (~$20) + LM2596 Buck (~$3) + PLA 500g (~$6)
+
+### Faz 17 (İklim ve Solunum Kalkanı)
+38. Hisense D16CW Nem Alma Cihazı (~$120) + Shelly Plug S (~$15)
+39. BME280 Sensör (~$5) + ESP32 DevKit V1 (~$5)
+40. HEPA H13 Filtre (~$12) + 12V PC Fanı (~$8) + 12V 2A Adaptör (~$6)
+41. PLA 200g / MDF Kutu (~$4) + Dupont Kablo (~$1)
 
 ---
 

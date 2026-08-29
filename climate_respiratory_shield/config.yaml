@@ -1,0 +1,77 @@
+# Modül 32: Yurt İklim ve Solunum Kalkanı — Konfigürasyon
+# Hisense D16CW + Shelly Plug S + BME280/ESP32 + DIY HEPA Hava Temizleyici
+
+module:
+  id: 32
+  name: "Yurt İklim ve Solunum Kalkanı"
+  type: "iklim_kontrol_solunum_kalkani"
+  purpose: "Kıbrıs rutubeti + klima boğaz kurutması → otonom iklim yönetimi"
+
+hardware:
+  dehumidifier:
+    model: "Hisense D16CW"
+    capacity: "1.6L/gün"
+    power: "~230W"
+    auto_restart: true
+    control: "shelly_plug_s" # Güç kes/aç ile kontrol
+  smart_plug:
+    model: "Shelly Plug S"
+    entity_id: "switch.hisense_dehumidifier"
+    power_monitoring: true
+  sensor:
+    model: "BME280"
+    bus: "I2C"
+    measurements: ["temperature", "humidity", "pressure"]
+    esp32: true
+    esphome: true
+  air_purifier:
+    type: "DIY"
+    filter: "HEPA H13"
+    fan: "12V PC Fan (120mm)"
+    control: "shelly_plug_s" # veya ESP32 PWM
+    entity_id: "switch.diy_air_purifier"
+
+thresholds:
+  humidity:
+    day_high: 55 # %55 üstü → Hisense aç
+    day_low: 45 # %45 altı → Hisense kapat
+    night_max: 60 # Gece max %60 (uyku için tolere)
+  temperature:
+    night_target: 26 # Gece klima 26°C (boğaz koruması)
+  air_quality:
+    pm25_high: 35 # μg/m³ üstü → hava temizleyici aç
+    pm25_low: 15 # μg/m³ altı → hava temizleyici kapat
+
+schedule:
+  day_mode:
+    start: "07:00"
+    end: "23:00"
+    logic: "humidity_driven" # Nem > %55 → Hisense ON, Klima OFF
+  night_mode:
+    start: "23:00"
+    end: "07:00"
+    logic: "throat_protection" # Hisense OFF, Klima 26°C, Swing tavan
+
+mqtt:
+  broker: "gl-mt3000.local"
+  port: 1883
+  humidity_topic: "jarvis/climate/humidity"
+  temperature_topic: "jarvis/climate/temperature"
+  command_topic: "jarvis/climate/command"
+  status_topic: "jarvis/climate/status"
+
+broadlink:
+  device: "RM4 Mini"
+  entity_id: "remote.broadlink_rm4_mini"
+  climate_entity: "climate.yurt_klima"
+
+jarvis_integration:
+  voice_control: true
+  voice_phrases:
+    - "odamın nemini kontrol et"
+    - "nem alıcıyı aç"
+    - "nem alıcıyı kapat"
+    - "gece moduna geç"
+    - "boğaz koruması aktif"
+  notify_on_high_humidity: true # Nem > %65 → Jarvis uyarır
+  notify_on_dry_throat_risk: true # Klima + düşük nem → Jarvis uyarır
