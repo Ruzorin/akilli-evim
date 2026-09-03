@@ -2,7 +2,7 @@
 
 > **"Sinematik atmosfer, duyusal optimizasyon ve otonom yapay zeka ile yaşam ve mobil alanları tek bir akıllı ekosistemde birleştiren premium otomasyon platformu."**
 
-Bu proje, bir yaşam alanını ve aracı; sesli komutlarla yönetilebilen, sensörlerle çevresel farkındalığa sahip, görsel-işitsel-duyusal olarak sinematik bir atmosfer sunan ve çok-modelli yapay zeka ile proaktif karar veren **premium bir otomasyon ekosistemine** dönüştürür. Sistem, merkezi bir hibrit zeka beyni (`jarvis_core` — MiniMax + DeepSeek) etrafında **32 modülden** oluşan tek bir kod tabanı (Single Codebase) mimarisiyle inşa edilmiştir. Sistem, dijital ajan (OpenClaw), fiziksel avatarlar (5-DOF robotik lamba + dört bacaklı robot evcil hayvan), akıllı mutfak otomasyonu, otonom kokteyl robotu (CocktailBerry) ve iklim/solunum kalkanı ile fiziksel-dijital dünyayı birleştirir.
+Bu proje, bir yaşam alanını ve aracı; sesli komutlarla yönetilebilen, sensörlerle çevresel farkındalığa sahip, görsel-işitsel-duyusal olarak sinematik bir atmosfer sunan ve çok-modelli yapay zeka ile proaktif karar veren **premium bir otomasyon ekosistemine** dönüştürür. Sistem, merkezi bir hibrit zeka beyni (`jarvis_core` — MiniMax + DeepSeek, **tamamen VPS bulutunda**) etrafında **34 modülden** oluşan tek bir kod tabanı (Single Codebase) mimarisiyle inşa edilmiştir. **Yerel sunucu donanımı YOK** — beyin VPS'te, dağıtıcı GL-MT3000 modemde, uç cihazlar (ESP32, Tuya, Yeelight, Echo Dot) yerel WiFi'da. Sistem, dijital ajan (OpenClaw), akıllı mutfak (Hisense multicooker + HAUSBERG espresso), DIY perde motoru, Yeelight ambiyans ve iklim/solunum kalkanı ile fiziksel-dijital dünyayı birleştirir. Robotik avatarlar (lamba, robot köpek, kokteyl robotu) oda temeli bitince devreye girecek şekilde **beklemede** tutulur.
 
 ---
 
@@ -33,8 +33,9 @@ Bu proje, bir yaşam alanını ve aracı; sesli komutlarla yönetilebilen, sens�
 - **Aydınlatma:** WLED (Sound Reactive) + COB LED + Hyperion.ng (ekran senk)
 - **Sensörler:** LD2410/LD2450 mmWave radar, MPU6050 ivmeölçer, TTP223 kapasitif, INMP441 I2S mikrofon
 - **Araç:** OBD2 ELM327, Nvidia Jetson Nano 4GB + Sony IMX219 (Edge-AI ADAS)
-- **Gömülü:** Raspberry Pi Zero 2 W (Magic Mirror), Raspberry Pi 4 (jarvis_core + Hyperion + CocktailBerry Kiosk)
-- **İklim:** Hisense D16CW nem alıcı + Shelly Plug S + BME280/ESP32 + DIY HEPA H13 hava temizleyici
+- **Gömülü (Pi'siz):** Yerel sunucu YOK — MagicMirror² VPS Docker'da web servisi, TV'de Mi Box S 4K tarayıcı Kiosk'unda gösterilir. Tüm yerel zeka ESP32'lerde (ESPHome)
+- **İklim:** Hisense D16CW nem alıcı + Tuya akıllı priz + BME280/ESP32 + DIY HEPA H13 hava temizleyici
+- **Yeni Ekipman (Eylül 2026):** Yeelight Bulb 1S (ELDE), Tuya IR+RF kumanda (ELDE — klima+vantilatör bağlı), Hisense HMC6SBK 6L multicooker (ELDE), HAUSBERG HB3723 espresso (ELDE), 28BYJ-48+ULN2003 perde motoru (ELDE), Echo Dot 5 ×2 (ELDE)
 
 ### Modül İsimlendirme Standartları
 Bu projede modüller, fonksiyonel amaçlarını net bir şekilde yansıtan teknik isimlerle tanımlanmıştır. Tüm modüllerin arkasındaki mantık (çevresel senkronizasyon, otonom iklim ayarı, akustik optimizasyon ve duyusal tetikleyiciler) tam güçle ve eksiksiz bir şekilde çalışmaktadır.
@@ -160,7 +161,9 @@ Bu proje, fiziksel bir Raspberry Pi / PC sunucusu gerektirmez. Sistem **ucuz bir
 
 ---
 
-## 📦 Modüller (32 Modül — 2026)
+## 📦 Modüller (34 Modül — 2026)
+
+> **⚠️ Mimari Değişiklik (Eylül 2026):** Raspberry Pi ÇÖP (beyin VPS'te), Sonoff ZBMINI ÇÖP (TTP223 ×5 elde), Broadlink → Tuya IR+RF (elde), SwitchBot → 28BYJ-48 DIY (elde), Xiaomi tencere → Hisense HMC6SBK 6L (elde). Robotik modüller (29, 30, 31) **beklemede** — önce oda temeli (ses, ışık, otomasyon).
 
 ### 1. `jarvis_core` — Sistemin Beyni 🧠 (Core 3.0 — 2026 AGI)
 
@@ -187,10 +190,10 @@ Bu proje, fiziksel bir Raspberry Pi / PC sunucusu gerektirmez. Sistem **ucuz bir
 
 ### 2. `hidden_triggers` — Gizli Tetikleyiciler 🔘
 
-- **Zigbee Mini Buton:** Sonoff/Tuya ZBMINI, yatak başı + masa altı gizli. Tek tık → Lounge, çift tık → Sinema, basılı tut → sistem kapat
-- **TTP223 Kapasitif Dokunmatik:** Ahşap masa altına yapıştırılmış, ahşabın üstünden dokunma algılar. 2sn basılı tutma → Intimacy modu. ESP32 + ESPHome, debounce kalibrasyonu (ahşap kalınlığına göre)
-- **NFC Bardak Altlığı:** NTAG215 bardak altlığı altında. Telefon koy → auto-ducking (müzik %15'e kıs, sohbet modu)
+- **TTP223B Dokunmatik Sensörler (×5 — ELDE):** Yurt priz/anahtar tesisatı sökülmez. Ahşap masa altı, komodin, yatak başı ve mutfak tezgahına yapıştırılmış 5 gizli dokunmatik nokta. Ahşabın üstünden dokunma algılar. Tek tık → Lounge, çift tık → Sinema, 2sn basılı tutma → Intimacy modu. ESP32 + ESPHome, debounce kalibrasyonu (ahşap kalınlığına göre)
+- **NFC Etiketler (NTAG213 ×8 — ELDE):** Bardak altlığı, kahve köşesi, Study Book, misafir etiketleri. Telefon koy → auto-ducking (müzik %15'e kıs, sohbet modu)
 - **Gecikmesiz çalışma:** <100ms → "sihir" hissi
+- **Zigbee KALDIRILDI:** Sonoff ZBMINI çöpe — TTP223 ×5 (ELDE) her işi yapar, pil/CR2032 gerektirmez
 
 ### 3. `space_projection` — Derin Uzay Projeksiyonu 🌌
 
@@ -201,13 +204,13 @@ Bu proje, fiziksel bir Raspberry Pi / PC sunucusu gerektirmez. Sistem **ucuz bir
 - **Broadlink IR alternatifi:** Tuya uyumlu değilse, Broadlink ile IR kontrol
 - **Sleep Fade-Out:** 45dk hareketsizlik → projeksiyon kapat → melatonin → derin uyku
 
-### 4. `magic_mirror` — Akıllı Ayna 🪞
+### 4. `magic_mirror` — Akıllı Ayna (TV Üzerinde — Pi'siz) 🪞
 
-- **Two-way mirror akrilik + çerçevesiz LCD:** Siyah bant ile ışık sızdırmazlık
-- **Akıllı priz mantığı:** LCD siyah ekran gösterse bile backlight çalışır → ayna illüzyonu bozulur. Güç kesik → %100 normal ayna
-- **MagicMirror²:** Saf beyaz yazı, siyah arka plan (OLED hissi). Renkli ikonlar YOK. Saat (sağ üst), hava (sol üst), MMM-Spotify (alt orta — o an çalan şarkı), MMM-MQTT (orta — sinematik mesajlar)
-- **Calm Technology:** Kullanılmadığında sadece ayna, kişi yaklaştığında "canlanır" (~10-15sn boot)
-- **3 senaryo:** Yaklaşma → ekran aç, Intimacy/Date → MQTT mesajı ("Atmosphere set to Deep Flow..."), Uzaklaşma → 1dk sonra kapat
+- **MagicMirror² VPS Docker'da:** Raspberry Pi Zero ÇÖP — MagicMirror² web servisi olarak VPS'te çalışır (`http://VPS_IP:8080`), TV'de Mi Box S 4K tarayıcısında tam ekran (Kiosk) gösterilir
+- **TV Ayna Hibrit:** (Opsiyonel) Two-way mirror akriliği TV ekranının önüne — TV kapalıyken ayna, açıkken MagicMirror²
+- **MagicMirror²:** Saf beyaz yazı, siyah arka plan (OLED hissi). Saat (sağ üst), hava (sol üst), MMM-Spotify (alt orta), MMM-MQTT (orta — sinematik mesajlar)
+- **Calm Technology:** Kullanılmadığında TV kapalı (akıllı priz), kişi yaklaştığında TV açılır → MagicMirror² görünür
+- **3 senaryo:** Yaklaşma → TV aç + MagicMirror², Intimacy/Date → MQTT mesajı, Uzaklaşma → 1dk sonra TV kapat
 
 ### 5. `spatial_audio` — Konumsal Ses 🔊
 
@@ -224,21 +227,21 @@ Bu proje, fiziksel bir Raspberry Pi / PC sunucusu gerektirmez. Sistem **ucuz bir
 - **COB LED (Pürüzsüz Işık):** WS2812B noktasal LED yerine COB → "Floating Bed" illüzyonu (yatak havada duruyor)
 - **3 senaryo:** Gece yönlendirmesi (ayak algıla → %15 aç, 3sn transition), Kapanış (2dk sonra fade-out), Vibe/Date modu (gece yönlendirmesi OFF, %30 sabit amber)
 
-### 7. `morning_after` — Ertesi Sabah 🌅
+### 7. `morning_after` — Ertesi Sabah (DIY Perde Motoru) 🌅
 
 - **Sirkadiyen Ritim:** Kortizol uyanış tepkisi — sesli alarm = "savaş ya da kaç" stresi, ışıkla uyanış = doğal ritim
-- **SwitchBot Curtain:** Kornişe kırma-dökme yapmadan takılır, sessiz mod (~40dB)
+- **DIY Perde Motoru (28BYJ-48 + ULN2003 — ELDE):** 3000₺ SwitchBot yerine ~150₺ robotik parça. ESP32 + ESPHome `stepper` ile tam yerel kontrol. Yavaş açılım (~30-60 sn) = sinematik avantaj: perde yavaş açılır → güneş kademeli girer
 - **WLED Yapay Gündoğumu:** 10 dakikada 4 aşama — #100000 (koyu bordo) → #FF4500 (turuncu) → #FFD700 (altın) → #FFAA55 (sıcak beyaz). transition: 180-240sn → "korkutmadan" uyanış
 - **T-Eksi Orkestra:** T-10dk (WLED gündoğumu + perde %20), T-5dk (Spotify %5→%15 fade-in), T-0dk (perde %100 + barista_mode), T+2dk (Jarvis "Good morning. Weather is 24 degrees. Your espresso machine is ready.")
-- **Barista entegrasyonu:** T-0dk'da barista_mode tetiklenir → espresso ısınmaya başlar → T+5dk "Espresso ready"
+- **Barista entegrasyonu:** T-0dk'da barista_mode tetiklenir → HAUSBERG espresso ısınmaya başlar → T+5dk "Espresso ready"
 
-### 8. `invisible_remote` — Görünmez Kumanda 📡
+### 8. `invisible_remote` — Görünmez Kumanda (Tuya IR+RF) 📡
 
-- **Broadlink RM4 Mini:** 360° IR, TV ve klimayı görecek konumda gizli
-- **SmartIR:** Klimayı termostat olarak HA'a entegre (sıcaklık, fan hızı, mod). 100+ klima markası hazır kod veritabanı
-- **TV IR Script'leri:** Power, HDMI 1/2, Volume Up/Down, Mute. Kompozit script: Power → 3sn bekle → HDMI 1
-- **Stealth otomasyonlar:** Intimacy → klima 20°C quiet (sessizce, arka planda). Netflix & Chill → TV aç + HDMI + sinema ışıkları. Oda boş 1saat → klima otomatik kapat
-- **ESP32 + IR LED alternatifi:** Broadlink yerine ESP32 + ESPHome
+- **Tuya WiFi Smart IR+RF (ELDE):** Klima + vantilatör Tuya Smart ile bağlı. HA `tuya-local` entegrasyonu: remote entity + learn_command + send_command — tamamen Tuya bulutunu atlar, yerel kontrol
+- **IR + RF çift destek:** RF 433/315MHz — eski perdeler/panjurlar için de kullanılabilir (Broadlink RM4 Mini sadece IR'di, RF için Pro gerekirdi)
+- **ESP32 IR Blaster (Yedek — Parçalar ELDE):** TSOP1838 (IR alıcı) + LTE-4206 IR LED ×2 + 2N2222 transistör + 220R — Tuya kumandanın görmediği köşeler için yedek blaster, ESPHome `remote_transmitter/receiver`
+- **Stealth otomasyonlar:** Intimacy → klima 20°C quiet (sessizce, arka planda). Netflix & Chill → Mi Box aç + sinema ışıkları. Oda boş 1saat → klima otomatik kapat
+- **TV Notu:** TV'nin IR alıcısı arızalı — TV değişecek. Yeni TV + Mi Box S 4K ile kontrol IR yerine Android TV (ADB) + Chromecast ile yapılır
 
 ### 9. `smart_diffuser` — Akıllı Koku Difüzörü 🌿
 
@@ -256,11 +259,12 @@ Bu proje, fiziksel bir Raspberry Pi / PC sunucusu gerektirmez. Sistem **ucuz bir
 - **Gökkuşağı YOK:** Sadece sıcak tonlar (amber, kırmızı, altın) → "premium" hissi. Gökkuşağı = "ucuz pavyon"
 - **3 otomasyon:** Müzik başladı → Date Lounge preset (güneş batmışsa), Müzik durdu → Rest Idle, Mod değiştir (parti/odaklanma/lounge)
 
-### 11. `barista_mode` — Kahve Otomasyonu ☕
+### 11. `barista_mode` — Kahve Otomasyonu (HAUSBERG HB3723) ☕
 
-- **NFC Etiketi (NTAG215):** Masanın altına gizli, telefon dokundur → kahve makinesi ısınmaya başlar
-- **Güç Ölçüm (Smart Readiness):** Akıllı priz Watt değerini izler. 1000W+ (ısınma) → 20W altı (hazır) tespiti. "Su kaynadı" anını yakalama
-- **Premium materyaller:** Çift cidarlı porselen fincan, Monin vanilya/karamel şurupları, Nespresso/Illy kahve, bambu sunum tepsisi
+- **HAUSBERG HB3723 Espresso (ELDE):** 15 bar pompa, buharla süt köpürtme. WiFi yok — zeka akıllı prizde
+- **NFC Etiketi (NTAG213 — ELDE):** Masanın altına gizli, telefon dokundur → espresso makinesi ısınmaya başlar
+- **Güç Ölçüm (Smart Readiness):** Tuya akıllı priz Watt değerini izler. ~900W (thermoblock ısınma) → ~50W (hazır bekleme) tespiti. "Su kaynadı" anını yakalama
+- **Premium materyaller:** Çift cidarlı porselen fincan, Monin vanilya/karamel şurupları, espresso çekirdeği, bambu sunum tepsisi
 - **Atmosfer:** Işıklar %30 amber (2700K), WLED kahverengi/altın, Lo-Fi müzik %15
 - **TTS:** "Barista mode activated. Pre-heating the espresso machine." → "The water is at optimal temperature. Your espresso is ready to brew."
 
@@ -399,22 +403,27 @@ Bu proje, fiziksel bir Raspberry Pi / PC sunucusu gerektirmez. Sistem **ucuz bir
 - **Zero Trust Güvenlik (7 Katman):** OpenClaw hiçbir zaman serbest çalışmaz. Docker konteyner içinde, root yetkisi olmadan, dosya sistemi kilitli, ağ kısıtlı. Tehlikeli komutlar otomatik engellenir. Önemli işlerde mobil onay ister — "Bu işlem için onayınız gerekli"
 - **Fiziksel Lamba ile Senkron:** OpenClaw bir görevi bitirdiğinde masadaki robotik lamba (Modül 29) başını sallar ve yeşil ışık yanar. Görev hata alırsa lamba sallanır ve kırmızı yanar. Onay beklerken lamba size bakar ve kehribar renk yanar. "Dijital ajanınız fiziksel olarak size haber verir"
 
-### 28. `multicooker_chef_automation` — Mealie + Multicooker Chef Automation 🍳
+### 28. `multicooker_chef_automation` — Mealie + Multicooker Chef (Hisense HMC6SBK) 🍳
 
-- **Thermomix'e Açık Kaynak Rakip:** 100.000₺'lik Thermomix'in kapalı Cookidoo ekosistemi yerine, Mealie (açık kaynak tarif yöneticisi) + Xiaomi akıllı tencere (~3.000₺) ile aynı fonksiyonları fazlasıyla karşılar. Üstelik makro hesabı, görüntü tanıma ve sesli kontrol Thermomix'te YOK. "Açık kaynak, kapalı sisteme karşı"
-- **Mealie Tarif Kütüphanesi:** Bir tarif sitesinin URL'ini yapıştırırsınız → Mealie otomatik malzeme, talimat ve besin değerlerini çıkarıp veritabanına kaydeder. Tüm tarifler sizin sunucunuzda, hiçbir bulut bağımlılığı yok. "Tarif sitenizin URL'ini yapıştırın, gerisini Mealie halleder"
-- **Sporcu Makro Orkestrasyonu:** DeepSeek, kilonuzu ve hedefinizi (bulk/cut/maintenance) alır, günlük protein/karb/yağ hedeflerinizi hesaplar. Mealie'deki tarifleri bu hedeflere göre dinamik olarak ölçekler — "125kg'sınız ve bakım modundasınız, bu tarifi 3 porsiyona çıkarıyorum, 810 kalori 68g protein" der. "Sporcu beslenmesi artık otomatik"
-- **Gözle Pişir (Vision-to-Cook):** Modül 13'ün kamerası (Qwen-VL Max) tezgaha bakar, malzemeleri tanır. Mealie'deki tariflerle eşleştirir, size önerir. Onayladığınızda tencere otomatik başlar. "Kamera görür, Mealie eşleştirir, DeepSeek ölçekler, tencere pişirir"
-- **VSS Dostu Bildirim:** Pişirme başlayınca WLED ışıklar pürüzsüz geçişle turuncu yanar (strobe YASAK, sadece kehribar/yeşil). Lamba (Modül 29) tencereye eğilir. Pişirme bittiğinde Lamba başını sallar ve yeşil yanar. Jarvis "Yemeğiniz hazır" der
+- **Hisense HMC6SBK 6L (ELDE):** Xiaomi 3L yerine 2× kapasite (6L — misafir yemeği), 2× güç (1500W), basınçlı pişirme VAR. WiFi YOK — Çin bulutu riski SIFIR. Zeka Jarvis'te: Tuya akıllı priz güç izleme (1500W pişirme → 40W keep-warm tespiti) + Vision-Cooker orkestrasyonu
+- **Thermomix'e Açık Kaynak Rakip:** 100.000₺'lik Thermomix'in kapalı Cookidoo ekosistemi yerine, Mealie (açık kaynak) + Hisense multicooker (~3.000₺) ile aynı fonksiyonlar. Makro hesabı, görüntü tanıma ve sesli kontrol Thermomix'te YOK. "Açık kaynak, kapalı sisteme karşı"
+- **Mealie Tarif Kütüphanesi:** Bir tarif sitesinin URL'ini yapıştırırsınız → Mealie otomatik malzeme, talimat ve besin değerlerini çıkarıp veritabanına kaydeder. Tüm tarifler sizin sunucunuzda (VPS Docker), hiçbir bulut bağımlılığı yok
+- **Sporcu Makro Orkestrasyonu:** DeepSeek, kilonuzu ve hedefinizi (bulk/cut/maintenance) alır, günlük protein/karb/yağ hedeflerinizi hesaplar. Mealie'deki tarifleri bu hedeflere göre dinamik olarak ölçekler — "125kg'sınız ve bakım modundasınız, bu tarifi 3 porsiyona çıkarıyorum, 810 kalori 68g protein" der
+- **Gözle Pişir (Vision-to-Cook):** Modül 13'ün kamerası (Qwen-VL Max) tezgaha bakar, malzemeleri tanır. Mealie'deki tariflerle eşleştirir, size önerir. Onayladığınızda Hisense'de programı başlatırsınız — prizden güç izleme pişirmenin bittiğini otomatik tespit eder. "Kamera görür, Mealie eşleştirir, DeepSeek ölçekler, priz izler, Jarvis bildirir"
+- **VSS Dostu Bildirim:** Pişirme başlayınca WLED ışıklar pürüzsüz geçişle turuncu yanar (strobe YASAK). Pişirme bittiğinde (güç 40W'a düştüğünde) Yeelight flash + Jarvis "Yemeğiniz hazır" der
 
-### 29. `embodied_jarvis_avatar` — Embodied Jarvis Avatar (5-DOF Robotik Lamba) 💡
+### 29. `embodied_jarvis_avatar` — Embodied Jarvis Avatar (5-DOF Robotik Lamba) 💡 ⏸️ BEKLEMEDE
+
+> **⚠️ BEKLEMEDE:** "Önce odanın temeli (ses, ışık, otomasyon). Robotiğe 1 kuruş harcamıyoruz." Oda temeli bitince uygulanacak.
 
 - **Jarvis'in Fiziksel Yüzü:** 3D yazıcı ile basılan 5 eksenli robotik bir masa lambası. Autonomous OS (açık kaynak robot işletim sistemi) ile çalışır. Beyin bulut VPS'de, Raspberry Pi sadece "gövde" — komutları alır ve servo motorları hareket ettirir. "Jarvis artık sadece ses değil, hareket eden bir fiziksel varlık"
 - **Sana Bakar, Seni İzler:** Lamba size doğru dönebilir, size bakabilir, başını sallayabilir. Inverse kinematics ile yumuşak ve doğal hareketler. Acil durumlarda E-STOP ile anında durur
 - **Postür Kalkanı:** MediaPipe Pose ile boyun açısı sürekli ölçülür. Boyun 15°+ öne eğilirse ("Tech Neck") lamba size döner, kehribar ışıkla nabız atar ve Jarvis "Postürünüzü düzeltin" der. 25°+ ise daha güçlü uyarı. Düzeltince lamba başını sallar ve yeşil yanar. "Lambanız aynı zamanda postür koçunuz"
 - **Dijital Ajan ile Konuşur:** OpenClaw (Modül 27) bir iş bitirdiğinde lamba başını sallar. Kame (Modül 30) dans ettiğinde lamba ritme ayak uydurur. "Fiziksel ve dijital ajanlar birbiriyle konuşur"
 
-### 30. `desktop_pet_kame` — Desktop Pet Kame32 (Dört Bacaklı Robot) 🐕
+### 30. `desktop_pet_kame` — Desktop Pet Kame32 (Dört Bacaklı Robot) 🐕 ⏸️ BEKLEMEDE
+
+> **⚠️ BEKLEMEDE:** Oda temeli bitince uygulanacak.
 
 - **Jarvis'in Robot Köpeği:** Masada yaşayan, 3D basılmış, dört bacaklı bir robot. ESP32 + 8 ucuz servo motor (SG90/MG90S). Kamera ve mikrofonu YOK — tüm zekası Jarvis'ten MQTT ile gelir. "Köpeğin gözleri ve kulakları Jarvis'in kamerası ve mikrofonu"
 - **Müziğe Dans Eder:** Modül 10'un mikrofonu (WLED INMP441) müziğin ritmini (BPM) analiz eder. Ritmi Kame'ye MQTT ile gönderir. Kame müziğin beat'ine göre çömelir, kalkar, ayak vurur, döner. "Müzik çalınca masanızdaki köpek dans eder"
@@ -423,7 +432,9 @@ Bu proje, fiziksel bir Raspberry Pi / PC sunucusu gerektirmez. Sistem **ucuz bir
 
 ---
 
-### 31. `siber_barmen_cocktailberry` — Siber Barmen (CocktailBerry Kiosk) 🍸
+### 31. `siber_barmen_cocktailberry` — Siber Barmen (CocktailBerry Kiosk) 🍸 ⏸️ BEKLEMEDE
+
+> **⚠️ BEKLEMEDE:** Oda temeli bitince uygulanacak. Raspberry Pi gerektirdiğinden Pi'siz yeni mimaride tekrar değerlendirilecek (VPS + ESP32 röle alternatifi).
 
 - **Otonom Kokteyl Robotu:** Raspberry Pi 4 + 7" dokunmatik ekran (Kiosk mod) + 10 adet 12V pompa + 16 kanallı röle kartı. Misafir ekrana dokunur, kokteyl seçer, robot pompalar çalışır ve bardağa içki akıtır. "Bana Negroni yap" dersin, gerisini o halleder
 - **Şov (Wow Factor):** 7" ekranda parlayan kokteyl menüsü — misafirin gözünde "premium lounge" hissi. Headless bir ESP32'de bu deneyim yok. CocktailBerry Kiosk modu, bu projenin "premium lounge" konseptiyle uyumlu
@@ -433,12 +444,28 @@ Bu proje, fiziksel bir Raspberry Pi / PC sunucusu gerektirmez. Sistem **ucuz bir
 
 ### 32. `climate_respiratory_shield` — Yurt İklim ve Solunum Kalkanı 🛡️
 
-- **Kıbrıs Rutubetine Karşı:** Hisense D16CW (1.6L/gün) nem alma cihazı, Shelly Plug S prizle otonom kontrol. BME280 + ESP32 sensör oda nemini ölçer. Nem > %55 → Klima kapatılır (Broadlink), Hisense açılır (Shelly ON → Auto-Restart). Nem < %45 → Hisense kapatılır. "Gündüz rutubeti alır, gece boğazınızı korur"
-- **Boğaz Koruması (Gece Modu):** Gece 23:00 → Hisense kapatılır (sessiz uyku — kompressör gürültüsü yok). Klima 26°C'ye alınır (Broadlink IR). Swing modu tavana yönlendirilir (hava akımı doğrudan yüzünüze/boğazınıza çarpmaz). "Klima boğazınızı kurutmaz, çünkü hava akımını tavana yönlendirir"
+- **Kıbrıs Rutubetine Karşı:** Hisense D16CW (1.6L/gün) nem alma cihazı, Tuya akıllı prizle otonom kontrol. BME280 + ESP32 sensör oda nemini ölçer. Nem > %55 → Klima kapatılır (Tuya IR+RF — ELDE, klima zaten bağlı), Hisense açılır (priz ON → Auto-Restart). Nem < %45 → Hisense kapatılır. "Gündüz rutubeti alır, gece boğazınızı korur"
+- **Boğaz Koruması (Gece Modu):** Gece 23:00 → Hisense kapatılır (sessiz uyku — kompressör gürültüsü yok). Klima 26°C'ye alınır (Tuya IR+RF). Swing modu tavana yönlendirilir (hava akımı doğrudan yüzünüze/boğazınıza çarpmaz). "Klima boğazınızı kurutmaz, çünkü hava akımını tavana yönlendirir"
 - **DIY Hava Temizleyici:** HEPA H13 filtre + 12V PC fanı = $25 ile toz/küf/polen filtreleme. Xiaomi Mi Air Purifier ($130) yerine DIY — 5× ucuz, filtre 4× ucuz, HA'ya yerel entegre (Zero-Trust uyumlu), kutu içinde gizlenebilir
 - **Neden 1.6L ve 4.2L Değil:** Yurt odası 15-20m². 1.6L/gün yeterli. 4.2L model 2× pahalı, 2× büyük, 10dB daha gürültülü, 2× güç tüketir. Doğru kapasiteyi seçmek mühendisliktir
 - **Neden Nem Alıcı ve Nemlendirici Değil:** Kıbrıs bir ada — nem zaten %65-80. Nemlendirici = küf üretme makinesi. Klima boğazı kurutuyorsa çözüm nemlendirici değil — klimayı 26°C'ye alıp swing'i tavana yönlendirmektir
-- **Jarvis Sesli Komut:** "Odamın nemini kontrol et" → Jarvis nem ve sıcaklığı söyler. "Gece moduna geç" → Hisense OFF + Klima 26°C + Swing tavan. "Nem alıcıyı aç" → Shelly ON → Hisense çalışır
+- **Jarvis Sesli Komut:** "Odamın nemini kontrol et" → Jarvis nem ve sıcaklığı söyler. "Gece moduna geç" → Hisense OFF + Klima 26°C + Swing tavan. "Nem alıcıyı aç" → priz ON → Hisense çalışır
+
+---
+
+### 33. `yeelight_ambiance` — Yeelight Ambiyans Aydınlatma 💡
+
+- **Yeelight Smart LED Color Bulb 1S (ELDE):** Oda genel ambiyans aydınlatması (tavan lambası). 16M renk, WiFi. HA yerel Yeelight entegrasyonu — app'te "LAN Control" açılır, HA otomatik keşfeder, bulut YOK (Zero-Trust uyumlu)
+- **Music Mode:** HA Yeelight entegrasyonunun music mode'u ile dakikada 60 istek limiti kalkar → WLED ile senkron hızlı renk geçişleri mümkün
+- **WLED ile Düet:** Yeelight oda geneli (tavan), WLED duvar ritmi. "Sinema modu" → Yeelight %10 kehribar + WLED off. "Parti" → Yeelight renk döngüsü + WLED audio reactive. "Sabah" → Yeelight yumuşak beyaz + WLED sunrise
+- **Neden Yeelight ve Hue Değil:** Philips Hue $50 ampul + $60 köprü ister. Yeelight 1S $15, HA native entegrasyon, LAN Control, music mode. Tek ampullik yurt odasında Hue ekosistemi absürt
+
+### 34. `tv_media_center` — TV Medya Merkezi (Mi Box S) 📺
+
+- **Xiaomi Mi Box S 4K 32GB WiFi 6 (3rd Gen — Planlanan):** TV'nin IR alıcısı arızalı → TV değişecek. Mi Box: Google TV 14, AMLogic S905X5M (4×2.5GHz), 2GB RAM, 32GB, HDMI 2.1a, Dolby Vision/Atmos, WiFi 6, BT 5.2
+- **Üç Kuş Bir Taş:** (1) HA Android TV entegrasyonu (ADB) — power, volume, app kontrolü, (2) Chromecast dahili — jarvis_core medya cast hedefi, (3) Tam tarayıcı — MagicMirror² web Kiosk (Modül 4'ün Pi'siz çözümü)
+- **Neden Chromecast/Fire TV Değil:** Chromecast 4K sadece cast yapar — HA kontrolü ve tarayıcı yok. Fire TV Amazon bulutuna bağımlı (Zero-Trust ihlali). Mi Box üç işi birden yapar, $60
+- **TV Ayna Hibrit:** (Opsiyonel) Two-way mirror akrilik TV önünde → TV kapalıyken ayna, açıkken MagicMirror²
 
 ---
 
@@ -493,7 +520,9 @@ jarvis/#
 ├── jarvis/climate/humidity          → BME280 (Modül 32) oda nemi
 ├── jarvis/climate/temperature       → BME280 (Modül 32) oda sıcaklığı
 ├── jarvis/climate/command           → İklim Kalkanı (Modül 32) sesli komut
-└── jarvis/climate/status            → İklim Kalkanı mod durumu (day/night)
+├── jarvis/climate/status            → İklim Kalkanı mod durumu (day/night)
+├── jarvis/yeelight/scene            → Yeelight (Modül 33) ambiyans sahnesi
+└── jarvis/tv/command                → Mi Box (Modül 34) medya komutu
 ```
 
 ### Haberleşme Protokolleri
@@ -659,15 +688,21 @@ akilli-evim/
 │   ├── eye_of_sauron_parking.py
 │   ├── wingman_greeting_protocol.yaml
 │   └── config.yaml
-├── siber_barmen_cocktailberry/     ← Modül 31: Siber Barmen (CocktailBerry Kiosk)
+├── siber_barmen_cocktailberry/     ← Modül 31: Siber Barmen (⏸️ BEKLEMEDE)
 │   ├── hardware_and_wiring.md          ← 10 pompa + 16-CH röle + 1N4007 diyot + LM2596
 │   ├── cocktailberry_kiosk_setup.md   ← install.sh + Kiosk mod + MQTT bridge
 │   ├── jarvis_mqtt_integration.yaml   ← Jarvis sesli komut → CocktailBerry REST API
 │   └── config.yaml
-└── climate_respiratory_shield/     ← Modül 32: Yurt İklim ve Solunum Kalkanı
-    ├── hardware_and_setup.md          ← Hisense D16CW + Shelly + BME280 + DIY HEPA
-    ├── bme280_esphome.yaml            ← ESP32 + BME280 ESPHome konfigürasyonu
-    ├── climate_shield_automation.yaml ← Gündüz nem alma + Gece boğaz koruması
+├── climate_respiratory_shield/     ← Modül 32: Yurt İklim ve Solunum Kalkanı
+│   ├── hardware_and_setup.md          ← Hisense D16CW + Tuya priz + BME280 + DIY HEPA
+│   ├── bme280_esphome.yaml            ← ESP32 + BME280 ESPHome konfigürasyonu
+│   ├── climate_shield_automation.yaml ← Gündüz nem alma + Gece boğaz koruması
+│   └── config.yaml
+├── yeelight_ambiance/              ← Modül 33: Yeelight Ambiyans Aydınlatma (ELDE)
+│   ├── yeelight_ambiance_automation.yaml ← WLED senkron + sinema/parti/sabah sahneleri
+│   └── config.yaml
+└── tv_media_center/                ← Modül 34: TV Medya Merkezi (Mi Box S — Plan)
+    ├── mi_box_setup.md                ← Android TV (ADB) + Chromecast + MagicMirror² Kiosk
     └── config.yaml
 ```
 
@@ -687,11 +722,15 @@ akilli-evim/
 10. **Faz 10 — Maliyet Devrimi:** MiniMax Speech 2.8 Turbo + DeepSeek Hybrid Brain + Voice Cloning ✅
 11. **Faz 11 — Entegrasyon:** Tüm modüllerin Jarvis ile orkestrasyonu ✅
 12. **Faz 12 — Modül 27:** OpenClaw Dijital Ajan (Zero Trust Docker Sandbox + VSS Ekran Kalkanı) ✅
-13. **Faz 13 — Modül 28:** Multicooker Chef (Xiaomi/Tuya yerel izolasyon + Vision-Cooker kapalı döngü) ✅
-14. **Faz 14 — Modül 29:** Embodied Jarvis Avatar (5-DOF robotik lamba + Autonomous OS + Postür Kalkanı) ✅
-15. **Faz 15 — Modül 30:** Desktop Pet Kame (8-DOF quadruped + Audio-Reactive Dans + Eye of Sauron Park + Wingman Karşılama) ✅
-16. **Faz 16 — Modül 31:** Siber Barmen CocktailBerry (Pi 4 + 7" Kiosk + 10 pompa + 1N4007 diyot + Jarvis MQTT) ✅
-17. **Faz 17 — Modül 32:** Yurt İklim ve Solunum Kalkanı (Hisense D16CW + Shelly + BME280 + DIY HEPA + Gece boğaz koruması) ✅
+13. **Faz 13 — Modül 28:** Multicooker Chef (Hisense HMC6SBK 6L + Tuya priz güç izleme + Vision-Cooker kapalı döngü) ✅
+14. **Faz 14 — Modül 29:** Embodied Jarvis Avatar (5-DOF robotik lamba) ⏸️ **BEKLEMEDE** (dokümantasyon hazır)
+15. **Faz 15 — Modül 30:** Desktop Pet Kame (8-DOF quadruped) ⏸️ **BEKLEMEDE** (dokümantasyon hazır)
+16. **Faz 16 — Modül 31:** Siber Barmen CocktailBerry ⏸️ **BEKLEMEDE** (dokümantasyon hazır — Pi'siz mimaride tekrar değerlendirilecek)
+17. **Faz 17 — Modül 32:** Yurt İklim ve Solunum Kalkanı (Hisense D16CW + Tuya priz + BME280 + DIY HEPA + Gece boğaz koruması) ✅
+18. **Mimari Devrim (Eylül 2026):** Raspberry Pi ÇÖP → beyin VPS'te, dağıtıcı GL-MT3000. ZBMINI ÇÖP → TTP223 ×5. Broadlink → Tuya IR+RF. SwitchBot → 28BYJ-48 DIY. Xiaomi tencere → Hisense HMC6SBK. Yeni: Yeelight 1S, HAUSBERG espresso, Mi Box S planı ✅
+19. **Faz 18 — Modül 33:** Yeelight Ambiyans Aydınlatma (LAN Control + music mode + WLED senkron) ✅
+20. **Faz 19 — Modül 34:** TV Medya Merkezi (Mi Box S 4K + Android TV ADB + Chromecast + MagicMirror² Kiosk) 🔄 Planlanan
+21. **Aktif Öncelik:** Oda temeli — Faz 1 (ses) → Faz 2 (ışık) → Faz 3 (mutfak+perde) → Faz 4 (sensör) → Faz 5 (medya). Robotik ve araç modülleri beklemede.
 
 ---
 
@@ -706,8 +745,12 @@ akilli-evim/
 | Dijital Ajan | **OpenClaw v2026.4.15** (browser-use + shell + file ops), **browser-use** (Playwright), Docker Zero Trust sandbox (7 katman) |
 | Fiziksel Avatar | **Autonomous OS** (autonomous-ai/autonomous-os — edge_body_only), **PCA9685** I2C PWM driver, MG996R + SG90 servo, inverse kinematics |
 | Robotik Evcil Hayvan | **Kame32** (ESP32 DevKit V1 + 8× SG90/MG90S), ESP32Servo kütüphanesi, paralelgram mekanizması, F693ZZ rulman |
-| Kokteyl Robotu | **CocktailBerry** (Raspberry Pi 4 + 7" Touch Kiosk + 10× 12V pompa + 16-CH röle), 1N4007 ters akım koruma diyotları, LM2596 buck converter, Chromium Kiosk mod, REST API + MQTT bridge |
-| Akıllı Mutfak | **Mealie** (açık kaynak tarif yöneticisi, REST API, URL scrape), **Xiaomi Miot Auto** (`miot_local: true`), **Tuya Local**, router `iptables` ile Çin bulutu izolasyonu, DeepSeek sporcu makro orkestrasyonu |
+| Kokteyl Robotu | **CocktailBerry** (Raspberry Pi 4 + 7" Touch Kiosk + 10× 12V pompa + 16-CH röle), 1N4007 ters akım koruma diyotları, LM2596 buck converter, Chromium Kiosk mod, REST API + MQTT bridge — ⏸️ BEKLEMEDE |
+| Akıllı Mutfak | **Mealie** (açık kaynak tarif yöneticisi, REST API, URL scrape), **Hisense HMC6SBK 6L** (WiFi'siz — Tuya priz güç izleme: 1500W pişirme → 40W keep-warm tespiti), **HAUSBERG HB3723** (Tuya priz: 900W ısınma → 50W hazır), **Tuya Local**, DeepSeek sporcu makro orkestrasyonu |
+| Ambiyans Aydınlatma | **Yeelight Bulb 1S** (HA native entegrasyon, LAN Control, music mode — bulut YOK), **WS2812B 300 LED** (WLED Sound Reactive — her LED adreslenebilir) |
+| TV Medya | **Xiaomi Mi Box S 4K 3rd Gen** (Google TV 14, WiFi 6, HDMI 2.1a, Chromecast dahili, HA Android TV ADB, MagicMirror² web Kiosk) |
+| Perde Motoru | **28BYJ-48 + ULN2003** (ELDE — ESPHome `stepper`, tam yerel, ~150₺ DIY vs 3000₺ SwitchBot) |
+| IR+RF Kumanda | **Tuya WiFi Smart IR+RF** (ELDE — klima + vantilatör bağlı, HA `tuya-local` remote entity, tam yerel) + ESP32 IR blaster yedek (TSOP1838 + LTE-4206 + 2N2222 — ELDE) |
 | İklim Kalkanı | **Hisense D16CW** (1.6L/gün kompresörlü nem alıcı, Auto-Restart), **Shelly Plug S** (güç kontrol + izleme), **BME280** (I2C nem/sıcakk/basınç, ESPHome), **DIY HEPA H13** + 12V PC fanı, Broadlink RM4 Mini (klima 26°C + swing tavan — boğaz koruması) |
 | Ağ | Tailscale VPN, GL-MT3000 (Beryl AX), WiFi 6 |
 | Mikrodenetleyici | ESP32/ESP32-S3 (ESPHome 2026), ESP32 DevKit V1 (Kame32 — Arduino IDE) |
@@ -715,7 +758,7 @@ akilli-evim/
 | Kablosuz | Zigbee (Zigbee2MQTT), WiFi 6, IR (Broadlink) |
 | Görüntü | OpenCV 2026, MediaPipe Pose (postür analizi), face_recognition, ChromaDB (vektör DB), Hyperion.ng (ekran senk) |
 | Medya | Spotify Web API, WLED (Sound Reactive), Tuya, Hyperion (Ambilight) |
-| Gömülü | Raspberry Pi Zero 2 W (Magic Mirror), Raspberry Pi 4 (Jarvis Core + Hyperion + Autonomous OS Body + CocktailBerry Kiosk), Nvidia Jetson Nano 4GB (Edge-AI ADAS) |
+| Gömülü | **Pi'siz mimari:** Yerel sunucu YOK — jarvis_core + ChromaDB + Mealie + MagicMirror² hepsi VPS Docker'da. Yerel: ESP32-S3 ×2 (ELDE) + ESP32 DevKit (Sensör Hub). Nvidia Jetson Nano 4GB (Edge-AI ADAS — ileri faz) |
 | Sağlık | Apple Health / Google Fit (akıllı saat), CalDAV/Google Calendar, PyPDF2 (kan tahlili), Omron BLE (tansiyon), FL-41 Rose Tint (VSS aydınlatma) |
 | VSS Kalkanı | MediaPipe Pose (servikal açı), WLED anti-mavi ışık protokolü, Windows WMI / brightnessctl (ekran parlaklık), Night Light 3400K |
 | Maliyet | **~$12-15/ay** (MiniMax ~$10 + DeepSeek ~$2 + Qwen-VL ~$2) |

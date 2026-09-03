@@ -2,15 +2,21 @@
 
 > **Modül 28: Multicooker Chef Automation**
 > Jarvis'in mutfaktaki "kasları" — Mealie (açık kaynak tarif yöneticisi) +
-> ticari akıllı tencere, yerel ağda izole
+> **Hisense HMC6SBK 6L Multicooker (ELDE — Eylül 2026)**, Tuya akıllı prizle güç izleme
 > Thermomix/Cookidoo'ya açık kaynak rakibi
-> Modül 13 (Vision Chef) görür → Mealie eşleştirir → Modül 28 (Cooker) pişirir
+> Modül 13 (Vision Chef) görür → Mealie eşleştirir → priz izler → Jarvis bildirir
+
+> **⚠️ EKİPMAN DEĞİŞİKLİĞİ (Eylül 2026):** Xiaomi Mi Smart Multi Cooker 3L yerine
+> **Hisense HMC6SBK 6L** alındı. 2× kapasite (6L), 2× güç (1500W), basınçlı pişirme VAR.
+> WiFi YOK → Çin bulutu izolasyonu (iptables) ARTIK GEREKMEZ — sıfır bulut riski.
+> "Akıllı" kısım: Tuya akıllı priz güç izleme (1500W pişirme → 40W keep-warm tespiti)
+> + Vision-Cooker orkestrasyonu (kamera + Mealie + Jarvis).
 
 ---
 
-## 🆚 Thermomix vs Jarvis + Mealie + Akıllı Tencere
+## 🆚 Thermomix vs Jarvis + Mealie + Hisense HMC6SBK
 
-| Özellik | Thermomix TM6 (~100.000₺) | Jarvis + Mealie + Xiaomi (~3.000₺) |
+| Özellik | Thermomix TM6 (~100.000₺) | Jarvis + Mealie + Hisense (~3.500₺) |
 |---------|---------------------------|--------------------------------------|
 | **Tarif veritabanı** | Cookidoo (kapalı, abonelik) | Mealie (açık kaynak, ücretsiz) |
 | **Tarif ekleme** | Sadece Cookidoo'dan | Herhangi bir siteden URL scrape |
@@ -18,17 +24,41 @@
 | **Porsiyon ölçekleme** | Manuel | Otomatik (DeepSeek + Mealie API) |
 | **Görüntü tanıma** | Yok | Qwen-VL Max (Modül 13) tezgahı görür |
 | **Sesli kontrol** | Yok | MiniMax Speech 2.8 Turbo |
-| **Fiziksel bildirim** | Yok | Lamba (Modül 29) başını sallar |
+| **Fiziksel bildirim** | Yok | Yeelight flash + WLED turuncu (pürüzsüz) |
 | **VSS koruması** | Yok | WLED strobe YASAK, pürüzsüz geçiş |
-| **Bulut bağımlılığı** | Cookidoo bulutu (zorunlu) | Yerel ağ (Çin bulutu kapalı) |
+| **Bulut bağımlılığı** | Cookidoo bulutu (zorunlu) | SIFIR — Hisense WiFi'siz, priz yerel (LocalTuya) |
+| **Kapasite** | 2.2L | 6L (misafir yemeği) |
+| **Basınçlı pişirme** | Var | Var (Hisense HMC6SBK) |
 | **Yemek planı** | Cookidoo takvimi | Mealie takvimi (REST API) |
 | **Alışveriş listesi** | Cookidoo | Mealie (otomatik oluşturma) |
-| **Toplam maliyet** | ~100.000₺ + abonelik | ~3.000₺ (tek seferlik) |
+| **Toplam maliyet** | ~100.000₺ + abonelik | ~3.500₺ (tek seferlik) |
 
 > **Sonuç:** Thermomix'in 100.000₺'lik kapalı Cookidoo ekosistemi yerine,
-> Mealie (açık kaynak) + Xiaomi akıllı tencere (~3.000₺) ile aynı
+> Mealie (açık kaynak) + Hisense HMC6SBK 6L (~3.500₺) ile aynı
 > fonksiyonları fazlasıyla karşılar. Üstelik makro hesabı, görüntü tanıma
-> ve sesli kontrol Thermomix'te YOK.
+> ve sesli kontrol Thermomix'te YOK. Hisense WiFi'siz olduğu için Çin bulutu
+> riski sıfırdır — Xiaomi'deki iptables izolasyonu bile gerekmez.
+
+---
+
+## 🍲 Hisense HMC6SBK — Güç İzleme Stratejisi (WiFi'siz "Akıllı" Tencere)
+
+| Durum | Güç (Tuya priz) | HA Tespiti |
+|---|---|---|
+| Kapalı/bekleme | 0-2W | `switch` OFF konumunda |
+| Isınma/pişirme | 1200-1500W | `binary_sensor.multicooker_cooking` ON (2 dk üstünde) |
+| Keep-warm (sıcak bekleme) | 30-50W | `binary_sensor.multicooker_done` ON (3 dk üstünde) |
+
+```
+Vision-Cooker kapalı döngü (güncellenmiş):
+1. Tapo C200 (Modül 13) tezgaha bakar → Qwen-VL malzemeleri tanır
+2. Mealie'de tarif eşleştirir → Jarvis önerir ("Bunlardan ne çıkar?")
+3. Kullanıcı onaylar → malzemeler Hisense'e konur → program seçilir
+4. Tuya prizden güç izleme: 1500W (pişirme başladı)
+5. Güç 40W'a düşer (keep-warm) → "Pişirme bitti"
+6. Jarvis "Yemeğiniz hazır" der → WLED turuncu → Yeelight flash
+   → (Beklemede: Lamba Modül 29 başını sallar)
+```
 
 ---
 

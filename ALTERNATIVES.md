@@ -592,6 +592,110 @@
 
 ---
 
+## ⚡ Mimaride Devrim: Yerel Sunucu vs Bulut Beyni (Raspberry Pi ÇÖP)
+
+| | Önerilen (Yeni Mimari) | Alternatif 1 (Eski Plan) | Alternatif 2 |
+|---|---|---|---|
+| **Model** | VPS (Docker) + GL-MT3000 dağıtıcı | Raspberry Pi 4 (yerel sunucu) | Intel NUC / Mini PC |
+| **Fiyat** | ~$10/ay (VPS) | ~$55 (tek seferlik) + elektrik | ~$150-300 + elektrik |
+| **Kesinti dayanıklılığı** | VPS 7/24 — Kıb-Tek kesintisi HA'ı etkilemez | Kıb-Tek kesintisi → HA çöker, hafıza kopar | Kıb-Tek kesintisi → çöker |
+| **Fiziksel erişim** | Gerekmez — SSH ile her yerden | Yurt odasında fiziksel erişim gerekir (SD kart, USB) | Gerekir |
+| **Fan sesi / ısı** | Sıfır (yurt odasında sunucu yok) | Pi 4 pasif ama yazın ısınır, throttle yapar | Fan sesi |
+| **Güncelleme** | Uzaktan, anında | Fiziksel erişim veya SSH (aynı ağda) | SSH |
+| **Neden önerilen?** | Yurt odası bir veri merkezi değil. Beyin bulutta, dağıtıcı GL-MT3000. Kıb-Tek kesintisinde bile HA çalışır — otomasyonlar devam eder. Yerel cihazlar (ESP32, Tuya, Yeelight) kesintide son davranışlarını korur | Ucuz ama Kıb-Tek'in kesintisi tüm beyni öldürür. Yurt odasında fiziksel müdahale gerekir. Yazın ısınma sorunu. Ayrıca ChromaDB + jarvis_core + Mealie + OpenClaw aynı anda Pi 4'ü yorar | Güçlü ama pahalı, elektrik tüketir, yer kaplar, yurt odası için absürt |
+
+> **Dost acı söyler:** "Yerel sunucu daha gizli" düşüncesi yanıltıcı — Tailscale ile VPS arasındaki tünel WireGuard şifreli. Yüz tanıma verisi ChromaDB'de VPS'te saklanır, üçüncü tarafa gönderilmez. Kıb-Tek'in haftada bir kestiği bir adada, beynin elektrik kesintisinden etkilenmemesi ALTIN DEĞERİNDE. Raspberry Pi 4 çöpe ayrıldı — bu bir kayıp değil, mimari olgunlaşmadır.
+
+---
+
+## 💡 Modül 33: Yeelight Ambiyans Ampul
+
+### Akıllı Ampul
+
+| | Önerilen | Alternatif 1 | Alternatif 2 |
+|---|---|---|---|
+| **Model** | Yeelight Smart LED Color Bulb 1S (ELDE) | Tuya WiFi Ampul (W3) | Philips Hue White & Color |
+| **Fiyat** | ~$15 | ~$10 | ~$50 + $60 köprü |
+| **HA entegrasyonu** | Yerel Yeelight entegrasyonu (LAN Control) — bulut YOK | LocalTuya (yerel) ama bazı modellerde bulut zorunlu | Hue Bridge (yerel Zigbee) |
+| **Music mode** | EVET — >60 istek/dk limiti kalkar → hızlı efekt | Hayır | Sınırlı |
+| **Neden önerilen?** | HA'nın NATIVE Yeelight entegrasyonu var — sıfır konfigürasyon. Yeelight app'te "LAN Control" aç → HA otomatik keşfeder. Bulut bağımlılığı yok (Zero-Trust uyumlu). Music mode ile WLED ile senkron hızlı renk geçişleri. 16M renk, ~800 lümen | Ucuz ama LocalTuya her modelde sorunsuz çalışmaz. Bazı Tuya ampuller bulut komutu ister (yerel protokol kilitli). Music mode yok | En iyi ekosistem ama $110 toplam maliyet (ampul + köprü). Yurt odası için tek ampule $110 fazla. Yeelight aynı işi $15 yapar |
+
+> **Dost acı söyler:** Hue "endüstri standardı" ama bir köprü gerektirir ve pahalıdır. Tek ampullik bir yurt odasında $110'luk Hue ekosistemi absürt. Yeelight 1S: HA native entegrasyon, LAN Control, music mode, $15. Alınmış bile — doğru karar.
+
+---
+
+## 📡 Modül 8 (Güncelleme): IR+RF Kumanda
+
+### IR+RF Kumanda
+
+| | Önerilen | Alternatif 1 | Alternatif 2 |
+|---|---|---|---|
+| **Model** | Tuya WiFi Smart IR+RF (ELDE) | Broadlink RM4 Mini | ESP32 + IR LED (DIY) |
+| **Fiyat** | ~$18 | ~$20 | ~$8 (parçalar ELDE) |
+| **IR + RF** | HER İKİSİ (RF 433/315MHz) | Sadece IR (RF için RM4 Pro ~$35 gerekir) | Sadece IR |
+| **HA entegrasyonu** | `tuya-local` — remote entity, learn/send, tam yerel | Broadlink integration (yerel) — mature | ESPHome `remote_transmitter/receiver` (yerel) |
+| **Tuya Smart app** | Klima + vantilatör zaten bağlı ✅ | Yok | Yok |
+| **Neden önerilen?** | ALINDI ve klima + vantilatör bağlandı. `tuya-local` entegrasyonu Tuya IR/RF blaster'ları remote entity olarak destekler — learn_command + send_command, tamamen Tuya bulutunu atlar. RF desteği avantaj (bazı eski perdeler/panjurlar RF) | İyi cihaz ama artık gerek yok — Tuya IR+RF elde. Ayrıca RF için Pro model gerekir (+$15) | Parçalar elde (TSOP1838 + LTE-4206 + 2N2222) — Tuya kumandanın görmediği köşeler için yedek blaster olarak kurulur. Ana kumanda değil, yedek |
+
+> **Dost acı söyler:** TV'nin IR alıcısı arızalı — Tuya kumanda TV'ye komut gönderse de TV almıyor. Çözüm: TV'yi değiştir + Mi Box S 4K ekle → TV kontrolü artık IR değil, Android TV entegrasyonu (ADB) + Chromecast ile. IR kumanda klima + vantilatör + projeksiyon için yeterli.
+
+---
+
+## 📺 Modül 34: TV Medya Merkezi
+
+### TV Box
+
+| | Önerilen | Alternatif 1 | Alternatif 2 |
+|---|---|---|---|
+| **Model** | Xiaomi TV Box S 4K 32GB (3rd Gen) | Google Chromecast 4K | Amazon Fire TV Stick 4K |
+| **Fiyat** | ~$60 | ~$50 | ~$40 |
+| **İşletim Sistemi** | Google TV 14 (Android tabanlı) | Chromecast OS (kısıtlı) | Fire OS (Amazon) |
+| **Depolama** | 32GB eMMC | 8GB | 8GB |
+| **WiFi** | WiFi 6 (802.11ax) | WiFi 5 | WiFi 6 |
+| **Chromecast** | DAHİLİ | Kendisi | Yok (Alexa cast) |
+| **HA entegrasyonu** | Android TV (ADB — power, volume, app) + Chromecast | Sadece Chromecast (cast) | Fire TV (ADB, sınırlı) |
+| **Tarayıcı (MagicMirror²)** | EVET — tam tarayıcı → MagicMirror² web Kiosk | Hayır (tarayıcı yok) | Amazon Silk (kısıtlı) |
+| **Neden önerilen?** | 3 işi birden yapar: (1) HA Android TV entegrasyonu — tam kontrol, (2) Chromecast dahili — jarvis_core medya cast, (3) Tam tarayıcı — MagicMirror² web Kiosk (Modül 4'ün Pi'siz çözümü). 32GB depolama, WiFi 6, Dolby Vision/Atmos. $60'a üç modülün çözümü | Sadece cast yapar — HA kontrolü yok, tarayıcı yok. MagicMirror² gösteremez. Tek fonksiyon | Ucuz ama Amazon bulutuna bağımlı (Zero-Trust ihlali), Google servisleri zor kurulum, tarayıcı kısıtlı |
+
+> **Dost acı söyler:** Chromecast 4K "yeterli" görünebilir ama sadece video cast yapar. Mi Box S ise bir BİLGİSAYAR gibi: tarayıcı var (MagicMirror² Kiosk), ADB var (HA tam kontrol), Chromecast var (medya cast). Yurt odasının TV'si artık sadece TV değil — ayna (MagicMirror²), medya merkezi (Chromecast) ve HA kontrol paneli. $60'a üç kuş bir taş.
+
+---
+
+## 🍳 Modül 28 (Güncelleme): Multicooker
+
+### Multicooker
+
+| | Önerilen | Alternatif 1 | Alternatif 2 |
+|---|---|---|---|
+| **Model** | Hisense HMC6SBK 6L (ELDE) | Xiaomi Mi Smart Multi Cooker 3L | Thermomix TM6 |
+| **Fiyat** | ~$80 | ~$45 | ~$3.000 |
+| **Kapasite** | 6 LİTRE | 3 litre | 2.2 litre |
+| **Güç** | 1500W (hızlı ısınma) | 700W (yavaş) | 1000W |
+| **WiFi** | YOK — Tuya akıllı prizle güç izleme | VAR ama Çin bulutu (chunmi) | VAR ama kapalı ekosistem |
+| **Program** | 10-13 program (basınçlı, slow, pilav, buğulama, yoğurt) | Sınırlı | Tam |
+| **Neden önerilen?** | ALINDI. 2× kapasite (6L — misafir yemeği), 2× güç (1500W), basınçlı pişirme VAR (Xiaomi'de yok). WiFi olmaması sorun değil — zeka Jarvis'te: Tapo C200 malzemeleri görür → Mealie tarif eşleştirir → kullanıcı başlatır → Tuya priz 1500W→40W geçişini tespit eder → "Pişirme bitti" → Jarvis bildirir. Tencerenin WiFi'ye ihtiyacı yok | Ucuz ve WiFi'li ama: 3L yurt odası için küçük (misafir yemeği yetmez), 700W yavaş, Çin bulutu (chunmi.cooker) — izolasyon için router iptables gerekir, basınçlı pişirme yok | Mutfak robotu ama $3.000 — bir yurt odası bütçesinin 3 katı. Kapalı ekosistem, Jarvis'e entegre edilemez |
+
+> **Dost acı söyler:** "WiFi'li tencere daha akıllı" düşüncesi yanıltıcı. WiFi'li tencere = Çin bulutuna bağımlı tencere. WiFi'siz tencere + akıllı priz + kamera + Mealie = Jarvis'in beyniyle çalışan tencere. Hisense 6L + 1500W + basınçlı pişirme, Xiaomi 3L'den her yönden üstün. Alınmış ve doğru karar.
+
+---
+
+## 🌅 Modül 7 (Güncelleme): Perde Motoru
+
+### Perde Motoru
+
+| | Önerilen | Alternatif 1 | Alternatif 2 |
+|---|---|---|---|
+| **Model** | 28BYJ-48 + ULN2003 DIY Kiti (ELDE) | SwitchBot Curtain | Tuya Rod Motor |
+| **Fiyat** | ~$4 (motor kiti) + mekanik parçalar ~$5 | ~$90 (3000₺+) | ~$35 |
+| **Sürücü** | ESP32 + ESPHome `stepper` (tam yerel, MQTT) | SwitchBot app (Bluetooth → bulut) | Tuya (LocalTuya) |
+| **Hız** | Yavaş (~15 RPM — perde 30-60 sn) → sinematik | Orta | Orta |
+| **Tork** | 1:64 redüktör — hafif perde için yeterli | Güçlü | Güçlü |
+| **Neden önerilen?** | ALINDI. 3000₺'lik SwitchBot yerine ~150₺'lik robotik parça. ESP32 + ESPHome ile tam yerel kontrol (Zero-Trust). Yavaş açılım aslında AVANTAJ: perde yavaş açılır → güneş kademeli girer → "sinematik sabah" hissi. Mühendislik = doğru işi en ucuz parçayla yapmak | Kolay takılır ama 3000₺ — bir step motor + sürücünün 20 katı fiyatı. Bulut bağımlı (SwitchBot internet gerekir uzaktan kontrol için) | Ucuz ama rod motoru — mevcut perde rayına uymayabilir. 28BYJ-48 her mekanizmaya uyarlanır |
+
+> **Dost acı söyler:** SwitchBot Curtain "tak-çalıştır" kolaylığı satar ama 3000₺ fiyat, bir yurt öğrencisinin robotik bütçesini tek başına yer. 28BYJ-48 (ELDE) + ULN2003 (ELDE) + ESP32 = tam kontrol, $9. Aradaki $81 fark → WS2812B 300 LED şerit + Tuya prizler finanse olur. Mühendislik budur.
+
+---
+
 ## 🍸 Modül 31: Siber Barmen (CocktailBerry)
 
 ### Kokteyl Robot Beyni

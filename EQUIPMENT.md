@@ -1,6 +1,102 @@
 ﻿# 📋 EQUIPMENT.md — Akıllı Yurt Odası Teçhizat Listesi
 
-> Bu dosya, projenin tüm 14 modülü için gereken donanım, sensör, kablo ve materyallerin eksiksiz listesidir. Modüllere göre sıralanmıştır.
+> Bu dosya, projenin tüm modülleri için gereken donanım, sensör, kablo ve materyallerin eksiksiz listesidir. Modüllere göre sıralanmıştır.
+
+---
+
+## ⚡ Mimaride Devrim: Beyin Bulutta (Raspberry Pi YOK)
+
+> **"Yerel sunucu tutmayız. Beyni bulutta (VPS), dağıtıcılığı GL-MT3000 modemde."**
+
+| Katman | Cihaz | Görev |
+|---|---|---|
+| **Beyin (Bulut)** | VPS (Docker) | Home Assistant + jarvis_core 3.0 (Python) + ChromaDB (yüz hafızası) + Mealie + OpenClaw |
+| **Dağıtıcı (Yerel)** | GL-MT3000 (Beryl AX) | WiFi 6 AP + Tailscale client + Yerel MQTT broker + cihaz izolasyonu (iptables) |
+| **Uç Cihazlar (Yerel)** | ESP32'ler, Tuya cihazlar, Yeelight, Echo Dot | Sensör, ses, ışık, röle — hepsi MQTT/WiFi ile GL-MT3000 üzerinden VPS'e bağlanır |
+
+**Sonuç:** Yurt odasında sıfır sunucu donanımı. Hiçbir fan sesi, hiçbir ekstra elektrik, hiçbir fiziksel erişim ihtiyacı. SSH ile her şey uzaktan yönetilir.
+
+---
+
+## 🗑️ Çöpe Ayrılan Bileşenler (Mimari Değişiklik)
+
+| Bileşen | Eski Görev | Neden Çöp? |
+|---|---|---|
+| **Raspberry Pi 4** | jarvis_core Python + ChromaDB (Faz 1) + CocktailBerry (Faz 16) | Beyin VPS'e taşındı. Yerel sunucu = fan sesi + elektrik + fiziksel erişim + Kıb-Tek kesintisinde çökme. VPS 7/24 çalışır |
+| **Raspberry Pi Zero 2 W** | MagicMirror² (Modül 4) | MagicMirror² artık VPS Docker'da web servisi olarak çalışır → TV üzerinde Mi Box S (3rd Gen) tarayıcısında tam ekran gösterilir. Yerel donanım gerekmez |
+| **Sonoff ZBMINI × 2** | Gizli Zigbee butonlar (Modül 2) | Yurt odasının priz/anahtar tesisatı sökülmeyecek. Gizli tetikleyiciler TTP223 dokunmatik sensörlerle (×5, ELDE) masa altına yapıştırılır |
+| **Zigbee2MQTT Dongle (CC2652R)** | Zigbee koordinatör | Zigbee cihaz kalmadı (ZBMINI çöp). Tüm yerel cihazlar WiFi (Tuya LocalTuya / Yeelight LAN / ESPHome MQTT) |
+| **Broadlink RM4 Mini** | IR kumanda (Modül 8) | Yerine Tuya WiFi Smart IR+RF Akıllı Kumanda alındı (ELDE) — klima + vantilatör bağlı. HA'da `tuya-local` entegrasyonu ile tam yerel kontrol |
+| **SwitchBot Curtain** | Perde motoru (Modül 7) | Yerine 28BYJ-48 Step Motor + ULN2003 Sürücü Kiti (ELDE) — 3000₺ hazır cihaz yerine ~150₺ DIY robotik parça. ESP32 + ESPHome stepper ile sürülür |
+| **Xiaomi Mi Smart Multi Cooker 3L** | Akıllı tencere (Modül 28) | Yerine Hisense HMC6SBK 6L Multicooker (ELDE) alındı — 2× kapasite, 1500W. WiFi YOK → Tuya akıllı prizle güç izleme + Vision-Cooker orkestrasyonu |
+
+---
+
+## ⏸️ Beklemede: Robotik Projeler (Modül 29, 30, 31)
+
+> **"Önce odanın temeli (ses, ışık, otomasyon). Robotiğe 1 kuruş yok."**
+
+| Modül | Proje | Durum | Tahmini Maliyet (ileride) |
+|---|---|---|---|
+| Modül 29 | Embodied Jarvis Avatar (5-DOF robotik lamba) | ⏸️ BEKLEMEDE | ~$105 |
+| Modül 30 | Desktop Pet Kame32 (dört bacaklı robot) | ⏸️ BEKLEMEDE | ~$45 |
+| Modül 31 | Siber Barmen (CocktailBerry) | ⏸️ BEKLEMEDE | ~$265 |
+
+> Bu modüllerin dokümantasyonu ve kod tabanı korunur — oda temeli bitince aynı planlarla devam edilir. Ancak satın alma listesinden çıkarılırlar.
+
+---
+
+## 📦 Mevcut Envanter (Alındı — Kurulum Bekliyor)
+
+> Bu parçalar satın alındı ancak henüz hiçbir kurulum yapılmadı. Faz 1-4 kurulumlarının ham maddesi.
+
+| # | Parça | Adet | Kullanılacağı Yer | Durum |
+|---|---|---|---|---|
+| 1 | ESP32-S3 N8R2 WiFi+BT Board | 2 | #1: Ses Hub (INMP441 stereo) — #2: WLED Audio Hub (INMP441 + WS2812B) | ✅ Elde |
+| 2 | INMP441 MEMS I2S Mikrofon | 2 | 1× Ses Hub (Jarvis mikrofonu) + 1× WLED Audio (ritim analizi) | ✅ Elde |
+| 3 | TTP223B Dijital Dokunmatik Sensör | 5 | Modül 2 — masa altı gizli tetikleyiciler (ahşap üzerinden algılar) | ✅ Elde |
+| 4 | NFC Etiket NTAG213 (25mm) | 8 | Kahve + bardak altlığı + Study Book + misafir etiketleri | ✅ Elde |
+| 5 | MPU6050 6-Eksen Gyro/İvmeölçer | 1 | Modül 12 — yatak ritim algılama (intimacy sync) | ✅ Elde |
+| 6 | HLK-LD2410B+BLE 24GHz Radar | 1 | Modül 6 — yatak altı varlık/mesafe algılama | ✅ Elde |
+| 7 | TSOP1838 38KHz IR Alıcı (Metal) | 1 | Modül 8 — IR kod öğrenme (kumanda kodlarını ESP32'ye öğret) | ✅ Elde |
+| 8 | LTE-4206 3mm 940nm IR LED | 2 | Modül 8 — ESP32 IR blaster (TV/eski cihazlar için yedek) | ✅ Elde |
+| 9 | 2N2222 Transistör (NPN TO-92) | 2 | IR LED sürücü katı (ESP32 GPIO → transistör → IR LED) | ✅ Elde |
+| 10 | 220R 4+1 Sıra Direnç | 1 | IR LED akım sınırlama | ✅ Elde |
+| 11 | 100nF 63V Polyester Kondansatör | 10 | INMP441 VDD filtresi + WS2812B güç filtresi | ✅ Elde |
+| 12 | MCU2812B WS2812B RGB LED (tek modül) | 1 | WS2812B prototip testi (300'lük şerit alınmadan önce doğrulama) | ✅ Elde |
+| 13 | Breadboard Mini (Yapışkanlı) | 1 | Prototip kurulum (kalıcı montaj öncesi test) | ✅ Elde |
+| 14 | Dişi-Dişi Jumper (40'lı, 20cm) | 1 | Sensör → ESP32 bağlantıları | ✅ Elde |
+| 15 | Erkek-Erkek Jumper (40'lı, 20cm) | 1 | Breadboard prototip | ✅ Elde |
+| 16 | Erkek-Dişi Jumper (40 pin, 20cm) | 1 | Breadboard → ESP32 | ✅ Elde |
+
+---
+
+## 🛒 Yeni Alınan Ekipmanlar (Eylül 2026)
+
+| # | Ekipman | Fiyat (≈) | Durum | Not |
+|---|---|---|---|---|
+| 1 | **Yeelight Smart LED Color Bulb 1S** (WiFi) | ~$15 | ✅ Alındı | Oda ambiyans aydınlatması. HA yerel Yeelight entegrasyonu (LAN Control aç) — bulut YOK, Zero-Trust uyumlu |
+| 2 | **Tuya WiFi Smart IR+RF Akıllı Kumanda** | ~$18 | ✅ Alındı | Klima + vantilatör Tuya Smart ile bağlı ✅. TV bağlanamadı (TV'nin IR alıcısı arızalı — TV değişecek). HA'da `tuya-local` entegrasyonu: remote entity + learn_command + send_command, tam yerel |
+| 3 | **Hisense HMC6SBK Multi Cooker 6L** | ~$80 | ✅ Alındı | 1500W, 10-13 program, paslanmaz çelik iç kap. WiFi YOK → Tuya akıllı prizle güç izleme (1500W ısınma / ~40W keep-warm tespiti) + Vision-Cooker orkestrasyonu |
+| 4 | **HAUSBERG HB3723 Espresso Kahve Makinesi** | ~$70 | ✅ Alındı | WiFi yok → Tuya akıllı prizle güç izleme (ısıtma ~900W / hazır bekleme ~50W tespiti → "kahve hazır" bildirimi) |
+| 5 | **28BYJ-48 Step Motor + ULN2003 Sürücü Kiti** | ~$4 | ✅ Alındı | DIY perde motoru (Modül 7). 3000₺ hazır SwitchBot yerine ~150₺ robotik parça. ESP32 + ESPHome `stepper` bileşeni ile sürülür |
+| 6 | **Echo Dot 5. Gen × 2** | ~$100/çift | ✅ Alındı | Odanın sağ ve sol köşesi — stereo ses hub (spatial audio). Alexa integration veya Bluetooth hoparlör olarak jarvis_core'a bağlanır |
+
+---
+
+## 🤔 Planlanan Alımlar (Öncelik Sırasıyla)
+
+| # | Ekipman | Fiyat (≈) | Öncelik | Not |
+|---|---|---|---|---|
+| 1 | **WS2812B LED Şerit (300 LED — 5m × 60/m)** | ~$20 | 🔴 YÜKSEK | Her LED adreslenebilir → şarkı ritmiyle tek tek eşleşme (audio reactive). MCU2812B test modülü ile prototip doğrulandı |
+| 2 | **Tuya WiFi UK Smart Plug (güç ölçümlü) × 3-4** | ~$12/adet | 🔴 YÜKSEK | Hausberg espresso + Hisense multicooker + klima güç izleme. LocalTuya ile yerel kontrol |
+| 3 | **Xiaomi Mi Box S 4K 32GB WiFi 6 (3rd Gen)** | ~$60 | 🟡 ORTA | TV'nin IR alıcısı arızalı → TV değişecek. Mi Box: Google TV 14 + Chromecast dahil + HA Android TV entegrasyonu (ADB) + MagicMirror² web gösterimi |
+| 4 | ESP32 DevKit V1 × 1-2 | ~$5/adet | 🟡 ORTA | Sensör Hub (LD2410 + MPU6050 + TTP223 + 28BYJ-48 perde + IR blaster konsolidasyonu) |
+| 5 | COB LED Şerit (12V sıcak beyaz) + 12V 2A adaptör + IRLZ44N MOSFET | ~$25 | 🟡 ORTA | Modül 6 — yatak altı rehber aydınlatma (LD2410 ile tetiklenir) |
+| 6 | Tuya Galaksi Projeksiyon | ~$30 | 🟢 DÜŞÜK | Modül 3 — derin uzay illüzyonu (Tuya Local ile yerel) |
+| 7 | Tuya Akıllı Difüzör + esans yağları | ~$25 + $45 | 🟢 DÜŞÜK | Modül 9 — koku otomasyonu |
+| 8 | TP-Link Tapo C200 × 2 | ~$50/çift | 🟢 DÜŞÜK | Yüz tanıma (Modül 1) + mutfak vision (Modül 13) — RTSP yerel |
+| 9 | Hisense D16CW Nem Alıcı + BME280 | ~$125 | 🟢 DÜŞÜK | Modül 32 — İklim Kalkanı (Kıbrıs rutubeti) |
 
 ---
 
@@ -8,33 +104,32 @@
 
 | # | Bileşen | Model / Tip | Adet | Modül | Fiyat (≈) | Not |
 |---|---|---|---|---|---|---|
-| 1 | VPS | DigitalOcean / Hetzner (2 vCPU, 4GB RAM) | 1 | Tümü | ~$10/ay | Home Assistant Docker + Tailscale |
-| 2 | Yönlendirici | GL-MT3000 (Beryl AX) | 1 | Tümü | ~$80 | WiFi 6 + Tailscale client + MQTT broker |
+| 1 | VPS | DigitalOcean / Hetzner (2 vCPU, 4GB RAM) | 1 | Tümü | ~$10/ay | HA + jarvis_core + ChromaDB + Mealie + OpenClaw (hepsi Docker) |
+| 2 | Yönlendirici | GL-MT3000 (Beryl AX) | 1 | Tümü | ~$80 | WiFi 6 + Tailscale client + MQTT broker + iptables izolasyon |
 | 3 | Tailscale VPN | Tailscale (ücretsiz plan) | — | Tümü | $0 | VPS ↔ GL-MT3000 şifreli tünel |
-| 4 | Home Assistant | HA Core (Docker) | 1 | Tümü | $0 | VPS üzerinde Docker |
-| 5 | Zigbee2MQTT | Z-Stack dongle (CC2652R) | 1 | Tümü | ~$25 | Zigbee koordinatör |
-| 6 | Akıllı Priz (Güç Ölçümlü) | Shelly Plug S | 3-4 | 8, 11, 13 | ~$15/adet | Klima, kahve, ocak güç izleme |
-| 7 | **Akım Korumalı Priz (Surge Protector)** | APC / Brennenstuhl / Tunçmatik | 2 | Tümü | ~$25-40/adet | Kıb-Tek şebeke dalgalanmalarına karşı GL-MT3000, Pi 4, Pi Zero ve LCD monitörü korur. Tüm emeğin tek bir şimşek çakmasıyla çöp olmasını engeller |
-| 8 | **UPS (Kesintisiz Güç Kaynağı)** | APC Back-UPS 600VA (opsiyonel) | 1 | Tümü | ~$50-70 | Şebeke kesintisinde GL-MT3000 + Pi 4'ü 10-15 dk çalıştırır (HA çökmesini engeller) |
+| 4 | Home Assistant | HA Core (Docker, VPS) | 1 | Tümü | $0 | VPS üzerinde |
+| 5 | **Akım Korumalı Priz (Surge Protector)** | APC / Brennenstuhl / Tunçmatik | 2 | Tümü | ~$25-40/adet | Kıb-Tek dalgalanmalarına karşı GL-MT3000 + Echo Dot + TV'yi korur |
+| 6 | **UPS (opsiyonel)** | APC Back-UPS 600VA | 1 | Tümü | ~$50-70 | Şebeke kesintisinde GL-MT3000 + ESP32'leri 10-15 dk çalıştırır (VPS zaten kesintiden etkilenmez) |
+
+> **Not:** Zigbee2MQTT dongle KALDIRILDI — Zigbee cihaz kalmadı. Tüm yerel cihazlar WiFi üzerinden: ESPHome (MQTT), LocalTuya, Yeelight LAN.
 
 ---
 
-## 🧠 Modül 1: jarvis_core (Sistemin Beyni)
+## 🧠 Modül 1: jarvis_core (Sistemin Beyni — VPS'te)
 
 | # | Bileşen | Model / Tip | Adet | Fiyat (≈) | Not |
 |---|---|---|---|---|---|
-| 1 | Mikrodenetleyici | ESP32-S3 DevKit | 1 | ~$8 | Audio hub (mikrofon + hoparlör yönetimi) |
-| 2 | Dijital Mikrofon | INMP441 I2S | 1 | ~$5 | Komodin içinde gizli, 24-bit |
-| 3 | IP Kamera (Yüz Tanıma) | TP-Link Tapo C200 | 1 | ~$25 | RTSP, oturma alanı için |
-| 4 | Akıllı Hoparlör | Echo Dot 5. Gen (veya Nest Mini) | 2 | ~$50/çift | Stereo pair (spatial audio) |
-| 5 | MiniMax API | **Speech 2.8 Turbo** (sesten-sese, voice cloning) | — | ~$10/ay | Sesten-sese <300ms, voice cloning, duygu kontrol |
-| 6 | DeepSeek API | **DeepSeek V4-Pro** (ağır zeka, kod, özet) | — | ~$1-2/ay | Günlük özet, kod yazma, analiz — çok ucuz |
-| 7 | Qwen-VL API | **Qwen-VL Max** (görüntü analizi) | — | ~$2/ay | Kamera/vision analizi — ucuz |
-| 8 | (Yazılım) | Voice Cloning referans ses (10 sn WAV) | — | $0 | Tek seferlik klonlama, sonra sınırsız |
-| 9 | (Yazılım) | Prompt Caching (hafıza) | — | $0 | DeepSeek özet → MiniMax prompt cache → bedava hafıza |
-| 10 | (Yazılım) | Hybrid Brain Manager (Python) | — | $0 | Açık kaynak — DeepSeek + Qwen-VL orkestrasyonu |
-| 9 | Python Sunucu | Raspberry Pi 4 (4GB) | 1 | ~$55 | jarvis_core Python + ChromaDB çalıştırır |
-| 10 | Kondansatör | 100nF | 1 | ~$0.1 | INMP441 VDD filtresi |
+| 1 | Mikrodenetleyici | **ESP32-S3 N8R2** (ELDE) | 1 | ~$10 | Ses hub — INMP441 mikrofon yönetimi + BT proxy |
+| 2 | Dijital Mikrofon | **INMP441 I2S** (ELDE) | 1 | ~$5 | Komodin içinde gizli, 24-bit |
+| 3 | IP Kamera (Yüz Tanıma) | TP-Link Tapo C200 | 1 | ~$25 | RTSP, oturma alanı (planlanan) |
+| 4 | Akıllı Hoparlör | **Echo Dot 5. Gen × 2** (ELDE) | 2 | ~$100/çift | Stereo pair (spatial audio) |
+| 5 | MiniMax API | **Speech 2.8 Turbo** (sesten-sese, voice cloning) | — | ~$10/ay | <300ms, voice cloning, duygu kontrol |
+| 6 | DeepSeek API | **DeepSeek V4-Pro** (ağır zeka) | — | ~$1-2/ay | Günlük özet, kod, analiz |
+| 7 | Qwen-VL API | **Qwen-VL Max** (görüntü analizi) | — | ~$2/ay | Kamera/vision analizi |
+| 8 | (Yazılım) | jarvis_core 3.0 Python + ChromaDB | — | $0 | **VPS Docker'da** — yerel sunucu YOK |
+| 9 | Kondansatör | **100nF** (ELDE) | 1 | ~$0.1 | INMP441 VDD filtresi |
+
+> **Not:** Raspberry Pi 4 ÇÖP — jarvis_core Python + ChromaDB VPS Docker'da çalışır.
 
 ---
 
@@ -42,13 +137,13 @@
 
 | # | Bileşen | Model / Tip | Adet | Fiyat (≈) | Not |
 |---|---|---|---|---|---|
-| 1 | Zigbee Mini Buton | Sonoff ZBMINI / Tuya | 2 | ~$10/adet | Yatak başı + masa altı |
-| 2 | Kapasitif Sensör | TTP223 | 1 | ~$2 | Ahşap masa altına yapıştır |
-| 3 | Mikrodenetleyici | ESP32 DevKit V1 | 1 | ~$5 | TTP223'ü okur |
-| 4 | Bakır Folyo | 5cm × 5cm | 1 | ~$1 | Kalın ahşap için alan genişletme |
-| 5 | NFC Etiket | NTAG215 | 1 | ~$0.30 | Bardak altlığı altına |
-| 6 | Çift Taraflı Bant | 3M VHB | 1 rulo | ~$5 | Gizleme için |
-| 7 | CR2032 Pil | Buton pili | 2 | ~$1/adet | Zigbee butonlar için |
+| 1 | Kapasitif Sensör | **TTP223B** (ELDE) | 5 | ~$2/adet | Ahşap masa altına yapıştır — ahşabın üstünden dokunma algılar |
+| 2 | Mikrodenetleyici | ESP32 DevKit V1 (Sensör Hub ile paylaşımlı) | — | ~$5 | TTP223 ×5'i okur (tek ESP32 yeter — GPIO bol) |
+| 3 | NFC Etiket | **NTAG213** (ELDE) | 8 | ~$0.30/adet | Bardak altlığı + kahve + Study Book + misafir etiketleri |
+| 4 | NFC Okuyucu | PN532 / RC522 (ESP32'ye bağlı) | 1 | ~$5 | Masa üstüne gizli (planlanan) |
+| 5 | Çift Taraflı Bant | 3M VHB | 1 rulo | ~$5 | Gizleme için |
+
+> **Not:** Sonoff ZBMINI ÇÖP — yurt priz/anahtar tesisatı sökülmüyor. TTP223 ×5 (ELDE) masa altına.
 
 ---
 
@@ -56,24 +151,21 @@
 
 | # | Bileşen | Model / Tip | Adet | Fiyat (≈) | Not |
 |---|---|---|---|---|---|
-| 1 | Galaksi Projeksiyon | Tuya Galaxy Projector | 1 | ~$30 | Nebula + lazer (lazer kapatılacak) |
-| 2 | Broadlink RM4 Mini (alternatif) | IR blaster | 1 | ~$20 | Tuya yerine IR kumandalı cihazlar için |
+| 1 | Galaksi Projeksiyon | Tuya Galaxy Projector | 1 | ~$30 | Nebula + lazer (lazer kapatılacak) — planlanan |
+| 2 | IR Kumanda | **Tuya IR+RF** (ELDE) veya ESP32 IR blaster | — | $0 | Tuya projeksiyon LocalTuya ile, IR'li ise Tuya IR+RF ile |
 
 ---
 
-## 🪞 Modül 4: magic_mirror (Akıllı Ayna)
+## 🪞 Modül 4: magic_mirror (Akıllı Ayna — TV Üzerinde)
+
+> **Mimari değişiklik:** Raspberry Pi Zero ÇÖP. MagicMirror² VPS Docker'da web servisi olarak çalışır → TV'de Mi Box S (3rd Gen) tarayıcısında tam ekran (Kiosk) gösterilir.
 
 | # | Bileşen | Model / Tip | Adet | Fiyat (≈) | Not |
 |---|---|---|---|---|---|
-| 1 | Two-way Mirror Akrilik | Şeffaf ayna filmli akrilik | 1 | ~$40 | Ayna boyutu |
-| 2 | LCD Panel | Çerçevesiz monitör (stripped) | 1 | ~$100 | Akrilik ile aynı boyut |
-| 3 | Mikro Bilgisayar | Raspberry Pi Zero 2 W | 1 | ~$15 | MagicMirror² çalıştırır |
-| 4 | Akıllı Priz | Shelly Plug s | 1 | ~$15 | LCD gücünü keser/açar |
-| 5 | Siyah Bant | Işık sızdırmazlık bandı | 1 rulo | ~$5 | Kenar ışık sızıntısı |
-| 6 | MicroSD | 16GB Class 10 | 1 | ~$5 | Raspberry Pi OS Lite |
-| 7 | HDMI Adaptör | Mini HDMI → HDMI | 1 | ~$3 | Pi Zero → LCD |
-| 8 | Güç Adaptörü | 5V 2.5A USB-C | 1 | ~$5 | Raspberry Pi |
-| 9 | PIR Sensör (opsiyonel) | HC-SR501 mini | 1 | ~$2 | Ayna yakınında hareket algılama |
+| 1 | (Yazılım) | MagicMirror² (Docker, VPS) | 1 | $0 | Web server modu — `http://vps-ip:8080` |
+| 2 | TV Box | **Xiaomi Mi Box S 4K** (planlanan) | 1 | ~$60 | TV'de tarayıcı Kiosk → MagicMirror² tam ekran |
+| 3 | Two-way Mirror Akrilik (opsiyonel) | Şeffaf ayna filmli akrilik | 1 | ~$40 | TV önüne yerleştirilirse gerçek ayna illüzyonu |
+| 4 | Akıllı Priz | Tuya UK Smart Plug | 1 | ~$12 | TV/Mi Box gücünü keser/açar (varlık algılama ile) |
 
 ---
 
@@ -81,10 +173,8 @@
 
 | # | Bileşen | Model / Tip | Adet | Fiyat (≈) | Not |
 |---|---|---|---|---|---|
-| 1 | Akıllı Hoparlör | Echo Dot 5. Gen (veya Nest Mini) | 2 | ~$50/çift | Stereo pair, çapraz köşelerde |
+| 1 | Akıllı Hoparlör | **Echo Dot 5. Gen × 2** (ELDE) | 2 | ~$100/çift | Stereo pair, çapraz köşelerde |
 | 2 | Spotify Premium | Spotify abonelik | — | ~$10/ay | Çalma listeleri için |
-
-> Not: Hoparlörler Modül 1 (jarvis_core) ile paylaşımlıdır.
 
 ---
 
@@ -92,37 +182,45 @@
 
 | # | Bileşen | Model / Tip | Adet | Fiyat (≈) | Not |
 |---|---|---|---|---|---|
-| 1 | Mikrodenetleyici | ESP32 DevKit V1 | 1 | ~$5 | LD2410 + COB LED sürücü |
-| 2 | Radar Sensör | HLK-LD2410B | 1 | ~$5 | 24GHz mmWave, mesafe algılama |
-| 3 | COB LED Şerit | 12V sıcak beyaz (2700K) | 2-3m | ~$10/m | Pürüzsüz ışık (Floating Bed) |
+| 1 | Radar Sensör | **HLK-LD2410B+BLE** (ELDE) | 1 | ~$5 | 24GHz mmWave, mesafe algılama |
+| 2 | Mikrodenetleyici | ESP32 DevKit V1 (Sensör Hub ile paylaşımlı) | — | ~$5 | LD2410 okur (UART) |
+| 3 | COB LED Şerit | 12V sıcak beyaz (2700K) | 2-3m | ~$10/m | Pürüzsüz ışık (Floating Bed) — planlanan |
 | 4 | MOSFET Modülü | IRLZ44N | 1 | ~$2 | ESP32 PWM → COB LED sürme |
-| 5 | Güç Kaynağı | 12V 2A | 1 | ~$8 | COB LED için |
-| 6 | Silikon Difüzör Tüp | LED şerit boyu | 1 | ~$2/m | LED çiplerini gizle |
-| 7 | Jumper Wire | Dişi-Dişi | 4 | ~$2 | LD2410 → ESP32 |
+| 5 | Güç Kaynağı | 12V 2A | 1 | ~$8 | COB LED için — planlanan |
+| 6 | Jumper Wire | **Dişi-Dişi** (ELDE) | 4 | $0 | LD2410 → ESP32 |
 
 ---
 
-## 🌅 Modül 7: morning_after (Ertesi Sabah)
+## 🌅 Modül 7: morning_after (Ertesi Sabah — DIY Perde Motoru)
+
+> **Mimari değişiklik:** SwitchBot Curtain (3000₺) ÇÖP → 28BYJ-48 Step Motor + ULN2003 (ELDE, ~150₺) DIY kurgu.
 
 | # | Bileşen | Model / Tip | Adet | Fiyat (≈) | Not |
 |---|---|---|---|---|---|
-| 1 | Perde Motoru | SwitchBot Curtain | 1 | ~$90 | Kornişe takılır, sessiz |
-| 2 | Tuya Perde Motoru (alternatif) | Rod motor | 1 | ~$35 | Daha ucuz alternatif |
+| 1 | Step Motor | **28BYJ-48** (ELDE) | 1 | ~$3 | Perdeyi çekecek — 1:64 redüktör, tork yeterli (hafif perde) |
+| 2 | Sürücü Kartı | **ULN2003** (ELDE) | 1 | ~$1.5 | 28BYJ-48 sürücü (Darlington transistör dizisi) |
+| 3 | Mikrodenetleyici | ESP32 DevKit V1 (Sensör Hub ile paylaşımlı) | — | ~$5 | ESPHome `stepper` bileşeni ile sürer |
+| 4 | Dişli/Kayış Mekanizması | 3D baskı dişli veya halat+kasnak | 1 set | ~$5 | Motor → perde mekanik bağlantısı |
+| 5 | Güç Kaynağı | 5V 1A (motor için) | 1 | ~$4 | 28BYJ-48 beslemesi (ULN2003 üzerinden) |
+| 6 | Limit Switch (opsiyonel) | Mikro switch × 2 | 2 | ~$1/adet | Açık/kapalı uç pozisyon tespiti |
 
-> Not: WLED sistemi (Modül 10) ve barista_mode (Modül 11) ile entegre çalışır.
+> **Not:** 28BYJ-48 yavaştır (~15 RPM) — perde tam açılış ~30-60 sn. Bu "premium" yavaşlık aslında sinematik avantaj: perde yavaş açılır → güneş kademeli girer.
 
 ---
 
 ## 📡 Modül 8: invisible_remote (Görünmez Kumanda)
 
+> **Mimari değişiklik:** Broadlink RM4 Mini ÇÖP → Tuya WiFi Smart IR+RF (ELDE) ana kumanda + ESP32 IR blaster (ELDE parçalarla) yedek.
+
 | # | Bileşen | Model / Tip | Adet | Fiyat (≈) | Not |
 |---|---|---|---|---|---|
-| 1 | IR Blaster | Broadlink RM4 Mini | 1 | ~$20 | 360° IR, TV + klima kontrolü |
-| 2 | Akıllı Priz (Klima) | Shelly Plug s | 1 | ~$15 | Klima güç izleme (geri besleme) |
-| 3 | ESP32 (alternatif) | DevKit V1 | 1 | ~$5 | Broadlink yerine IR LED ile |
-| 4 | IR LED | 940nm, 5mm, yüksek güç | 1 | ~$1 | ESP32 alternatifi için |
-| 5 | IR Alıcı (öğrenme) | VS1838B | 1 | ~$1 | IR kod öğrenme (opsiyonel) |
-| 6 | 220Ω Direnç | — | 1 | ~$0.1 | IR LED koruması |
+| 1 | Akıllı IR+RF Kumanda | **Tuya WiFi Smart IR+RF** (ELDE) | 1 | ~$18 | Klima ✅ + vantilatör ✅ bağlı. TV arızalı (TV değişecek). HA `tuya-local`: remote entity, learn/send command, tam yerel |
+| 2 | IR Alıcı (öğrenme) | **TSOP1838** (ELDE) | 1 | ~$1 | ESP32'ye bağlı — orijinal kumanda kodlarını öğrenir |
+| 3 | IR LED (blaster) | **LTE-4206 940nm** (ELDE) | 2 | ~$0.5/adet | ESP32 IR blaster — Tuya kumandanın görmediği köşeler için |
+| 4 | Transistör | **2N2222 NPN** (ELDE) | 2 | ~$0.2/adet | IR LED sürücü katı (GPIO → transistör → LED) |
+| 5 | Direnç | **220R sıra direnç** (ELDE) | 1 | ~$0.2 | IR LED akım sınırlama |
+| 6 | Mikrodenetleyici | ESP32 DevKit V1 (Sensör Hub ile paylaşımlı) | — | ~$5 | IR öğrenme + blaster (ESPHome `remote_transmitter` + `remote_receiver`) |
+| 7 | Akıllı Priz (Klima) | Tuya UK Smart Plug (planlanan) | 1 | ~$12 | Klima güç izleme (geri besleme: komut işe yaradı mı?) |
 
 ---
 
@@ -130,13 +228,11 @@
 
 | # | Bileşen | Model / Tip | Adet | Fiyat (≈) | Not |
 |---|---|---|---|---|---|
-| 1 | Akıllı Difüzör | Tuya/SmartLife uyumlu | 1 | ~$25 | WiFi, LocalTuya ile kontrol |
+| 1 | Akıllı Difüzör | Tuya/SmartLife uyumlu | 1 | ~$25 | WiFi, LocalTuya ile kontrol — planlanan |
 | 2 | Esans Yağı — Sandalağacı | Monin / Plant Therapy | 1 | ~$15 | Topraklayıcı, sakinleştirici |
 | 3 | Esans Yağı — Amber | Monin / Nemat | 1 | ~$15 | Lüks, güven hissi |
 | 4 | Esans Yağı — Ylang-Ylang | Plant Therapy / Monin | 1 | ~$15 | Afrodizyak, duygusal açılım |
 | 5 | Cam Şişe (karışım) | 10ml pipetli | 3-4 | ~$2/adet | Mod bazlı karışımlar için |
-
-> Alternatif: "Dumb" difüzör + akıllı priz (Shelly Plug s ~$15)
 
 ---
 
@@ -144,31 +240,35 @@
 
 | # | Bileşen | Model / Tip | Adet | Fiyat (≈) | Not |
 |---|---|---|---|---|---|
-| 1 | Mikrodenetleyici | ESP32 DevKit V1 | 1 | ~$5 | FFT + I2S (ESP8266 yetersiz) |
-| 2 | Dijital Mikrofon | INMP441 I2S | 1 | ~$5 | 24-bit, düşük gürültü |
-| 3 | LED Şerit | WS2812B (60 LED/m) | 2-5m | ~$5/m | Oda boyutuna göre |
-| 4 | Güç Kaynağı | 5V 4A | 1 | ~$10 | LED şerit için harici güç |
-| 5 | Difüzör Profil | Alüminyum + mat akrilik | LED boyu | ~$8/m | Premium görünüm için şart |
-| 6 | Kondansatör | 100nF | 1 | ~$0.1 | INMP441 VDD filtresi |
+| 1 | Mikrodenetleyici | **ESP32-S3 N8R2** (ELDE) | 1 | ~$10 | FFT + I2S — WLED Audio Hub |
+| 2 | Dijital Mikrofon | **INMP441 I2S** (ELDE) | 1 | ~$5 | 24-bit, düşük gürültü — ritim analizi |
+| 3 | LED Şerit | **WS2812B 300 LED (5m × 60/m)** | 1 | ~$20 | Her LED adreslenebilir → şarkı ritmiyle tek tek eşleşme. MCU2812B test modülü ile doğrulandı — planlanan |
+| 4 | Güç Kaynağı | 5V 10A (300 LED tam beyaz ~18A, pratik efektler ~8-10A) | 1 | ~$15 | LED şerit için harici güç — planlanan |
+| 5 | Difüzör Profil | Alüminyum + mat akrilik | 5m | ~$8/m | Premium görünüm için şart |
+| 6 | Kondansatör | **100nF** (ELDE) + 1000µF (alınacak) | 1+1 | ~$0.5 | INMP441 VDD + WS2812B güç filtresi |
 | 7 | Direnç | 330Ω | 1 | ~$0.1 | WS2812B veri hattı koruması |
-| 8 | Jumper Wire | Dişi-Dişi | 6 | ~$2 | INMP441 → ESP32 |
+| 8 | Jumper Wire | **Dişi-Dişi** (ELDE) | 6 | $0 | INMP441 → ESP32-S3 |
+
+> **Not:** 300 LED = 60 LED/m × 5m. Her LED'in kendi adresi var → WLED "Sound Reactive" modu her beat'te farklı LED segmentlerini yakar → duvar boyunca "akan enerji dalgası" efekti.
 
 ---
 
-## ☕ Modül 11: barista_mode (Kahve Otomasyonu)
+## ☕ Modül 11: barista_mode (Kahve Otomasyonu — HAUSBERG)
+
+> **Mimari değişiklik:** Anonim kahve makinesi → HAUSBERG HB3723 Espresso (ELDE). WiFi yok → Tuya akıllı prizle güç izleme.
 
 | # | Bileşen | Model / Tip | Adet | Fiyat (≈) | Not |
 |---|---|---|---|---|---|
-| 1 | Akıllı Priz (Güç Ölçümlü) | Shelly Plug s | 1 | ~$15 | Kahve makinesi güç izleme |
-| 2 | NFC Etiket | NTAG215 | 1 | ~$0.30 | Masanın altına gizli |
-| 3 | Fingerbot (opsiyonel) | SwitchBot Fingerbot | 1 | ~$15 | Dijital anahtarlı makineler için |
-| 4 | Çift Cidarlı Fincan | Porselen (IKEA FÄRGRIK / Villeroy & Boch) | 2-4 | ~$5-20/adet | Premium sunum |
+| 1 | Espresso Makinesi | **HAUSBERG HB3723** (ELDE) | 1 | ~$70 | 15 bar pompa, buharla süt köpürtme. WiFi YOK |
+| 2 | Akıllı Priz (Güç Ölçümlü) | Tuya UK Smart Plug (planlanan) | 1 | ~$12 | Güç izleme: ısıtma ~900W → hazır bekleme ~50W → "kahve hazır" tespiti |
+| 3 | NFC Etiket | **NTAG213** (ELDE) | 1 | $0 | Masanın altına gizli — "kahve modu" tetikleyici |
+| 4 | Çift Cidarlı Fincan | Porselen | 2-4 | ~$5-20/adet | Premium sunum |
 | 5 | Vanilya Şurubu | Monin Vanilla | 1 | ~$10 | Tatlı, kremamsı |
 | 6 | Karamel Şurubu | Monin Caramel | 1 | ~$10 | Zengin tat |
-| 7 | Tarçın | Toz tarçın | 1 | ~$3 | Fincan üstüne serpme |
-| 8 | Kahve (Kapsül) | Nespresso Original (Arpeggio, Ristretto) | 1 kutu | ~$15 | Hızlı, tutarlı |
-| 9 | Kahve (Çekirdek) | Illy Classico | 1 paket | ~$15 | Premium (öğütücü gerekir) |
-| 10 | Sunum Tepsisi | Bambu / Ceviz ahşap | 1 | ~$15 | Premium sunum |
+| 7 | Kahve (Çekirdek) | Espresso çekirdeği | 1 paket | ~$15 | HAUSBERG öğütücü dahilse çekirdek, değilse öğütülmüş |
+| 8 | Sunum Tepsisi | Bambu / Ceviz ahşap | 1 | ~$15 | Premium sunum |
+
+> **Güç izleme mantığı:** Tuya priz watt'ı okur → 900W (ısıtma) → 50W'a düşer (hazır) → HA otomasyonu "Kahve hazır" → Jarvis sesli bildirir + WLED amber yanar.
 
 ---
 
@@ -176,13 +276,11 @@
 
 | # | Bileşen | Model / Tip | Adet | Fiyat (≈) | Not |
 |---|---|---|---|---|---|
-| 1 | Mikrodenetleyici | ESP32 DevKit V1 | 1 | ~$5 | MPU6050 + ritim algılama |
-| 2 | İvmeölçer / Jiroskop | MPU6050 (6-DoF) | 1 | ~$3 | Yatak iskeletine gizli |
-| 3 | Jumper Wire | Dişi-Dişi | 4 | ~$2 | MPU6050 → ESP32 (I2C) |
+| 1 | İvmeölçer / Jiroskop | **MPU6050** (ELDE) | 1 | ~$3 | Yatak iskeletine gizli — ritim algılama |
+| 2 | Mikrodenetleyici | ESP32 DevKit V1 (Sensör Hub ile paylaşımlı) | — | ~$5 | MPU6050 okur (I2C) |
+| 3 | Jumper Wire | **Dişi-Dişi** (ELDE) | 4 | $0 | MPU6050 → ESP32 (I2C) |
 | 4 | Köpük Şerit | 1-2mm | 1 | ~$2 | Sensör izolasyonu (yüksek frekans filtre) |
 | 5 | Çift Taraflı Bant | 3M VHB | 1 | ~$3 | Sensör montajı |
-
-> Not: WLED (Modül 10), Spatial Audio (Modül 5), Invisible Remote (Modül 8) ve Smart Diffuser (Modül 9) ile entegre çalışır.
 
 ---
 
@@ -190,83 +288,65 @@
 
 | # | Bileşen | Model / Tip | Adet | Fiyat (≈) | Not |
 |---|---|---|---|---|---|
-| 1 | IP Kamera | TP-Link Tapo C200 | 1 | ~$25 | RTSP, 720p, mutfak dolabı altı |
+| 1 | IP Kamera | TP-Link Tapo C200 | 1 | ~$25 | RTSP, mutfak dolabı altı — planlanan |
 | 2 | USB Güç Adaptörü | 5V 1A | 1 | ~$3 | Kamera beslemesi |
 | 3 | Çift Taraflı Bant | 3M VHB | 1 | ~$3 | Dolap altı montaj |
-| 4 | Akıllı Priz (Ocak) | Shelly Plug s | 1 | ~$15 | Ocak güç izleme (güvenlik) |
-| 5 | Zigbee Buton (Mutfak) | Sonoff ZBMINI / Tuya | 1 | ~$10 | Mutfak tezgahı yanında |
+| 4 | Akıllı Priz (Multicooker) | Tuya UK Smart Plug (planlanan) | 1 | ~$12 | Hisense HMC6SBK güç izleme (pişirme durumu tespiti) |
 
-> Not: Qwen-VL Max API (Modül 1 ile paylaşımlı).
+> **Not:** Zigbee mutfak butonu ÇÖP — TTP223 (ELDE) mutfak tezgahına yapıştırılır.
 
 ---
 
 ## 📚 Modül 15: immersive_language_tutor (Dil Eğitmeni)
 
-> **Ekstra donanım GEREKMEZ!** Bu modül tamamen yazılım tabanlıdır.
-> Mevcut Jarvis Core (Modül 1), WLED (Modül 10), Spatial Audio (Modül 5),
-> Magic Mirror (Modül 4) ve klima (Modül 8) altyapısını kullanır.
+> **Ekstra donanım GEREKMEZ!** Tamamen yazılım tabanlı. Mevcut Jarvis Core, WLED, Spatial Audio, TV/Mi Box (MagicMirror² web) ve klima (Tuya IR+RF) altyapısını kullanır.
 
 | # | Bileşen | Model / Tip | Adet | Fiyat (≈) | Not |
 |---|---|---|---|---|---|
-| 1 | NFC Etiket (Study Book) | NTAG215 | 1 | ~$0.30 | Masadaki NFC okuyucuya "Study Book" etiketi |
-| 2 | Odaklanma Esansı (opsiyonel) | Biberiye / Limon esansı | 1 | ~$10 | Difüzör için odaklanma kokusu (veya difüzörü kapat) |
-| 3 | vocabulary.json | Kelime listesi (100+ çift) | 1 | $0 | Magic Mirror için JSON dosya (elle hazırlanır) |
-
-> **Toplam ekstra maliyet: ~$0-10** (NFC etiket + opsiyonel esans)
+| 1 | NFC Etiket (Study Book) | **NTAG213** (ELDE) | 1 | $0 | "Study Book" etiketi |
+| 2 | Odaklanma Esansı (opsiyonel) | Biberiye / Limon esansı | 1 | ~$10 | Difüzör için odaklanma kokusu |
+| 3 | vocabulary.json | Kelime listesi (100+ çift) | 1 | $0 | TV/Mi Box MagicMirror² için JSON dosya |
 
 ---
 
 ## 🧬 Modül 16: holistic_life_os (Yaşam İşletim Sistemi)
 
-> **Ekstra donanım GEREKMEZ!** Bu modül tamamen yazılım tabanlıdır.
-> Mevcut akıllı saat (Apple Watch/Wear OS), yatak radarı (LD2410, Modül 6 — varlık/hareket),
-> kamera (Modül 13) ve HA altyapısını kullanır.
+> **Ekstra donanım GEREKMEZ!** Mevcut akıllı saat, yatak radarı (LD2410, ELDE), kamera ve HA altyapısını kullanır.
 >
-> ⚠️ **ÖNEMLİ:** LD2410/LD2450 radar kalp atışı ve nefes ÖLÇMEZ.
-> Kalp atışı, nefes ve uyku evreleri akıllı saatten (Apple Health/Google Fit) gelir.
-> Radar sadece varlık/hareket için kullanılır.
-> Eğer radar tabanlı kalp atışı ölçümü istenirse: HLK-LD2420/LD6001 (Sleep Radar, ~$15-25) gerekir.
+> ⚠️ **ÖNEMLİ:** LD2410 radar kalp atışı ve nefes ÖLÇMEZ. Kalp atışı/nefes/uyku evreleri akıllı saatten (Apple Health/Google Fit) gelir. Radar sadece varlık/hareket için.
 
 | # | Bileşen | Model / Tip | Adet | Fiyat (≈) | Not |
 |---|---|---|---|---|---|
-| 1 | Akıllı Saat | Apple Watch SE / Wear OS | 1 | ~$200 | Kullanıcının mevcut saati — kalp atışı, nefes, uyku evreleri (ANA KAYNAK) |
+| 1 | Akıllı Saat | Apple Watch SE / Wear OS | 1 | ~$200 | Kullanıcının mevcut saati — ANA KAYNAK |
 | 2 | (Yazılım) | CalDAV / Google Calendar API | — | $0 | Takvim entegrasyonu |
-| 3 | (Yazılım) | PyPDF2 (PDF analiz) | — | $0 | pip install pypdf2 |
-| 4 | (Yazılım) | Google Fit API / Apple Health | — | $0 | Sağlık verisi erişimi (nabız, uyku, adım) |
-| 5 | (Opsiyonel) | Google OAuth token | — | $0 | Takvim esnetme (Calendar API) |
-| 6 | (Opsiyonel) | HLK-LD6002 (60GHz Vital Signs Radar) | 1 | ~$25-40 | Temassız kalp atışı (BPM) + solunum ölçer. Yatak başucuna monte. ⚠️ LD2420 ve LD6001 kalp/nefes ÖLÇMEZ — sadece varlık/konum. LD6002 bu iş için özel üretilmiştir |
-
-> **Toplam ekstra maliyet: ~$0** (mevcut akıllı saat + yazılım)
-> (Opsiyonel sleep radar eklersen: +$15-25)
+| 3 | (Yazılım) | Google Fit API / Apple Health | — | $0 | Sağlık verisi erişimi |
+| 4 | (Opsiyonel) | HLK-LD6002 (60GHz Vital Signs Radar) | 1 | ~$25-40 | Temassız kalp atışı + solunum |
 
 ---
 
 ## 🎬 Modül 17: hyperion_media_sync (Ekran Senkronizasyonu)
 
+> **Mimari değişiklik:** Raspberry Pi 4 Hyperion sunucusu ÇÖP → Hyperion.ng VPS Docker'da çalışır. HDMI grabber hala yerel gerekir (USB cihaz) — bu modül ileri tarihe bırakılabilir veya ESP32-grabber alternatifi araştırılır.
+
 | # | Bileşen | Model / Tip | Adet | Fiyat (≈) | Not |
 |---|---|---|---|---|---|
-| 1 | Hyperion Sunucu | Raspberry Pi 4 (2GB) | 1 | ~$45 | Hyperion.ng çalıştırır (Modül 1 Pi 4'ten ayrı veya aynı) |
-| 2 | HDMI Grabber | UCV007 / MS2109 USB | 1 | ~$10 | HDMI → USB, düşük gecikme (<50ms) |
+| 1 | Hyperion Sunucu | Hyperion.ng (Docker, VPS) | 1 | $0 | VPS üzerinde — yerel sunucu YOK |
+| 2 | HDMI Grabber | UCV007 / MS2109 USB | 1 | ~$10 | HDMI → USB — yerel bir cihaza bağlanmalı (bu modül ileri faz) |
 | 3 | HDMI Splitter | 1x2 HDMI splitter | 1 | ~$10 | Kaynak → TV + grabber |
-| 4 | HDMI Kablo | 1.5m | 2 | ~$3/adet | Kaynak → splitter → TV/grabber |
 
-> **Not:** WLED sistemi (Modül 10) zaten kurulu. Bu modül Hyperion yazılımı + HDMI grabber ekler.
-> **Toplam ekstra maliyet: ~$71** (Pi 4 + grabber + splitter + kablolar)
+> **Not:** WLED (Modül 10) kurulu olduğu sürece Hyperion "ekran senk" ileride eklenir. Öncelik değil.
 
 ---
 
 ## 📱 Modül 18: life_os_superapp (PWA SuperApp)
 
-> **Ekstra donanım GEREKMEZ!** Mevcut HA PWA + HACS custom cards + ESP32-S3 (Modül 1) kullanır.
+> **Ekstra donanım GEREKMEZ!** Mevcut HA PWA + HACS + ESP32-S3 (ELDE) kullanır.
 
 | # | Bileşen | Model / Tip | Adet | Fiyat (≈) | Not |
 |---|---|---|---|---|---|
-| 1 | (Yazılım) | Mushroom Cards (HACS) | — | $0 | Modern yuvarlak kartlar |
-| 2 | (Yazılım) | Bubble Card (HACS) | — | $0 | Swipeable sekmeler, pop-up |
-| 3 | (Yazılım) | HA Companion App | — | $0 | PWA + çağrı sensörü (phone_state) |
-| 4 | (Donanım) | ESP32-S3 Bluetooth Proxy | — | $0 | Modül 1 ile paylaşımlı |
-
-> **Toplam ekstra maliyet: ~$0** — tüm altyapı mevcut, sadece yazılım.
+| 1 | (Yazılım) | Mushroom Cards + Bubble Card (HACS) | — | $0 | Modern UI |
+| 2 | (Yazılım) | HA Companion App | — | $0 | PWA + çağrı sensörü |
+| 3 | (Donanım) | ESP32-S3 BT Proxy (ELDE) | — | $0 | Modül 1 ile paylaşımlı |
 
 ---
 
@@ -275,97 +355,36 @@
 | # | Bileşen | Model / Tip | Adet | Fiyat (≈) | Not |
 |---|---|---|---|---|---|
 | 1 | I2S DAC | MAX98357A | 1 | ~$3 | Hoparlör sürücü (çağrı sesi → oda) |
-| 2 | (Donanım) | ESP32-S3 (Modül 1 ile paylaşımlı) | — | $0 | BT Proxy + HFP + I2S |
-| 3 | (Donanım) | INMP441 (Modül 1 ile paylaşımlı) | — | $0 | Mikrofon (senin sesin) |
+| 2 | (Donanım) | ESP32-S3 (ELDE, Modül 1 paylaşımlı) | — | $0 | BT Proxy + HFP + I2S |
+| 3 | (Donanım) | INMP441 (ELDE, Modül 1 paylaşımlı) | — | $0 | Mikrofon |
 | 4 | (Yazılım) | HA Companion App | — | $0 | phone_call_state sensörü |
-
-> **Toplam ekstra maliyet: ~$3** (I2S DAC — diğer her şey Modül 1 ile paylaşımlı)
 
 ---
 
 ## 🪞 Modül 20: magic_mirror_comm_and_grooming (Ayna İletişim + Stil Koçu)
 
+> **Mimari değişiklik:** Pi Zero ÇÖP → TV + Mi Box (Modül 4) üzerinden. USB kamera/mikrofon Mi Box'a bağlanır.
+
 | # | Bileşen | Model / Tip | Adet | Fiyat (≈) | Not |
 |---|---|---|---|---|---|
-| 1 | USB Web Kamera | Logitech C270 (720p mini) | 1 | ~$25 | Ayna çerçevesine gizli |
-| 2 | USB Mikrofon | Mini USB mic | 1 | ~$10 | Ayna arkasında gizli |
-| 3 | Hoparlör | Mini 3W speaker | 1 | ~$5 | Ayna arkasında (TTS + arama) |
-| 4 | USB Hub | Mini 4-port USB hub | 1 | ~$5 | Pi Zero'nun tek portuna hub |
-| 5 | (Donanım) | Pi Zero 2 W (Modül 4 ile paylaşımlı) | — | $0 | MagicMirror² çalıştırır |
-| 6 | (Yazılım) | aiortc (WebRTC) | — | $0 | pip install aiortc |
-
-> **Toplam ekstra maliyet: ~$45** (kamera + mikrofon + hoparlör + hub)
+| 1 | USB Web Kamera | Logitech C270 (720p mini) | 1 | ~$25 | TV üstüne / ayna çerçevesine gizli |
+| 2 | USB Mikrofon | Mini USB mic | 1 | ~$10 | Gizli |
+| 3 | Hoparlör | Mini 3W speaker | 1 | ~$5 | TTS + arama |
+| 4 | (Donanım) | Mi Box S 4K (planlanan, Modül 4 paylaşımlı) | — | $0 | USB port üzerinden kamera/mic bağlanır |
 
 ---
 
-## 🚗 Modül 21: car_knight_rider_core (Araç Beyni + Giant's Throne)
+## 🚗 Modül 21-25: Araç Modülleri (Knight Rider, Omniscience, Stealth, Edge-AI, Sentry)
 
-| # | Bileşen | Model / Tip | Adet | Fiyat (≈) | Not |
-|---|---|---|---|---|---|
-| 1 | Android Multimedya | 9-10" Head Unit (2GB RAM, Android 10+) | 1 | ~$150-250 | 2005+ araçlar, universal fit |
-| 2 | OBD2 Adaptör | ELM327 Bluetooth/Wi-Fi | 1 | ~$15-25 | Direksiyon altı OBD2 portu |
-| 3 | (Opsiyonel) | ESP32 + CAN Bus shield | 1 | ~$20 | Gelişmiş OBD2 (CAN Bus direkt) |
-| 4 | (Yazılım) | Torque Pro / Car Scanner | 1 | ~$5 | OBD2 okuma app'i |
-| 5 | (Yazılım) | Tailscale (Android) | — | $0 | VPN tüneli → VPS |
+> Araç modülleri ayrı satın alma fazındadır (yurt odası bitmeden öncelik değil). Detaylı listeler modül klasörlerindeki `hardware_and_*.md` dosyalarında korunur.
 
-> **Toplam ekstra maliyet: ~$170-275** (Android ekran + OBD2 adaptör)
-
----
-
-## 🔮 Modül 22: car_omniscience_copilot (Gözetmen + OBD2 Kehanet)
-
-| # | Bileşen | Model / Tip | Adet | Fiyat (≈) | Not |
-|---|---|---|---|---|---|
-| 1 | IR Kamera | FLIR One / Seek Thermal (USB-C) | 1 | ~$200 | Sürücü yüzü → PERCLOS (gece görüş) |
-| 2 | OBD2 Wi-Fi | ELM327 Wi-Fi (Bluetooth yerine) | 1 | ~$20 | Daha hızlı veri akışı (10 Hz) |
-| 3 | Akıllı Saat | Apple Watch / Wear OS (mevcut) | — | $0 | Nabız, HRV, stres (Modül 16 ile paylaşımlı) |
-| 4 | GPS | Android dahili GPS | — | $0 | Hız, konum |
-| 5 | İvmeölçer | Android dahili / MPU6050 | — | $0 | G-kuvveti, ivme |
-
-> **Toplam ekstra maliyet: ~$220** (IR kamera + OBD2 Wi-Fi adaptörü)
-
----
-
-## 🌑 Modül 23: car_stealth_and_seduction (Blackout + Seduction + Sci-Fi)
-
-| # | Bileşen | Model / Tip | Adet | Fiyat (≈) | Not |
-|---|---|---|---|---|---|
-| 1 | (Yazılım) | HA Companion App (Android) | — | $0 | Direksiyon tuşu → HA |
-| 2 | (Opsiyonel) | Zigbee mini buton (araç içi gizli) | 1 | ~$10 | Direksiyon altına gizli |
-| 3 | (Opsiyonel) | Araç içi WLED şerit (ayak/kapı) | 1m | ~$5 | ESP32 + WS2812B |
-| 4 | (Opsiyonel) | Araç içi USB difüzör | 1 | ~$20 | Imza koku için |
-
-> **Toplam ekstra maliyet: ~$0-35** (mevcut altyapı + opsiyonel WLED/difüzör)
-
----
-
-## 🚀 Modül 24: car_edge_ai_vision (Jetson Nano Edge-AI + ADAS)
-
-| # | Bileşen | Model / Tip | Adet | Fiyat (≈) | Not |
-|---|---|---|---|---|---|
-| 1 | Edge-AI Bilgisayar | Nvidia Jetson Nano 4GB Dev Kit | 1 | ~$150 | 128 CUDA core, GPU |
-| 2 | Kamera | Sony IMX219 CSI-2 (8MP) | 1 | ~$25 | Ön cam → dikiz aynası arkası |
-| 3 | MicroSD | 64GB UHS-I U3 (A2) | 1 | ~$15 | JetPack imajı için |
-| 4 | Güç | 5V 4A USB-C adaptör | 1 | ~$10 | Jetson Nano beslemesi |
-| 5 | (Opsiyonel) | 5/7" IPS dokunmatik LCD | 1 | ~$35-50 | HMI ekranı |
-| 6 | (Opsiyonel) | USB Wi-Fi dongle | 1 | ~$10 | Tailscale için |
-
-> **Toplam ekstra maliyet: ~$200-250** (Jetson + kamera + SD + güç + opsiyonel LCD)
-
----
-
-## 🛡️ Modül 25: car_sentry_mode_security (Sentry Mode + Güvenlik)
-
-| # | Bileşen | Model / Tip | Adet | Fiyat (≈) | Not |
-|---|---|---|---|---|---|
-| 1 | PIR Sensör | HC-SR501 mini (12V uyumlu) | 1 | ~$2 | Araç içi, düşük güç (~0.05W) |
-| 2 | Şok Sensör | MPU6050 (Modül 12 ile paylaşımlı) | — | $0 | Darbe/sarsıntı algılama |
-| 3 | Akıllı Röle | 12V→5V DC-DC + voltaj sensörü | 1 | ~$10 | Akü koruma (<11.5V → kapat) |
-| 4 | (Opsiyonel) | Arka kamera (USB webcam) | 1 | ~$15 | Ön + arka kayıt |
-| 5 | (Yazılım) | Telegram Bot API | — | $0 | BotFather → token → anlık bildirim |
-| 6 | (Donanım) | Jetson Nano (Modül 24 ile paylaşımlı) | — | $0 | Deep Sleep + kamera uyandırma |
-
-> **Toplam ekstra maliyet: ~$12-27** (PIR + röle + opsiyonel arka kamera)
+| Modül | Ana Donanım | Fiyat (≈) | Durum |
+|---|---|---|---|
+| 21 — car_knight_rider_core | Android Head Unit + OBD2 ELM327 | ~$170-275 | 🟢 İleri faz |
+| 22 — car_omniscience_copilot | FLIR One IR kamera + OBD2 Wi-Fi | ~$220 | 🟢 İleri faz |
+| 23 — car_stealth_and_seduction | (Yazılım ağırlıklı) | ~$0-35 | 🟢 İleri faz |
+| 24 — car_edge_ai_vision | Jetson Nano 4GB + IMX219 | ~$200-250 | 🟢 İleri faz |
+| 25 — car_sentry_mode_security | PIR + 12V röle | ~$12-27 | 🟢 İleri faz |
 
 ---
 
@@ -380,197 +399,177 @@
 | 3 | Docker Sandbox | Docker CE (VPS üzerinde) | 1 | $0 | Zero Trust 7 katman |
 | 4 | Mealie (tarif DB) | Mealie 3.13+ (Docker) | 1 | $0 | Açık kaynak tarif yöneticisi, REST API |
 
-> **Modül 27 donanım maliyeti: $0** (tamamen yazılım, VPS üzerinde)
-
 ---
 
-## 🍳 Modül 28: Multicooker Chef Automation
+## 🍳 Modül 28: Multicooker Chef Automation (Hisense HMC6SBK)
+
+> **Mimari değişiklik:** Xiaomi Mi Smart Multi Cooker 3L → **Hisense HMC6SBK 6L** (ELDE). 2× kapasite, 1500W. WiFi YOK → güç izleme + Vision-Cooker orkestrasyonu.
 
 | # | Bileşen | Model / Tip | Adet | Fiyat (≈) | Not |
 |---|---|---|---|---|---|
-| 1 | Akıllı Tencere | Xiaomi Mi Smart Multi Cooker 3L | 1 | ~$45 | chunmi.cooker.normal4, 700W, 3L |
-| 2 | (Alternatif) | Tuya Smart Multicooker | 1 | ~$25 | Bütçe alternatifi |
-| 3 | Router İzolasyon | GL-MT3000 iptables (mevcut) | — | $0 | Çin bulutu kapatma |
-| 4 | Mealie Docker | (Modül 27 ile paylaşımlı) | — | $0 | Aynı Docker instance |
+| 1 | Multicooker | **Hisense HMC6SBK 6L** (ELDE) | 1 | ~$80 | 1500W, 10-13 program (basınçlı pişirme, slow cook, pilav, buğulama, yoğurt), paslanmaz çelik iç kap. WiFi YOK |
+| 2 | Akıllı Priz (Güç Ölçümlü) | Tuya UK Smart Plug (planlanan) | 1 | ~$12 | Güç izleme: 1500W (ısınma) → ~40W (keep-warm) → "pişirme bitti" tespiti |
+| 3 | Mealie Docker | (Modül 27 ile paylaşımlı) | — | $0 | Aynı Docker instance |
+| 4 | (Yazılım) | Vision-Cooker orkestrasyonu | — | $0 | Tapo C200 (Modül 13) malzemeleri görür → Mealie tarif eşleştirir → kullanıcı başlatır → güç izleme bitişi tespit eder → bildirim |
 
-> **Modül 28 donanım maliyeti: ~$45** (Xiaomi tencere tek seferlik)
-
----
-
-## 💡 Modül 29: Embodied Jarvis Avatar
-
-| # | Bileşen | Model / Tip | Adet | Fiyat (≈) | Not |
-|---|---|---|---|---|---|
-| 1 | Mikrodenetleyici | Raspberry Pi 4 (4GB) | 1 | ~$55 | Modül 1 ile paylaşımlı (jarvis_core + Lamp body) |
-| 2 | Servo Sürücü | PCA9685 (I2C, 16 kanal PWM) | 1 | ~$5 | 5 servo + yedek kanallar |
-| 3 | Servo Motor (Ana) | MG996R (11kg-cm, metal dişli) | 3 | ~$6/adet | Omuz + dirsek + bas dönüş |
-| 4 | Servo Motor (Uç) | SG90 (1.8kg-cm) | 2 | ~$2/adet | Bilek + kafa |
-| 5 | Güç Kaynağı | 5V 4A (20W) adaptör | 1 | ~$8 | Servo + Pi güç |
-| 6 | 3D Baskı | PLA Filament 500g | 1 | ~$6 | BCN3D Moveo parçaları |
-| 7 | Rulman | F693ZZ (3x8x4mm) | 4 | ~$1/adet | Eklemlerde sürtünme azaltma |
-| 8 | Vidalar | M2/M3 vida + somun seti | 1 | ~$3 | Montaj |
-| 9 | Jumper Kablo | Dişi-dişi jumper (I2C + servo) | 20 | ~$3 | PCA9685 ↔ Pi ↔ servo |
-| 10 | Kondansatör | 1000µF/16V | 1 | ~$0.5 | Servo güç dalgalanması |
-| 11 | WS2812 LED | NeoPixel Ring (16 LED) | 1 | ~$3 | Lamba göz ifadesi |
-| 12 | INMP441 | I2S Mikrofon | 1 | ~$5 | Modül 1 ile paylaşımlı (ses) |
-
-> **Modül 29 donanım maliyeti: ~$105** (Pi 4 paylaşımlı sayılmazsa ~$50)
+> **Neden WiFi'siz Hisense ve Xiaomi değil?** Hisense 6L (Xiaomi 3L), 1500W (Xiaomi 700W), ~$80 (Xiaomi ~$45 + Çin bulut riski). Hisense'in "akıllı" kısmı Jarvis'te: kamera görür, Mealie eşleştirir, priz izler, Jarvis bildirir. Tencerenin kendisinin WiFi'ye ihtiyacı yok — zeka bulutta.
 
 ---
 
-## 🐕 Modül 30: Desktop Pet Kame
+## ⏸️ Modül 29: Embodied Jarvis Avatar — BEKLEMEDE
 
-| # | Bileşen | Model / Tip | Adet | Fiyat (≈) | Not |
-|---|---|---|---|---|---|
-| 1 | Mikrodenetleyici | ESP32 DevKit V1 (38 pin) | 1 | ~$5 | Dual-core 240MHz, WiFi |
-| 2 | Servo Motor | SG90 (1.8kg-cm) | 8 | ~$1.5/adet | 4 bacak × 2 servo (Kame32) |
-| 3 | LiPo Batarya | 2S 7.4V 1000mAh | 1 | ~$8 | Kame güç kaynağı |
-| 4 | Şarj Modülü | TP4056 (koruma dahil) | 1 | ~$1 | LiPo şarj koruması |
-| 5 | Kondansatör | 1000µF/16V | 1 | ~$0.5 | Servo güç dalgalanması |
-| 6 | Qi Verici Pad | 5W Qi kablosuz şarj verici | 1 | ~$3 | Masa üstüne sabit |
-| 7 | Qi Alıcı Coil | 5W Qi kablosuz şarj alıcı | 1 | ~$2 | Kame'nin altına yapıştır |
-| 8 | USB Adaptör | 5V/2A (Qi pad güç) | 1 | ~$4 | Qi pad güç kaynağı |
-| 9 | Slide Switch | Aç/kapa anahtarı | 1 | ~$0.5 | Güç anahtarı |
-| 10 | Direnç | 10kΩ + 4.7kΩ (voltage divider) | 1 set | ~$0.3 | LiPo → ESP32 ADC |
-| 11 | 3D Baskı | PLA Filament 500g | 1 | ~$6 | Kame gövde parçaları |
-| 12 | Rulman | F693ZZ (3x8x4mm) | 8 | ~$1/adet | Eklemlerde sürtünme |
-| 13 | Vidalar | M2/M3 vida + somun seti | 1 | ~$3 | Montaj |
-| 14 | Jumper Kablo | Dişi-dişi jumper | 15 | ~$2 | ESP32 ↔ servo bağlantı |
-
-> **Modül 30 donanım maliyeti: ~$45** (SG90 ile, MG90S ile ~$55)
+> Robotik proje — oda temeli bitene kadar satın alma YOK. Dokümantasyon `embodied_jarvis_avatar/` klasöründe korunur.
 
 ---
 
-## 🍸 Modül 31: Siber Barmen (CocktailBerry)
+## ⏸️ Modül 30: Desktop Pet Kame — BEKLEMEDE
 
-| # | Bileşen | Model / Tip | Adet | Fiyat (≈) | Not |
-|---|---|---|---|---|---|
-| 1 | Tek Kart Bilgisayar | Raspberry Pi 4 (4GB) | 1 | ~$55 | CocktailBerry + Kiosk UI |
-| 2 | Dokunmatik Ekran | Raspberry Pi 7" Touch Display | 1 | ~$60 | Kiosk mod — kokteyl seçim arayüzü |
-| 3 | Röle Kartı | 16 Kanal 5V Röle (Aktif Low) | 1 | ~$12 | 10 pompayı kontrol eder (6 yedek) |
-| 4 | Pompa | 12V Diyafram/Peristaltik Pompa | 10 | ~$8/adet | 10 farklı içki/mixer |
-| 5 | Silikon Hortum | Gıda uyumlu silikon Ø6mm | 15m | ~$15 | Pompa → nozül sıvı taşıma |
-| 6 | Koruma Diyotu | 1N4007 (1000V 1A) | 10 | ~$0.10/adet | Ters akım koruması — her pompaya paralel |
-| 7 | Güç Kaynağı | 12V 10A SMPS | 1 | ~$20 | 10 pompayı besler (8A peak) |
-| 8 | Voltaj Düşürücü | LM2596 Buck Converter | 1 | ~$3 | 12V → 5V (Pi'yi besler) |
-| 9 | DC Jack | 5.5×2.1mm Dişi | 2 | ~$1 | Güç girişi |
-| 10 | Jumper Kablo | Dişi-Erkek Dupont | 20 | ~$2 | Pi GPIO → röle kartı |
-| 11 | 3D Baskı | PLA Filament 500g | 1 | ~$6 | Pompa montaj + ekran çerçeve |
-
-> **Modül 31 donanım maliyeti: ~$265**
+> Robotik proje — oda temeli bitene kadar satın alma YOK. Dokümantasyon `desktop_pet_kame/` klasöründe korunur.
 
 ---
 
-## 🛡️ Modül 32: Yurt İklim ve Solunum Kalkanı
+## ⏸️ Modül 31: Siber Barmen (CocktailBerry) — BEKLEMEDE
+
+> Robotik proje — oda temeli bitene kadar satın alma YOK. Dokümantasyon `siber_barmen_cocktailberry/` klasöründe korunur. Raspberry Pi gerektirdiğinden, ileride tekrar değerlendirilir (VPS + ESP32 röle alternatifi).
+
+---
+
+## 🛡️ Modül 32: Yurt İklim ve Solunum Kalkanı (Planlanan)
 
 | # | Bileşen | Model / Tip | Adet | Fiyat (≈) | Not |
 |---|---|---|---|---|---|
-| 1 | Nem Alma Cihazı | Hisense D16CW (1.6L/gün) | 1 | ~$120 | Kompresörlü, Auto-Restart, Shelly ile kontrol |
-| 2 | Akıllı Priz | Shelly Plug S | 1 | ~$15 | Hisense'i otonom tetikler + güç izleme |
-| 3 | Sensör | BME280 (Sıcaklık + Nem + Basınç) | 1 | ~$5 | I2C, ESP32'ye bağlı |
+| 1 | Nem Alma Cihazı | Hisense D16CW (1.6L/gün) | 1 | ~$120 | Kompresörlü, Auto-Restart — planlanan |
+| 2 | Akıllı Priz | Tuya UK Smart Plug | 1 | ~$12 | Hisense'i otonom tetikler + güç izleme |
+| 3 | Sensör | BME280 (Sıcaklık + Nem + Basınç) | 1 | ~$5 | I2C, ESP32'ye bağlı — planlanan |
 | 4 | Mikrodenetleyici | ESP32 DevKit V1 | 1 | ~$5 | BME280 okur, MQTT yayınlar |
-| 5 | HEPA Filtre | H13 (Ø15cm × 5cm) | 1 | ~$12 | DIY hava temizleyici — toz/küf/polen |
-| 6 | PC Fanı | 12V 120mm Bilgisayar Fanı | 1 | ~$8 | DIY hava temizleyici — hava akışı |
-| 7 | Güç Kaynağı | 12V 2A Adaptör | 1 | ~$6 | PC fanını besler |
-| 8 | 3D Baskı / Kutu | PLA 200g veya MDF kutu | 1 | ~$4 | HEPA + fan montajı |
-| 9 | Jumper Kablo | Dupont Dişi-Dişi | 4 | ~$1 | BME280 → ESP32 I2C |
+| 5 | HEPA Filtre + 12V PC Fanı | DIY hava temizleyici | 1 set | ~$25 | Toz/küf/polen filtreleme |
 
-> **Modül 32 donanım maliyeti: ~$181**
+> **Not:** Klima kontrolü artık Broadlink yerine **Tuya IR+RF** (ELDE) ile — klima zaten bağlı. Gece modu: Hisense kapat + klima 26°C + swing tavan (boğaz koruması).
+
+---
+
+## 💡 Modül 33: Yeelight Ambiyans Aydınlatma (Yeni — ELDE)
+
+| # | Bileşen | Model / Tip | Adet | Fiyat (≈) | Not |
+|---|---|---|---|---|---|
+| 1 | Akıllı Ampul | **Yeelight Smart LED Color Bulb 1S** (ELDE) | 1 | ~$15 | 16M renk, WiFi. HA yerel Yeelight entegrasyonu — LAN Control aç (bulut YOK) |
+| 2 | (Yazılım) | HA Yeelight integration + music mode | — | $0 | Music mode: >60 istek/dk limiti kalkar → hızlı efekt geçişleri |
+
+> **Kullanım:** WLED duvar şeridi ile birlikte çalışır — Yeelight oda genel ambiyansı (tavan lambası), WLED duvar ritmi. "Sinema modu" → Yeelight %10 kehribar + WLED off. "Parti" → Yeelight renk döngüsü + WLED audio reactive.
+
+---
+
+## 📺 Modül 34: TV Medya Merkezi (Mi Box S — Planlanan)
+
+> TV'nin IR alıcısı arızalı → TV değişecek. Yeni TV + Mi Box S 4K ile tam akıllı medya merkezi.
+
+| # | Bileşen | Model / Tip | Adet | Fiyat (≈) | Not |
+|---|---|---|---|---|---|
+| 1 | TV Box | **Xiaomi Mi Box S 4K 32GB WiFi 6 (3rd Gen)** | 1 | ~$60 | Google TV 14, AMLogic S905X5M, 4×2.5GHz, 2GB RAM, HDMI 2.1a, Dolby Vision/Atmos, Chromecast dahil |
+| 2 | (Yazılım) | HA Android TV integration (ADB) | — | $0 | Power, volume, app kontrolü — yerel ağ |
+| 3 | (Yazılım) | Chromecast (dahili) | — | $0 | Spotify/video cast — jarvis_core media_player |
+| 4 | (Yazılım) | MagicMirror² web Kiosk | — | $0 | Tarayıcıda tam ekran → TV ayna (Modül 4) |
+
+> **Neden Mi Box S 4K?** Chromecast dahil (jarvis_core medya cast), Google TV (HA Android TV entegrasyonu ile tam kontrol), MagicMirror² tarayıcı gösterimi, 32GB depolama, WiFi 6. Fire TV Stick (Amazon bulutu) ve Chromecast 4K (tek fonksiyon) yerine çok daha yetenekli.
 
 ---
 
 ##  Toplam Maliyet Özeti
 
+### Aktif Sistem (Oda Temeli — Ses, Işık, Otomasyon)
+
 | Kategori | Adet | Toplam Fiyat (≈) |
 |---|---|---|
-| **Genel Altyapı** (VPS, yönlendirici, Zigbee dongle) | — | ~$120 + $10/ay |
-| **Mikrodenetleyiciler** (ESP32 × 6, Pi Zero, Pi 4) | 8 | ~$100 |
-| **Sensörler** (LD2410, MPU6050, TTP223, INMP441 × 2) | 6 | ~$25 |
-| **Hoparlörler** (Echo Dot × 2) | 2 | ~$50 |
-| **Kameralar** (Tapo C200 × 2) | 2 | ~$50 |
-| **Akıllı Prizler** (Shelly × 4) | 4 | ~$60 |
-| **LED & Aydınlatma** (WLED, COB, projeksiyon, NeoPixel) | — | ~$83 |
-| **Perde & Difüzör & Broadlink** | 3 | ~$135 |
-| **Magic Mirror** (akrilik + LCD + Pi Zero) | — | ~$180 |
-| **Esans Yağları** | 3 | ~$45 |
-| **Kahve & Sunum** | — | ~$60 |
-| **Kablo & Direnç & Kondansatör** | — | ~$23 |
-| **Modül 27 (OpenClaw)** | — | $0 (yazılım) |
-| **Modül 28 (Multicooker)** | 1 | ~$45 (Xiaomi tencere) |
-| **Modül 29 (Lamba)** | — | ~$105 (servo + sürücü + 3D) |
-| **Modül 30 (Kame)** | — | ~$45 (ESP32 + 8 servo + Qi + 3D) |
-| **Modül 31 (CocktailBerry)** | — | ~$265 (Pi 4 + 7" ekran + 10 pompa + röle + diyot) |
-| **Modül 32 (İklim Kalkanı)** | — | ~$181 (Hisense D16CW + Shelly + BME280 + DIY HEPA) |
+| **Genel Altyapı** (VPS, GL-MT3000, akım koruma) | — | ~$120 + $10/ay |
+| **Mikrodenetleyiciler** (ESP32-S3 ×2 ELDE + ESP32 DevKit ×1-2 plan) | 3-4 | ~$25 |
+| **Sensörler** (LD2410, MPU6050, TTP223 ×5, INMP441 ×2, TSOP1838 — HEPSİ ELDE) | 10 | ~$25 |
+| **Hoparlörler** (Echo Dot 5 ×2 — ELDE) | 2 | ~$100 |
+| **Kameralar** (Tapo C200 ×2 — plan) | 2 | ~$50 |
+| **Akıllı Prizler** (Tuya UK ×3-4 — plan) | 4 | ~$48 |
+| **LED & Aydınlatma** (WS2812B 300 LED plan + Yeelight ELDE + COB plan + difüzör profil) | — | ~$130 |
+| **Mutfak** (HAUSBERG espresso ELDE + Hisense multicooker ELDE) | 2 | ~$150 |
+| **Perde Motoru** (28BYJ-48 + ULN2003 — ELDE) | 1 | ~$4 |
+| **IR+RF Kumanda** (Tuya — ELDE) | 1 | ~$18 |
+| **TV Medya** (Mi Box S 4K — plan) | 1 | ~$60 |
+| **Difüzör + Esanslar** (plan) | — | ~$70 |
+| **Kablo & Direnç & Kondansatör** (çoğu ELDE) | — | ~$15 |
 | **API Abonelikleri** (MiniMax, DeepSeek, Qwen-VL, Spotify) | — | ~$15/ay |
-| **TOPLAM (Tek Seferlik)** | — | **~$1.561** |
-| **TOPLAM (Aylık)** | — | **~$15/ay** |
+| **TOPLAM (Tek Seferlik — Aktif)** | — | **~$815** |
+| **TOPLAM (Aylık)** | — | **~$25/ay** (VPS $10 + API $15) |
 
-> **Not:** Fiyatlar yaklaşık değerlerdir. Bazı bileşenler modüller arasında paylaşımlıdır (hoparlörler, API'ler, akıllı prizler). Gerçek maliyet, mevcut donanıma ve seçilen markalara göre değişir.
+> **Not:** ~$815'in ~$290'ı zaten ELDE (envanter + yeni alınanlar). Kalan ~$525 satın alma listesinde.
+
+### Beklemede (Robotik — Oda Temeli Bitince)
+
+| Kategori | Fiyat (≈) |
+|---|---|
+| Modül 29 (Lamba) | ~$105 |
+| Modül 30 (Kame) | ~$45 |
+| Modül 31 (CocktailBerry) | ~$265 |
+| **TOPLAM (Beklemede)** | **~$415** |
+
+### Planlanan (İklim + Araç — İleri Faz)
+
+| Kategori | Fiyat (≈) |
+|---|---|
+| Modül 32 (İklim Kalkanı) | ~$181 |
+| Modül 21-25 (Araç) | ~$600-800 |
+| **TOPLAM (Planlanan)** | **~$780-980** |
 
 ---
 
-## 🛒 Satın Alma Öncelik Sırası
+## 🛒 Satın Alma Öncelik Sırası (Yeniden Yapılandırılmış)
 
-### Faz 1 (Temel — Jarvis Core + Gizli Tetikleyiciler)
-1. ESP32-S3 + INMP441 (ses hub)
-2. Echo Dot × 2 (stereo pair)
-3. Raspberry Pi 4 (jarvis_core Python)
-4. Sonoff ZBMINI × 2 (gizli butonlar)
-5. TTP223 + ESP32 (kapasitif dokunma)
-6. MiniMax + DeepSeek + Qwen-VL API abonelikleri
+> **Prensip: "Önce odanın temeli (ses, ışık, otomasyon). Robotiğe ve lükse 1 kuruş yok."**
 
-### Faz 2 (Atmosfer — Işık + Ses + Koku)
-7. ESP32 + INMP441 + WS2812B (audio reactive WLED)
-8. Alüminyum difüzör profil (premium görünüm)
-9. Tuya difüzör + esans yağları
-10. Tuya galaksi projeksiyon
+### Faz 1 (TEMEL — Beyin + Ses) — Çoğu ELDE ✅
+1. VPS kurulumu (Docker: HA + jarvis_core + ChromaDB) — $10/ay
+2. GL-MT3000 + Tailscale tüneli (ELDE/mevcut)
+3. **ESP32-S3 #1 + INMP441 #1** (ELDE) → Ses Hub kurulumu
+4. **Echo Dot 5 × 2** (ELDE) → stereo pair + HA entegrasyonu
+5. MiniMax + DeepSeek + Qwen-VL API abonelikleri
+6. **Tuya IR+RF** (ELDE) → klima + vantilatör HA `tuya-local` entegrasyonu
 
-### Faz 3 (Konfor — Kahve + Perde + Sabah)
-11. Shelly Plug s × 4 (güç ölçümlü prizler)
-12. SwitchBot Curtain (akıllı perde)
-13. NFC NTAG215 × 2 (kahve + bardak altlığı)
-14. Çift cidarlı fincanlar + Monin şurupları
+### Faz 2 (IŞIK — WLED + Yeelight)
+7. **WS2812B 300 LED şerit** (~$20) + 5V 10A güç (~$15) → ESP32-S3 #2 (ELDE) + INMP441 #2 (ELDE) ile WLED Audio Hub
+8. **Yeelight Bulb 1S** (ELDE) → HA Yeelight yerel entegrasyonu (LAN Control)
+9. Alüminyum difüzör profil (premium görünüm)
+10. MCU2812B (ELDE) ile prototip doğrulama → sonra 300'lük şerit montajı
 
-### Faz 4 (Gelişmiş — Radar + Şef + Ayna)
-15. HLK-LD2410B + COB LED (yatak altı)
-16. MPU6050 (intimacy ritim)
-17. TP-Link Tapo C200 × 2 (yüz tanıma + mutfak)
-18. Broadlink RM4 Mini (IR kumanda)
-19. Two-way mirror akrilik + LCD + Pi Zero (akıllı ayna)
-20. **Kablo gizleme malzemeleri** (aşağıdaki tabloya bakın)
+### Faz 3 (KONFOR — Mutfak + Perde + Prizler)
+11. **Tuya UK Smart Plug × 3-4** (~$12/adet) → Hausberg espresso + Hisense multicooker + klima güç izleme
+12. **HAUSBERG HB3723** (ELDE) + priz → "kahve hazır" güç analizi otomasyonu
+13. **Hisense HMC6SBK** (ELDE) + priz → "pişirme bitti" güç analizi otomasyonu
+14. **28BYJ-48 + ULN2003** (ELDE) + ESP32 DevKit (~$5) → DIY perde motoru (ESPHome stepper)
+15. **NFC NTAG213 × 8** (ELDE) + PN532 okuyucu (~$5) → gizli NFC tetikleyiciler
 
-### Faz 12 (Dijital Ajan — OpenClaw + Mealie)
-21. (Yazılım) OpenClaw v2026.4.15 + browser-use (Docker, VPS)
-22. (Yazılım) Mealie 3.13+ (Docker, VPS) — tarif veritabanı
+### Faz 4 (SENSÖR + GİZLİ TETİK)
+16. **TTP223B × 5** (ELDE) → masa altı gizli dokunmatik (ESP32 Sensör Hub)
+17. **HLK-LD2410B** (ELDE) + COB LED (~$25) → yatak altı rehber aydınlatma
+18. **MPU6050** (ELDE) → yatak ritim algılama (intimacy sync)
+19. **TSOP1838 + LTE-4206 + 2N2222 + 220R** (ELDE) → ESP32 IR öğrenme + blaster (yedek kumanda)
 
-### Faz 13 (Akıllı Mutfak — Multicooker)
-23. Xiaomi Mi Smart Multi Cooker 3L (~$45)
+### Faz 5 (MEDYA — TV + Mi Box)
+20. **Xiaomi Mi Box S 4K 32GB WiFi 6** (~$60) → HA Android TV + Chromecast + MagicMirror² web Kiosk
+21. TV değişimi (IR alıcısı arızalı — mevcut TV çöpe/nakit)
 
-### Faz 14 (Fiziksel Avatar — Lamba)
-24. PCA9685 I2C PWM sürücü (~$5)
-25. MG996R servo × 3 (~$6/adet) + SG90 servo × 2 (~$2/adet)
-26. 5V 4A güç adaptörü (~$8)
-27. PLA filament 500g (~$6) + F693ZZ rulman × 4 (~$1/adet)
-28. WS2812 NeoPixel Ring 16 LED (~$3)
+### Faz 6 (ATMOSFER — Projeksiyon + Difüzör)
+22. Tuya Galaksi Projeksiyon (~$30) → derin uzay illüzyonu
+23. Tuya Difüzör (~$25) + esans yağları (~$45) → koku otomasyonu
 
-### Faz 15 (Robot Evcil Hayvan — Kame32)
-29. ESP32 DevKit V1 (~$5)
-30. SG90 servo × 8 (~$1.5/adet)
-31. 2S LiPo 1000mAh + TP4056 (~$9)
-32. Qi şarj verici + alıcı (~$5) + 5V/2A adaptör (~$4)
-33. PLA filament 500g (~$6) + F693ZZ rulman × 8 (~$1/adet)
+### Faz 7 (GÜVENLİK + VISION)
+24. Tapo C200 × 2 (~$50/çift) → yüz tanıma + mutfak vision (Qwen-VL)
 
-### Faz 16 (Siber Barmen — CocktailBerry)
-34. Raspberry Pi 4 (4GB) (~$55) + 7" Touch Display (~$60)
-35. 16 Kanal 5V Röle Kartı (~$12) + 10× 12V Pompa (~$8/adet)
-36. 1N4007 Diyot × 10 (~$0.10/adet) + 15m Silikon Hortum (~$15)
-37. 12V 10A SMPS (~$20) + LM2596 Buck (~$3) + PLA 500g (~$6)
+### Faz 8 (İKLİM KALKANI)
+25. Hisense D16CW (~$120) + Tuya priz → nem alma otomasyonu
+26. BME280 + ESP32 (~$10) → nem sensörü
+27. DIY HEPA + fan (~$25) → hava temizleyici
 
-### Faz 17 (İklim ve Solunum Kalkanı)
-38. Hisense D16CW Nem Alma Cihazı (~$120) + Shelly Plug S (~$15)
-39. BME280 Sensör (~$5) + ESP32 DevKit V1 (~$5)
-40. HEPA H13 Filtre (~$12) + 12V PC Fanı (~$8) + 12V 2A Adaptör (~$6)
-41. PLA 200g / MDF Kutu (~$4) + Dupont Kablo (~$1)
+### ⏸️ BEKLEMEDE (Oda Temeli Bitince)
+- Modül 29: Robotik Lamba (~$105)
+- Modül 30: Kame Robot (~$45)
+- Modül 31: CocktailBerry (~$265)
+- Modül 21-25: Araç modülleri (~$600-800)
 
 ---
 
@@ -581,27 +580,27 @@
 
 | # | Bileşen | Model / Tip | Adet | Fiyat (≈) | Not |
 |---|---|---|---|---|---|
-| 1 | Kablo Gizleyici Kılıf | Cırtlı kablo sleeve (duvar renginde/beyaz) | 5m | ~$8 | Birden fazla kabloyu tek tüp içinde toplar, duvar rengine uyumlu |
-| 2 | İnce Kablo Kanalı | PVC kablo kanalı (beyaz/duvar rengi, 15×10mm) | 5m | ~$5 | Duvar kenarında, baseboard boyunca gizli kablo geçişi |
-| 3 | Çift Taraflı Bant | 3M VHB (siyah/beyaz) | 2 rulo | ~$10/adet | ESP32 ve sensörleri mobilya altına sıfır görünür şekilde bantlama |
+| 1 | Kablo Gizleyici Kılıf | Cırtlı kablo sleeve (duvar renginde/beyaz) | 5m | ~$8 | Birden fazla kabloyu tek tüp içinde toplar |
+| 2 | İnce Kablo Kanalı | PVC kablo kanalı (beyaz/duvar rengi, 15×10mm) | 5m | ~$5 | Duvar kenarında, baseboard boyunca |
+| 3 | Çift Taraflı Bant | 3M VHB (siyah/beyaz) | 2 rulo | ~$10/adet | ESP32 ve sensörleri mobilya altına bantlama |
 | 4 | Kablo Bağı | Siyah kelebek kablo bağı | 100 adet | ~$5 | Kablo demetlerini sabitleme |
-| 5 | Duvar Rengi Boya | Kablo kanalı ile aynı renk (küçük kutu) | 1 | ~$5 | Kablo kanalını duvar rengine boyama (tam gizleme) |
-| 6 | Möbius / Felt Kılıf | Keçe kablo gizleyici (mobilya altı için) | 2m | ~$7 | Yatak/masa altında kabloları keçe içinde gizleme |
-| 7 | USB Kablo (Düz) | Düz başlı USB-C/Micro-USB kablo (kısa, 30-50cm) | 5 | ~$3/adet | ESP32'leri güçlendirmek için kısa, gizli kablolar |
-| 8 | Baseboard Kablo Kanalı | Zemin süpürgeliği arkası kablo kanalı | 5m | ~$8 | Oda çevresi kablo geçişi (tam gizli) |
+| 5 | Duvar Rengi Boya | Kablo kanalı ile aynı renk | 1 | ~$5 | Tam gizleme |
+| 6 | Möbius / Felt Kılıf | Keçe kablo gizleyici | 2m | ~$7 | Yatak/masa altı |
+| 7 | USB Kablo (Düz) | Düz başlı USB-C (kısa, 30-50cm) | 5 | ~$3/adet | ESP32'ler için kısa, gizli kablolar |
+| 8 | Baseboard Kablo Kanalı | Zemin süpürgeliği arkası | 5m | ~$8 | Oda çevresi (tam gizli) |
 
 ### Kablo Gizleme Kuralları
 
 | Kural | Açıklama |
 |---|---|
 | **Sadece uçlar görünür** | Sensörlerin ve LED'lerin sadece fonksiyonel uçları görünmeli, kablolar asla |
-| **Duvar rengine uyum** | Kablo kanalları ve sleeve'ler duvar rengine boyanmalı veya aynı renkte seçilmeli |
+| **Duvar rengine uyum** | Kablo kanalları ve sleeve'ler duvar rengine boyanmalı |
 | **Mobilya altı bantlama** | Tüm ESP32'ler ve kablolar yatak/masa/komodin altına 3M VHB ile bantlanmalı |
-| **Baseboard kullanımı** | Oda çevresi kablolar baseboard (zemin süpürgeliği) arkasından geçmeli |
-| **Kısa kablo prensibi** | Mümkün olan en kısa kablo kullanılmalı (sarkma olmasın) |
-| **Kablo sleeve ile toplama** | Birden fazla kablo tek sleeve içinde toplanmalı (dağınıklık yok) |
+| **Baseboard kullanımı** | Oda çevresi kablolar baseboard arkasından geçmeli |
+| **Kısa kablo prensibi** | Mümkün olan en kısa kablo (sarkma olmasın) |
+| **Kablo sleeve ile toplama** | Birden fazla kablo tek sleeve içinde |
 | **Güç kabloları ayrı** | 220V güç kabloları veri kablolarından ayrı kanalda (EMI önleme) |
 
 ---
 
-*Bu dosya, projenin tüm donanım ihtiyaçlarını listeler. Yeni modüller eklendikçe güncellenir.*
+*Bu dosya, projenin tüm donanım ihtiyaçlarını listeler. Mimari değişiklikler (Pi'siz bulut beyni) ve yeni alımlar yansıtılmıştır. Yeni modüller eklendikçe güncellenir.*

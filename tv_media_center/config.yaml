@@ -1,0 +1,51 @@
+# Modül 34: TV Medya Merkezi — Konfigürasyon
+# Xiaomi Mi Box S 4K 32GB WiFi 6 (3rd Gen) — Planlanan
+
+module:
+  id: 34
+  name: "TV Medya Merkezi (Mi Box S)"
+  type: "tv_medya_merkezi"
+  status: "planlanan" # TV değişince + Mi Box alınınca kurulur
+
+hardware:
+  tv_box:
+    model: "Xiaomi TV Box S 4K (3rd Gen, 2024/2025)"
+    soc: "AMLogic S905X5M (4× Cortex-A55 2.5GHz)"
+    ram: "2GB DDR4"
+    storage: "32GB eMMC 5.2"
+    wifi: "WiFi 6 (802.11ax, 2×2 MU-MIMO)"
+    bluetooth: "5.2 (LE Audio ready)"
+    video: "HDMI 2.1a — 4K@60Hz + VRR, Dolby Vision (Profile 8), HDR10+, Dolby Atmos, DTS:X"
+    os: "Google TV 14"
+    chromecast: "dahili"
+    usb: "1× USB-A 2.0 OTG (kamera/klavye/depolama)"
+  tv:
+    status: "arizali_ir" # Mevcut TV'nin IR alıcısı çalışmıyor — değişecek
+    note: "TV değişince Mi Box HDMI'ye takılır"
+
+home_assistant:
+  android_tv_integration:
+    method: "ADB (Network Debugging)"
+    entity_id: "media_player.mi_box"
+    controls: ["power", "volume", "apps", "home", "back"]
+    setup: "Mi Box → Settings → Device Preferences → About → Build Number 7× tıkla → Developer Options → Network Debugging AKTİF"
+  chromecast_integration:
+    entity_id: "media_player.mi_box_chromecast"
+    use: "jarvis_core medya cast hedefi (Spotify, video)"
+  magicmirror_kiosk:
+    url: "http://VPS_IP:8080"
+    method: "Tam ekran tarayıcı (Modül 4 — Pi'siz ayna çözümü)"
+
+mqtt:
+  broker: "gl-mt3000.local"
+  command_topic: "jarvis/tv/command"
+
+jarvis_integration:
+  voice_phrases:
+    - "televizyonu aç"
+    - "netflix aç"
+    - "spotify'da lo-fi çal"
+    - "televizyonu kapat"
+    - "ayinayı göster"
+  media_cast: true # Chromecast üzerinden
+  magicmirror_show: true # Tarayıcı Kiosk geçişi

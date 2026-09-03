@@ -161,45 +161,46 @@
 7. Komodin içine gizle (mikrofon dışarı bakar)
 ```
 
-### 1.2 Raspberry Pi 4 (jarvis_core Python)
+### 1.2 jarvis_core Python (VPS Docker — Raspberry Pi YOK)
+
+> **Mimari değişiklik:** Raspberry Pi 4 ÇÖP. jarvis_core Python + ChromaDB + Mealie + OpenClaw
+> hepsi VPS üzerinde Docker konteynerlerinde çalışır. Yurt odasında sıfır sunucu donanımı.
 
 ```
-1. Raspberry Pi OS Lite (64-bit) MicroSD'ye yaz (Raspberry Pi Imager)
-2. Pi 4'ü başlat, SSH ile bağlan
-3. Python 3.13+ kurulu kontrol et: python3 --version (2026 standartı)
-4. Gerekli kütüphaneleri kur (2026):
+1. VPS'e SSH ile bağlan (DigitalOcean / Hetzner — 2 vCPU, 4GB RAM)
+2. Docker + Docker Compose kur:
+   curl -fsSL https://get.docker.com | sh
+3. docker-compose.yml oluştur (HA + jarvis_core + ChromaDB + Mealie):
+   services:
+     home-assistant:
+       image: ghcr.io/home-assistant/home-assistant:stable
+       volumes: [./ha:/config]
+       network_mode: host
+     jarvis-core:
+       build: ./jarvis_core
+       volumes: [./jarvis_core:/app]
+       restart: always
+     chromadb:
+       image: chromadb/chroma
+       volumes: [./chroma:/chroma]
+     mealie:
+       image: hkex03/mealie:latest
+       volumes: [./mealie:/app/data]
+4. Gerekli Python kütüphaneleri (jarvis_core Dockerfile):
    pip install websockets asyncio httpx
-   pip install opencv-python face-recognition chromadb numpy pillow pypdf2 mediapipe
-5. jarvis_core dosyalarını Pi'ye kopyala:
-   scp -r jarvis_core/ pi@PI_IP:~/
-6. API anahtarlarını config'e gir:
+   pip install opencv-python-headless face-recognition chromadb numpy pillow pypdf2 mediapipe
+5. API anahtarlarını config'e gir:
    - MiniMax (Speech 2.8 Turbo — sesten-sese, voice cloning)
    - DeepSeek (V4-Pro — ağır zeka, özet)
    - Qwen-VL (Max — görüntü analizi)
-7. Voice Cloning referans ses dosyası hazırla:
+6. Voice Cloning referans ses dosyası hazırla:
    - 10 sn WAV/MP3 (Jarvis tonu — Paul Bettany veya Türkçe dublaj)
    - assets/jarvis_voice_reference.wav olarak kaydet
-8. System prompt'u yükle (advanced_system_prompt_v2.md — karakter anayasası)
-9. minimax_realtime_orchestrator.py'yi başlat (Core — sesten-sese):
-   cd ~/jarvis_core
-   python3 minimax_realtime_orchestrator.py
-10. hybrid_brain_and_memory_manager.py'yi başlat (ayrı terminal — hafıza):
-    python3 hybrid_brain_and_memory_manager.py
-11. facial_memory_and_vector_db.py'yi başlat (ayrı terminal — yüz tanıma):
-    python3 facial_memory_and_vector_db.py
-10. systemd service oluştur (otomatik başlatma):
-    sudo nano /etc/systemd/system/jarvis-core.service
-    [Unit]
-    Description=Jarvis Core 2.0
-    After=network.target
-    [Service]
-    ExecStart=/usr/bin/python3 /home/pi/jarvis_core/minimax_realtime_orchestrator.py
-    Restart=always
-    User=pi
-    [Install]
-    WantedBy=multi-user.target
-    sudo systemctl enable jarvis-core
-    sudo systemctl start jarvis-core
+7. System prompt'u yükle (advanced_system_prompt_v2.md — karakter anayasası)
+8. Konteynerleri başlat:
+   docker compose up -d
+9. Tüm servisler otomatik başlar (restart: always — VPS reboot'ta bile)
+10. Test: docker compose logs jarvis-core — MQTT bağlantısı kurulmuş olmalı
 ```
 
 ### 1.3 HA Entegrasyonu
@@ -223,16 +224,34 @@
 
 ## 🔘 Modül 2: hidden_triggers — Kurulum
 
-### 2.1 Zigbee Mini Butonlar
+> **Mimari değişiklik:** Sonoff ZBMINI ÇÖP — yurt priz/anahtar tesisatı sökülmüyor.
+> Gizli tetikleyiciler TTP223B dokunmatik sensörlerle (×5, ELDE) masa altına.
+
+### 2.1 TTP223B Dokunmatik Sensörler (×5 — ELDE)
 
 ```
-1. Sonoff ZBMINI butonun pilini (CR2032) tak
-2. Zigbee2MQTT arayüzüne gir (HA → Zigbee2MQTT)
-3. "Permit Join" tıkla
-4. Butonun eşleştirme tuşuna 5 sn bas → Zigbee2MQTT keşfeder
-5. Butona "bedside_button" ve "desk_button" adı ver
-6. Buton 1'i komodin arkasına 3M VHB bant ile yapıştır
-7. Buton 2'yi masa altına yapıştır
+1. 5× TTP223B'yi ESP32 Sensör Hub'a bağla:
+   TTP223 #1 (masa sol)  → GPIO 4
+   TTP223 #2 (masa sağ)  → GPIO 5
+   TTP223 #3 (komodin)   → GPIO 6
+   TTP223 #4 (yatak başı) → GPIO 7
+   TTP223 #5 (mutfak tezgah altı) → GPIO 15
+   (Hepsi: VCC → 3.3V, GND → GND)
+2. Her TTP223'ü ahşap yüzey altına yapıştır (sensör pad'i ahşaba bakar)
+3. (Kalın ahşap >10mm) Bakır folyo şerit lehimle → alan genişlet
+4. ESP32'ye stealth_button_esphome.yaml'i yükle (ESPHome web — 5 sensör birden)
+5. WiFi + MQTT yapılandır
+6. Kalibrasyon (her sensör için):
+   - ESPHome log'larını izle (USB)
+   - Ahşaba dokun → "Desk Hidden Touch: ON" gelmeli
+   - Gelmiyorsa → ahşap çok kalın, bakır folyo ekle
+   - Titreşimli → debounce artır (100ms → 200ms)
+7. HA'da 5× binary_sensor görünüyor mu kontrol et:
+   - binary_sensor.desk_touch_left
+   - binary_sensor.desk_touch_right
+   - binary_sensor.bedside_touch
+   - binary_sensor.bedframe_touch
+   - binary_sensor.kitchen_counter_touch
 8. invisible_orchestration_automations.yaml'ı HA'a yükle
 9. Test: Tek tık → Lounge modu, Çift tık → Sinema, Basılı tut → Kapat
 ```
@@ -292,42 +311,43 @@
 
 ---
 
-## 🪞 Modül 4: magic_mirror — Kurulum
+## 🪞 Modül 4: magic_mirror — Kurulum (Pi'siz — VPS + Mi Box)
 
-### 4.1 Donanım Montajı
+> **Mimari değişiklik:** Raspberry Pi Zero ÇÖP. MagicMirror² VPS Docker'da web
+> servisi olarak çalışır → TV'de Mi Box S 4K tarayıcısında tam ekran (Kiosk) gösterilir.
 
-```
-1. LCD monitörün çerçevesini ve plastik kasasını sök (stripped)
-2. Two-way mirror akriliği LCD'nin ön yüzüne yerleştir
-3. LCD kenarlarını siyah bant ile kapat (ışık sızıntısı)
-4. (Opsiyonel) Ahşap/siyah çerçeve ile kenarları kapat
-5. Raspberry Pi Zero 2 W'yu aynanın arkasına gizle
-6. LCD'yi akıllı prize tak, prizi ayna arkasındaki prize bağla
-7. Aynayı duvara as, kabloları gizle
-```
-
-### 4.2 MagicMirror² Kurulumu
+### 4.1 MagicMirror² Web Sunucusu (VPS Docker)
 
 ```
-1. Raspberry Pi OS Lite'i MicroSD'ye yaz
-2. Pi Zero'yu başlat, SSH ile bağlan
-3. MagicMirror² kur:
-   bash -c "$(curl -sL https://raw.githubusercontent.com/MichMich/MagicMirror/master/installers/raspberry.sh)"
-4. MMM-Spotify modülünü kur:
-   cd ~/MagicMirror/modules
+1. VPS'te MagicMirror² Docker konteyneri oluştur (server-only mod):
+   docker run -d --name magicmirror \
+     -p 8080:8080 \
+     -v ./magicmirror/config:/opt/magic_mirror/config \
+     -v ./magicmirror/modules:/opt/magic_mirror/modules \
+     bastilimbach/magicmirror
+2. MMM-Spotify modülünü kur:
+   cd ./magicmirror/modules
    git clone https://github.com/skuethe/MMM-Spotify.git
-   cd MMM-Spotify && npm install
-5. MMM-MQTT modülünü kur:
-   cd ~/MagicMirror/modules
+3. MMM-MQTT modülünü kur:
    git clone https://github.com/shbatm/MMM-MQTT.git
-   cd MMM-MQTT && npm install
-6. magicmirror_config.js'yi ~/MagicMirror/config/config.js olarak kopyala
-7. Spotify API bilgilerini ve MQTT broker adresini gir
-8. custom.css'e "Calm Technology" stillerini ekle (beyaz yazı, siyah arka plan)
-9. PM2 ile autostart:
-   npm install pm2 -g
-   pm2 start mm.sh
-   pm2 startup && pm2 save
+4. magicmirror_config.js'yi config/config.js olarak kopyala
+5. Spotify API bilgilerini ve MQTT broker adresini (GL-MT3000) gir
+6. custom.css'e "Calm Technology" stillerini ekle (beyaz yazı, siyah arka plan)
+7. Test: http://VPS_IP:8080 → MagicMirror² web sayfası görünmeli
+```
+
+### 4.2 TV'de Gösterim (Mi Box S 4K — Planlanan)
+
+```
+1. Mi Box S 4K'yi TV'nin HDMI girişine tak
+2. Mi Box kurulum: Google hesabı → Google TV 14
+3. Tarayıcı aç (veya "Fullscreen Browser" app kur)
+4. http://VPS_IP:8080 adresine git → MagicMirror² görünür
+5. Kiosk mod: Tarayıcıyı tam ekran yap + otomatik açılış ayarla
+6. (Opsiyonel) Two-way mirror akriliği TV ekranının önüne yerleştir
+   → TV kapalıyken ayna, açıkken MagicMirror² ("TV Ayna" hibrit)
+7. TV'yi Tuya akıllı prize tak → varlık algılayınca TV açılır
+   → MagicMirror² otomatik görünür
 ```
 
 ### 4.3 HA Otomasyonu
@@ -399,35 +419,127 @@
 
 ---
 
-## 🌅 Modül 7: morning_after — Kurulum
+## 🌅 Modül 7: morning_after — Kurulum (DIY Perde Motoru)
+
+> **Mimari değişiklik:** SwitchBot Curtain (3000₺) ÇÖP → 28BYJ-48 Step Motor +
+> ULN2003 Sürücü (ELDE, ~150₺) + ESP32 + ESPHome stepper.
+
+### 7.1 Donanım Montajı (28BYJ-48 + ULN2003)
 
 ```
-1. SwitchBot Curtain'i perde rayına tak (kornişe vidalama gerekmez)
-2. SwitchBot app → WiFi'ya bağla → HA'a ekle (cover.smart_curtain)
-3. Perdeyi kalibre et (tam açık / tam kapalı pozisyon)
-4. sunrise_simulation.yaml'ı HA'a yükle (script.sunrise_simulation)
-5. morning_orchestration_automation.yaml'ı HA'a yükle
-6. input_datetime.morning_wake_time'ı HA'ta tanımla
-7. Hava durumu sensörü ekle (weather.home)
-8. Test: "Jarvis, sabah 9'da uyandır" → input_datetime ayarlanır
-9. Test: 9:00'dan 10 dk önce WLED gündoğumu + perde %20 başlamalı
-10. Test: 9:00'da perde %100 + barista_mode tetiklenmeli
+1. 28BYJ-48 step motoru ULN2003 sürücü kartına tak (5-pin konnektör)
+2. ULN2003'ü ESP32'ye bağla:
+   IN1 → GPIO 16
+   IN2 → GPIO 17
+   IN3 → GPIO 5
+   IN4 → GPIO 18
+   VCC → 5V (harici güç önerilir — motor akımı çeker)
+   GND → GND (ESP32 GND ile ortak)
+3. Mekanik bağlantı:
+   - Motor miline dişli tak (3D baskı veya hazır dişli)
+   - Perde rayına halat + kasnak sistemi kur
+   - Motor → dişli → halat → perde mekanizması
+   - (Alternatif) Motor miline bobin (spool) tak → perde ipini sar
+4. Motoru perde rayının ucuna monte (braket + 3M VHB)
+5. (Opsiyonel) Limit switch × 2 → açık/kapalı uç pozisyonları
+   → GPIO 19 (açık) + GPIO 21 (kapalı)
+```
+
+### 7.2 ESPHome Stepper Konfigürasyonu
+
+```yaml
+# ESPHome stepper bileşeni (Sensör Hub config'ine ekle)
+stepper:
+  - platform: uln2003
+    id: curtain_stepper
+    pin_a: GPIO16
+    pin_b: GPIO17
+    pin_c: GPIO5
+    pin_d: GPIO18
+    max_speed: 250 steps/s  # Yavaş — sinematik açılım
+
+cover:
+  - platform: template
+    id: smart_curtain
+    name: "Perde"
+    open_action:
+      - stepper.set_target:
+          id: curtain_stepper
+          target: 2048  # Tam açık (kalibre et)
+    close_action:
+      - stepper.set_target:
+          id: curtain_stepper
+          target: 0      # Tam kapalı
+    position_template: >-
+      {{ (states('sensor.curtain_position') | float(0)) }}
+```
+
+### 7.3 Kalibrasyon + Otomasyon
+
+```
+1. ESPHome firmware yükle → WiFi + MQTT yapılandır
+2. Kalibrasyon:
+   - Perdeyi manuel tam kapat → stepper.set_target: 0
+   - Perdeyi manuel tam aç → adım sayısını oku (örn. 2048)
+   - Bu değeri config'e yaz
+3. sunrise_simulation.yaml'ı HA'a yükle (script.sunrise_simulation)
+4. morning_orchestration_automation.yaml'ı HA'a yükle
+5. input_datetime.morning_wake_time'ı HA'ta tanımla
+6. Hava durumu sensörü ekle (weather.home)
+7. Test: "Jarvis, sabah 9'da uyandır" → input_datetime ayarlanır
+8. Test: 9:00'dan 10 dk önce WLED gündoğumu + perde %20 başlamalı
+9. Test: 9:00'da perde %100 (yavaş sinematik açılım ~30-60 sn) + barista tetiklenmeli
 ```
 
 ---
 
-## 📡 Modül 8: invisible_remote — Kurulum
+## 📡 Modül 8: invisible_remote — Kurulum (Tuya IR+RF)
 
-### 8.1 Broadlink RM4 Mini
+> **Mimari değişiklik:** Broadlink RM4 Mini ÇÖP → Tuya WiFi Smart IR+RF (ELDE).
+> Klima + vantilatör Tuya Smart app'te zaten bağlı. HA'da `tuya-local` ile tam yerel kontrol.
+
+### 8.1 Tuya IR+RF Kumanda (ELDE — Klima + Vantilatör Bağlı)
 
 ```
-1. Broadlink RM4 Mini'yi WiFi'a bağla (Broadlink app)
-2. HA → Settings → Devices → Add → Broadlink
-3. remote.broadlink_rm4_mini entity'si oluşur
-4. Broadlink app → "Learn" modu:
-   - TV Power tuşuna bas → kod kaydet
-   - HDMI 1, Volume Up/Down, Mute → her birini kaydet
-5. Öğrenilen kodları smartir_climate_media.yaml'daki script'lere kopyala
+1. Tuya Smart app'te klima + vantilatör zaten eşleşmiş ✅
+2. HA'a tuya-local entegrasyonu kur (HACS):
+   HACS → Integrations → "Tuya Local" → Install
+3. HA → Settings → Devices → Add → Tuya Local
+4. Tuya IR+RF cihazının IP'sini bul (GL-MT3000 admin panelinden)
+5. Cihazı ekle → remote.tuya_ir_rf entity'si oluşur
+6. IR kod öğrenme (tuya-local remote.learn_command):
+   - HA → Developer Tools → Services → remote.learn_command
+   - entity_id: remote.tuya_ir_rf
+   - command: "klima_power_off"
+   - Orijinal klima kumandasından Power Off tuşuna bas (30 sn içinde)
+   - Kod kaydedilir (restart'ta kalıcı)
+7. Klimanın tüm tuşlarını öğren:
+   - power_on, power_off, temp_up, temp_down, mode_cool, mode_dry,
+     fan_speed, swing_on, swing_off
+8. Vantilatörün tüm tuşlarını öğren:
+   - fan_power, fan_speed_1, fan_speed_2, fan_speed_3, fan_oscillate
+9. Öğrenilen kodları smartir_climate_media.yaml'daki script'lere bağla
+10. Test: HA'dan klimayı aç/kapa → klima tepki vermeli
+```
+
+> **Not (TV):** TV'nin IR alıcısı arızalı — Tuya kumanda TV'ye komut gönderse de
+> TV almıyor. TV değişince + Mi Box S 4K takılınca TV kontrolü IR yerine
+> Android TV entegrasyonu (ADB) + Chromecast ile yapılır (Modül 34).
+
+### 8.2 ESP32 IR Blaster (Yedek — Parçalar ELDE)
+
+```
+1. TSOP1838 IR alıcıyı ESP32'ye bağla (kod öğrenme):
+   OUT → GPIO 14 (ESPHome remote_receiver)
+   VCC → 3.3V, GND → GND
+2. LTE-4206 IR LED'leri 2N2222 transistörle sür (blaster):
+   ESP32 GPIO 13 → 220Ω → 2N2222 Base
+   2N2222 Collector → IR LED (-)
+   IR LED (+) → 3.3V (2 LED seri)
+   2N2222 Emitter → GND
+3. ESPHome remote_transmitter + remote_receiver bileşenlerini yükle
+4. Orijinal kumandaların kodlarını öğren (TSOP1838 üzerinden)
+5. Tuya kumandanın görmediği köşelerde blaster olarak kullan
 ```
 
 ### 8.2 SmartIR (Klima)
@@ -513,22 +625,30 @@
 
 ---
 
-## ☕ Modül 11: barista_mode — Kurulum
+## ☕ Modül 11: barista_mode — Kurulum (HAUSBERG HB3723)
+
+> **Mimari değişiklik:** HAUSBERG HB3723 Espresso (ELDE) + Tuya akıllı priz (planlanan).
+> WiFi'siz makine → güç izleme ile "kahve hazır" tespiti.
 
 ```
-1. Kahve makinesini akıllı prize tak (Shelly Plug s)
-2. Shelly'yi WiFi'a bağla → HA'a ekle (switch.coffee_machine_plug)
-3. sensor.coffee_machine_power entity'si HA'ta görünüyor mu kontrol et
-4. Kahve makinesinin güç anahtarını ON konumunda bırak
-5. NTAG215 NFC etiketi masanın altına yapıştır
+1. HAUSBERG HB3723'ü Tuya UK akıllı prize tak
+2. Tuya prizi Tuya Smart app ile WiFi'a bağla
+3. HA'a LocalTuya entegrasyonu ile ekle (switch.coffee_machine_plug)
+   → sensor.coffee_machine_power entity'si oluşur (güç izleme)
+4. HAUSBERG'in güç anahtarını ON konumunda bırak
+   (Priz açılınca makine ısınmaya başlar)
+5. NTAG213 NFC etiketi (ELDE) masanın altına yapıştır
 6. HA Companion App → NFC Tags → Write → "nfc_coffee_table"
 7. Spotify'da "Lo-Fi Coffee Shop" çalma listesi oluştur → URI'yi al
 8. barista_automation.yaml'daki playlist URI'sini güncelle
 9. barista_automation.yaml'ı HA'a yükle
-10. smart_readiness_sensor.yaml'ı HA'a yükle
+10. smart_readiness_sensor.yaml'ı HA'a yükle — HAUSBERG güç profili:
+    - Isınma: ~900W (thermoblock ısıtıcı)
+    - Hazır bekleme: ~50W
+    - Geçiş tespiti: 900W → 50W = "Espresso ready"
 11. Çift cidarlı fincanları, şurupları ve kahveyi hazırla
 12. Test: NFC'ye telefon dokundur → priz aç + ışıklar %30 amber + müzik %15
-13. Test: Güç 1000W'a çıkıp 20W'a düşerse → "Espresso ready" anonsu
+13. Test: Güç 900W'a çıkıp 50W'a düşerse → "Espresso ready" anonsu
 ```
 
 ---
@@ -1247,39 +1367,44 @@ docker run -d --name openclaw \
 
 ---
 
-## Faz 13: Modül 28 — Multicooker Chef Automation (Akıllı Tencere)
+## Faz 13: Modül 28 — Multicooker Chef Automation (Hisense HMC6SBK)
 
-### Adım 1: Xiaomi Tencereyi Yerel Ağa Bağla
+> **Mimari değişiklik:** Xiaomi Mi Smart Multi Cooker → **Hisense HMC6SBK 6L** (ELDE).
+> WiFi YOK → Çin bulutu izolasyonu GEREKMEZ (sıfır bulut riski).
+> Zeka: Tuya akıllı priz güç izleme + Tapo C200 vision + Mealie orkestrasyonu.
+
+### Adım 1: Hisense HMC6SBK'yi Akıllı Prize Bağla
 ```
-1. Xiaomi Mi Home app ile tencereyi WiFi'a bağla (ilk kurulum)
-2. GL-MT3000 ağına bağlanmasını sağla (SSID: GL-MT3000)
-3. Mi Home app'ten cihaz token'ını al (gerekirse)
+1. Hisense HMC6SBK'yi (ELDE) Tuya UK akıllı prize tak
+2. Tuya prizi Tuya Smart app ile WiFi'a bağla (GL-MT3000 ağı)
+3. HA'a LocalTuya ile ekle:
+   → switch.hisense_multicooker
+   → sensor.hisense_multicooker_power (güç izleme)
+4. Hisense'in güç tuşunu ON bırak — priz açılınca hazır olur
 ```
 
-### Adım 2: HA'ya Xiaomi Miot Auto Ekle
+### Adım 2: Güç İzleme ile Pişirme Durumu Tespiti
 ```yaml
-# configuration.yaml
-xiaomi_miot:
-  - name: "Smart Multicooker"
-    host: 192.168.1.108  # Tencere IP (GL-MT3000 DHCP)
-    token: "YOUR_DEVICE_TOKEN"
-    miot_local: true      # YEREL LAN modu
-    miot_cloud: false     # Çin bulutu KAPALI
-    check_lan: true
+# Hisense HMC6SBK güç profili (1500W cihaz):
+# - Isınma/pişirme: ~1200-1500W
+# - Keep-warm (sıcak bekleme): ~30-50W
+# - Bekleme (kapalı): ~0-2W
+#
+# HA template sensor (configuration.yaml):
+template:
+  - binary_sensor:
+      - name: "Multicooker Cooking"
+        state: >
+          {{ states('sensor.hisense_multicooker_power') | float(0) > 500 }}
+        delay_on: "00:02:00"   # 2 dk üstünde kalırsa pişirme başladı
+      - name: "Multicooker Done"
+        state: >
+          {{ states('sensor.hisense_multicooker_power') | float(0) < 60
+             and states('sensor.hisense_multicooker_power') | float(0) > 5 }}
+        delay_on: "00:03:00"   # 3 dk keep-warm'da kaldıysa pişirme bitti
 ```
 
-### Adım 3: Router İzolasyon (Çin Bulutu Kapat)
-```bash
-# GL-MT3000 SSH
-ssh root@gl-mt3000.local
-
-# Tencere IP'sini internetten kes
-iptables -A FORWARD -s 192.168.1.108 -j DROP
-# Kaydet
-/etc/init.d/firewall restart
-```
-
-### Adım 4: Mealie + Vision-Cooker Otomasyonlarını Yükle
+### Adım 3: Mealie + Vision-Cooker Otomasyonlarını Yükle
 ```bash
 # HA'ya YAML dosyalarını kopyala
 cp vision_cooker_orchestration.yaml /config/packages/
@@ -1290,9 +1415,24 @@ cp mealie_macro_orchestrator.py /config/python_scripts/
 ha core restart
 ```
 
+### Adım 4: Vision-Cooker Kapalı Döngü Testi
+```
+1. Tapo C200 (Modül 13) mutfak tezgahına bakar
+2. Malzemeleri tezgaha koy → Qwen-VL malzemeleri tanır
+3. Mealie'de tarif eşleştirir → Jarvis önerir
+4. Kullanıcı onaylar → malzemeleri Hisense'e koy → programı seç
+5. Prizden güç izleme: 1500W (pişirme) → 40W (keep-warm)
+6. "Multicooker Done" tetiklenir → Jarvis "Yemeğiniz hazır" der
+   → WLED turuncu yanar → Lamba (beklemede) yerine Yeelight flash
+```
+
 ---
 
-## Faz 14: Modül 29 — Embodied Jarvis Avatar (5-DOF Lamba)
+## ⏸️ Faz 14: Modül 29 — Embodied Jarvis Avatar (5-DOF Lamba) — BEKLEMEDE
+
+> **⚠️ BU FAZ BEKLEMEYE ALINDI:** "Önce odanın temeli (ses, ışık, otomasyon).
+> Robotiğe 1 kuruş harcamıyoruz." Aşağıdaki adımlar oda temeli bitince
+> aynen uygulanacaktır. Dokümantasyon korunmuştur.
 
 ### Adım 1: 3D Baskı
 ```
@@ -1355,7 +1495,10 @@ python3 posture_shield_daemon.py &
 
 ---
 
-## Faz 15: Modül 30 — Desktop Pet Kame32 (Robot Evcil Hayvan)
+## ⏸️ Faz 15: Modül 30 — Desktop Pet Kame32 (Robot Evcil Hayvan) — BEKLEMEDE
+
+> **⚠️ BU FAZ BEKLEMEYE ALINDI:** Oda temeli (ses, ışık, otomasyon) bitince
+> uygulanacaktır. Dokümantasyon korunmuştur.
 
 ### Adım 1: 3D Baskı ve Montaj
 ```
@@ -1449,7 +1592,11 @@ python3 eye_of_sauron_parking.py --calibrate
 
 ---
 
-## Faz 16: Modül 31 — Siber Barmen (CocktailBerry)
+## ⏸️ Faz 16: Modül 31 — Siber Barmen (CocktailBerry) — BEKLEMEDE
+
+> **⚠️ BU FAZ BEKLEMEYE ALINDI:** Oda temeli bitince uygulanacaktır.
+> Ayrıca Raspberry Pi gerektirdiğinden, Pi'siz yeni mimaride tekrar
+> değerlendirilecek (VPS + ESP32 röle alternatifi). Dokümantasyon korunmuştur.
 
 > **Kokteyl miksoloji robotu — Raspberry Pi 4 + 7" Touch + 10 pompa + 16-CH röle + 1N4007 diyot**
 
@@ -1723,6 +1870,94 @@ SESLİ KOMUT TEST:
 1. "Odamın nemini kontrol et" → Jarvis nem ve sıcaklığı söyler
 2. "Nem alıcıyı aç" → Shelly ON → Hisense çalışır
 3. "Gece moduna geç" → Hisense OFF + Klima 26°C + Swing tavan
+```
+
+---
+
+## Faz 2 (Güncelleme): Modül 33 — Yeelight Ambiyans Ampul (ELDE)
+
+### Yeelight Bulb 1S Kurulumu
+
+```
+1. Yeelight Bulb 1S'i lamba dukosuna tak
+2. Yeelight app (Android/iOS) ile WiFi'a bağla (GL-MT3000 ağı)
+3. Ampulü app'te aç → cihaz ayarları → "LAN Control" AKTİFLEŞTİR
+   (Eski firmware'de "Developer mode" olarak geçer)
+4. Firmware güncelle (app içinden) — LAN Control için gerekli
+5. HA → Settings → Devices → Add → Yeelight
+   → Ampul otomatik keşfedilir (yerel ağ taraması)
+6. light.yeelight_color_bulb_1s entity'si oluşur
+7. (Opsiyonel) Music mode etkinleştir:
+   → HA Yeelight entegrasyonu ayarları → "Use music mode"
+   → >60 istek/dk limiti kalkar → hızlı efekt geçişleri
+8. Test: HA'dan ampulü aç → renk değiştir → parlaklık ayarla
+9. WLED (Modül 10) ile senkron otomasyonu:
+   → "Sinema modu": Yeelight %10 kehribar + WLED off
+   → "Parti modu": Yeelight renk döngüsü + WLED audio reactive
+   → "Sabah": Yeelight yumuşak beyaz + WLED sunrise
+```
+
+> **Zero-Trust notu:** LAN Control açıkken ampul bulut komutu ALMAZ —
+> HA yerel ağdan komut gönderir. Yeelight bulutu tamamen atlanır.
+
+---
+
+## Faz 5 (Güncelleme): Modül 34 — TV Medya Merkezi (Mi Box S — Planlanan)
+
+### Mi Box S 4K (3rd Gen) Kurulumu
+
+```
+1. Mi Box S 4K'yi TV HDMI girişine tak (HDMI 2.1a destekler)
+2. Güç bağla → Google TV 14 kurulum sihirbazı:
+   → Google hesabı ile giriş
+   → WiFi: GL-MT3000 ağına bağlan
+3. Google Play'den gerekli app'leri kur:
+   → Spotify (medya cast + kontrol)
+   → Home Assistant Companion (HA kontrol paneli TV'de)
+   → Tam ekran tarayıcı (MagicMirror² Kiosk için)
+4. HA Android TV entegrasyonu:
+   → HA → Settings → Devices → Add → Android TV
+   → Mi Box IP'sini gir (GL-MT3000 admin panelinden bul)
+   → ADB debugging aç: Mi Box → Settings → Device Preferences →
+     About → Build Number 7 kez tıkla → Developer Options →
+     USB Debugging / Network Debugging AKTİF
+   → media_player.mi_box entity'si oluşur (power, volume, app kontrolü)
+5. Chromecast (dahili):
+   → HA Chromecast entegrasyonu otomatik keşfeder
+   → media_player.mi_box_chromecast → jarvis_core medya cast hedefi
+6. MagicMirror² Kiosk (Modül 4):
+   → Tarayıcıda http://VPS_IP:8080 aç → tam ekran
+   → "Fullscreen Browser" app ile otomatik açılış ayarla
+7. Test: "Jarvis, Spotify'da Lo-Fi çal" → Mi Box Chromecast'e cast
+8. Test: HA'dan Mi Box power off → TV kapanır (enerji tasarrufu)
+```
+
+---
+
+## Faz 3 (Güncelleme): Tuya UK Akıllı Prizler (Planlanan)
+
+### Tuya Priz Kurulumu (Hausberg + Hisense + Klima)
+
+```
+1. Tuya UK Smart Plug'ı duvar prizine tak
+2. Tuya Smart app ile WiFi'a bağla (GL-MT3000 ağı):
+   → App → Add Device → Socket → WiFi bilgileri
+3. Cihaz adlandır:
+   → "Coffee Machine Plug" (Hausberg HB3723)
+   → "Multicooker Plug" (Hisense HMC6SBK)
+   → "AC Power Plug" (klima geri besleme)
+4. HA'a LocalTuya entegrasyonu ile ekle (HACS → Tuya Local):
+   → Her priz için: device_id + local_key (Tuya IoT Platform'dan)
+   → switch + power sensor entity'leri oluşur
+5. Güç izleme testi:
+   → Hausberg'i prize tak, aç → ~900W (ısınma) → ~50W (hazır)
+   → Hisense'i prize tak, program başlat → ~1500W (pişirme)
+6. Zero-Trust notu: LocalTuya yerel protokol kullanır —
+   Tuya bulutu komut için gerekmez (yalnızca ilk eşleştirme)
+
+> Alternatif: Shelly Plug S (yerel MQTT, bulut sıfır) — ama Tuya priz
+> ~$12 vs Shelly ~$15 ve Tuya Smart app ile ilk kurulum daha kolay.
+> LocalTuya ile ikisi de yerel çalışır.
 ```
 
 ---

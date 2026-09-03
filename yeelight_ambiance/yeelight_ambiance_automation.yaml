@@ -1,0 +1,145 @@
+# Modül 33: Yeelight Ambiyans — HA Otomasyonları
+# Yeelight Bulb 1S (LAN Control) + WLED senkron sahneleri
+#
+# GEREKSİNİMLER:
+#   - Yeelight app'te "LAN Control" AKTİF (cihaz ayarları)
+#   - HA → Settings → Devices → Add → Yeelight (otomatik keşif)
+#   - light.yeelight_color_bulb_1s entity'si
+#   - WLED (Modül 10) kurulu — light.wled_ambient
+
+automation:
+  # ── 1. SINEMA MODU: Yeelight loş kehribar + WLED kapalı ──
+  - id: "yeelight_scene_cinema"
+    alias: "Yeelight — Sinema Modu"
+    trigger:
+      - platform: mqtt
+        topic: "jarvis/yeelight/scene"
+      - platform: event
+        event_type: "jarvis_command"
+        event_data:
+          command: "cinema_mode"
+    condition:
+      - condition: template
+        value_template: "{{ trigger.payload_json.scene | default('cinema') == 'cinema' }}"
+    action:
+      - service: light.turn_on
+        target:
+          entity_id: light.yeelight_color_bulb_1s
+        data:
+          brightness_pct: 10
+          color_temp: 370 # ~2700K kehribar
+          transition: 3
+      - service: light.turn_off
+        target:
+          entity_id: light.wled_ambient
+        data:
+          transition: 3
+      - service: mqtt.publish
+        data:
+          topic: "jarvis/core/command"
+          payload: '{"action":"speak","message":"Sinema modu aktif, efendim."}'
+
+  # ── 2. PARTİ MODU: Yeelight renk döngüsü + WLED audio reactive ──
+  - id: "yeelight_scene_party"
+    alias: "Yeelight — Parti Modu"
+    trigger:
+      - platform: mqtt
+        topic: "jarvis/yeelight/scene"
+    condition:
+      - condition: template
+        value_template: "{{ trigger.payload_json.scene == 'party' }}"
+    action:
+      - service: light.turn_on
+        target:
+          entity_id: light.yeelight_color_bulb_1s
+        data:
+          effect: "Strobe Color" # Music mode ile hızlı renk geçişi
+          brightness_pct: 100
+      # WLED audio reactive preset (Modül 10)
+      - service: light.turn_on
+        target:
+          entity_id: light.wled_ambient
+        data:
+          effect: "Freqwave"
+          brightness_pct: 100
+
+  # ── 3. SABAH: Yeelight yumuşak beyaz + WLED sunrise ──
+  - id: "yeelight_scene_morning"
+    alias: "Yeelight — Sabah Işığı"
+    trigger:
+      - platform: mqtt
+        topic: "jarvis/yeelight/scene"
+    condition:
+      - condition: template
+        value_template: "{{ trigger.payload_json.scene == 'morning' }}"
+    action:
+      - service: light.turn_on
+        target:
+          entity_id: light.yeelight_color_bulb_1s
+        data:
+          brightness_pct: 60
+          color_temp: 250 # ~4000K yumuşak beyaz
+          transition: 10 # Yavaş açılım — sinematik
+
+  # ── 4. ODAKLANMA: Yeelight soğuk beyaz (zihin açıcı) ──
+  - id: "yeelight_scene_focus"
+    alias: "Yeelight — Odaklanma Işığı"
+    trigger:
+      - platform: mqtt
+        topic: "jarvis/yeelight/scene"
+    condition:
+      - condition: template
+        value_template: "{{ trigger.payload_json.scene == 'focus' }}"
+    action:
+      - service: light.turn_on
+        target:
+          entity_id: light.yeelight_color_bulb_1s
+        data:
+          brightness_pct: 80
+          color_temp: 200 # ~5000K soğuk beyaz
+          transition: 2
+
+  # ── 5. ROMANTİK: Yeelight loş koyu kırmızı + WLED Date Lounge ──
+  - id: "yeelight_scene_intimate"
+    alias: "Yeelight — Romantik Ortam"
+    trigger:
+      - platform: mqtt
+        topic: "jarvis/yeelight/scene"
+    condition:
+      - condition: template
+        value_template: "{{ trigger.payload_json.scene == 'intimate' }}"
+    action:
+      - service: light.turn_on
+        target:
+          entity_id: light.yeelight_color_bulb_1s
+        data:
+          brightness_pct: 15
+          rgb_color: [139, 0, 0] # Koyu kırmızı
+          transition: 5
+      - service: light.turn_on
+        target:
+          entity_id: light.wled_ambient
+        data:
+          effect: "Date Lounge"
+          brightness_pct: 40
+
+  # ── 6. UYKU: Her şey kademeli kapanır ──
+  - id: "yeelight_scene_sleep"
+    alias: "Yeelight — Uyku (Kademeli Kapatma)"
+    trigger:
+      - platform: mqtt
+        topic: "jarvis/yeelight/scene"
+    condition:
+      - condition: template
+        value_template: "{{ trigger.payload_json.scene == 'sleep' }}"
+    action:
+      - service: light.turn_on
+        target:
+          entity_id: light.yeelight_color_bulb_1s
+        data:
+          brightness_pct: 1
+          transition: 30 # 30 saniyede %1'e iner
+      - delay: "00:00:35"
+      - service: light.turn_off
+        target:
+          entity_id: light.yeelight_color_bulb_1s

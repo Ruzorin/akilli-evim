@@ -1,0 +1,52 @@
+# Modül 33: Yeelight Ambiyans Aydınlatma — Konfigürasyon
+# Yeelight Smart LED Color Bulb 1S (ELDE) — HA yerel Yeelight entegrasyonu
+
+module:
+  id: 33
+  name: "Yeelight Ambiyans Aydınlatma"
+  type: "oda_ambiyans_ampul"
+  status: "elde" # Ampul alındı, kurulum bekliyor
+
+hardware:
+  bulb:
+    model: "Yeelight Smart LED Color Bulb 1S"
+    connection: "WiFi (GL-MT3000 ağı)"
+    colors: "16M renk"
+    brightness: "~800 lümen"
+
+home_assistant:
+  integration: "yeelight" # HA native — Settings → Devices → Yeelight
+  entity_id: "light.yeelight_color_bulb_1s"
+  lan_control: true # Yeelight app'te "LAN Control" açılmalı
+  music_mode: true # >60 istek/dk limiti kalkar → hızlı efektler
+  cloud: false # Bulut YOK — tamamen yerel LAN kontrol
+
+scenes:
+  cinema:
+    yeelight: { brightness: 10, color_temp: 2700 } # Loş kehribar
+    wled: "off"
+  party:
+    yeelight: { effect: "color_loop" } # Renk döngüsü
+    wled: "audio_reactive" # Ritim senkronu
+  morning:
+    yeelight: { brightness: 60, color_temp: 4000 } # Yumuşak beyaz
+    wled: "sunrise"
+  focus:
+    yeelight: { brightness: 80, color_temp: 5000 } # Soğuk beyaz (odak)
+    wled: "deep_focus"
+  intimate:
+    yeelight: { brightness: 15, rgb: [139, 0, 0] } # Loş koyu kırmızı
+    wled: "date_lounge"
+
+mqtt:
+  broker: "gl-mt3000.local"
+  scene_topic: "jarvis/yeelight/scene"
+
+jarvis_integration:
+  voice_phrases:
+    - "sinema moduna geç"
+    - "parti modu"
+    - "sabah ışığı"
+    - "odaklanma ışığı"
+    - "romantik ortam"
+  wled_sync: true # Modül 10 (WLED) ile sahne senkronu
